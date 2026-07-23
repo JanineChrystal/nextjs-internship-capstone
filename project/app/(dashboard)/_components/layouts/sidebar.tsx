@@ -15,7 +15,8 @@ import {
 import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
-import { useTheme } from "./theme-provider";
+import { useTheme } from "@/components/theme-provider";
+import { UserButton } from "@clerk/nextjs";
 
 const navigation = [
 	{ name: "Dashboard", href: "/dashboard", icon: Home },
@@ -26,7 +27,7 @@ const navigation = [
 	{ name: "Settings", href: "/settings", icon: Settings },
 ];
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
+export function SideBar({ children }: { children: React.ReactNode }) {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const { theme, setTheme } = useTheme();
 
@@ -94,9 +95,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 								{theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
 							</button>
 
-							<div className="w-8 h-8 bg-blue_munsell-500 rounded-full flex items-center justify-center text-white font-semibold">
-								U
-							</div>
+							<UserButton />
 						</div>
 					</div>
 				</div>
