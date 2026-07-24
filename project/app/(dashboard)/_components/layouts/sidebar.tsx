@@ -1,5 +1,6 @@
 "use client";
 
+import { UserButton } from "@clerk/nextjs";
 import {
 	BarChart3,
 	Calendar,
@@ -16,7 +17,6 @@ import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
 import { useTheme } from "@/components/theme-provider";
-import { UserButton } from "@clerk/nextjs";
 
 const navigation = [
 	{ name: "Dashboard", href: "/dashboard", icon: Home },

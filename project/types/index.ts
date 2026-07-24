@@ -1,15 +1,6 @@
 // TypeScript type definitions
 // Task 1.3: Set up project structure and folder organization
 
-export interface User {
-	id: string;
-	clerkId: string;
-	email: string;
-	name: string;
-	createdAt: Date;
-	updatedAt: Date;
-}
-
 export interface Project {
 	id: string;
 	name: string;

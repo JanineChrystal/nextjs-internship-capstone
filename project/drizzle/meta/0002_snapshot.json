@@ -1,6 +1,6 @@
 {
-	"id": "03c72774-fcba-4952-b10e-47ff9679370d",
-	"prevId": "00000000-0000-0000-0000-000000000000",
+	"id": "ba7d5e5d-0d80-473e-91d9-af2355aa19f3",
+	"prevId": "991db028-9f62-4562-8bd0-9768be518138",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -33,21 +33,15 @@
 					"primaryKey": false,
 					"notNull": false
 				},
+				"image_url": {
+					"name": "image_url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
 				"last_name": {
 					"name": "last_name",
 					"type": "varchar(255)",
-					"primaryKey": false,
-					"notNull": false
-				},
-				"start_session": {
-					"name": "start_session",
-					"type": "timestamp",
-					"primaryKey": false,
-					"notNull": false
-				},
-				"end_session": {
-					"name": "end_session",
-					"type": "timestamp",
 					"primaryKey": false,
 					"notNull": false
 				},

@@ -43,38 +43,16 @@ export const users = pgTable('users', {
 // export const tasks = "TODO: Implement tasks table schema";
 // export const comments = "TODO: Implement comments table schema";
 
-// Import required Drizzle PostgreSQL core functions
-import { pgTable, text, timestamp, varchar, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
-// Define the users table schema for Project Flow
-export const usersTable = pgTable("users", {
-	// Generate a random UUID as the internal primary key
+export const users = pgTable("users", {
 	id: uuid("id").primaryKey().defaultRandom(),
-
-	// Store the external Clerk ID for authentication mapping
 	clerkId: text("clerk_id").notNull().unique(),
-
-	// Store the user email address
 	email: text("email").notNull().unique(),
-
-	// Store the first name provided during clerk signup
 	firstName: varchar("first_name", { length: 255 }),
-
-	// Store the last name provided during clerk signup
+	imageUrl: text("image_url"),
 	lastName: varchar("last_name", { length: 255 }),
-
-	// Record the start time of the user's most recent session
-	startSession: timestamp("start_session"),
-
-	// Record the end time of the user's most recent session
-	endSession: timestamp("end_session"),
-
-	// Record the exact time the user account is created
 	createdAt: timestamp("created_at").notNull().defaultNow(),
-
-	// Update this timestamp whenever the user profile changes
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
-
-	// Record when a user is soft-deleted to keep historical data intact
 	deletedAt: timestamp("deleted_at"),
 });

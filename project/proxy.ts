@@ -1,31 +1,14 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
-const protectedRoutes = [
-	"/analytics",
-	"/calendar",
-	"/dashboard",
-	"/projects",
-	"/settings",
-	"/team",
-];
-
-export default clerkMiddleware(async (auth, req) => {
-	const isProtected = protectedRoutes.some((route) =>
-		req.nextUrl.pathname.startsWith(route),
-	);
-
-	if (isProtected) {
-		await auth.protect();
-	}
-});
+export default clerkMiddleware();
 
 export const config = {
 	matcher: [
-		// Skip Next.js internals and all static files, unless found in search params
-		"/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-		// Always run for API routes
-		"/(api|trpc)(.*)",
-		// Always run for Clerk-specific frontend API routes
+		// skip Next.js internals, static files, and the webhooks route
+		"/((?!_next|api/webhooks|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+		// always run for API routes, except for the webhooks path
+		"/(api(?!/webhooks)|trpc)(.*)",
+		// always run for Clerk-specific frontend API routes
 		"/__clerk/(.*)",
 	],
 };

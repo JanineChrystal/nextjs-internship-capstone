@@ -1,6 +1,6 @@
 {
-	"id": "03c72774-fcba-4952-b10e-47ff9679370d",
-	"prevId": "00000000-0000-0000-0000-000000000000",
+	"id": "991db028-9f62-4562-8bd0-9768be518138",
+	"prevId": "03c72774-fcba-4952-b10e-47ff9679370d",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -36,18 +36,6 @@
 				"last_name": {
 					"name": "last_name",
 					"type": "varchar(255)",
-					"primaryKey": false,
-					"notNull": false
-				},
-				"start_session": {
-					"name": "start_session",
-					"type": "timestamp",
-					"primaryKey": false,
-					"notNull": false
-				},
-				"end_session": {
-					"name": "end_session",
-					"type": "timestamp",
 					"primaryKey": false,
 					"notNull": false
 				},
