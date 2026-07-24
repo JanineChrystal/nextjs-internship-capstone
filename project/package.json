@@ -24,10 +24,13 @@
 		"test": "vitest run",
 		"test:watch": "vitest watch",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate"
+		"db:migrate": "drizzle-kit migrate",
+		"db:studio": "drizzle-kit studio",
+		"db:seed": "tsx --env-file=.env.local src/lib/db/seed.ts"
 	},
 	"dependencies": {
 		"@clerk/nextjs": "^7.5.20",
+		"@neondatabase/serverless": "^1.1.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"drizzle-kit": "^0.31.10",
@@ -51,6 +54,7 @@
 		"@types/react-dom": "^19",
 		"@vitejs/plugin-react": "^6.0.3",
 		"autoprefixer": "^10.0.1",
+		"dotenv": "^17.4.2",
 		"eslint-config-next": "^16.0.0",
 		"postcss": "^8.5",
 		"tailwindcss": "^4.3.3",

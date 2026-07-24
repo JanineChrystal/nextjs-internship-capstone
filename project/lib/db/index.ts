@@ -1,5 +1,4 @@
 // TODO: Task 3.2 - Configure PostgreSQL database (Vercel Postgres or Neon)
-// TODO: Task 3.5 - Implement database connection and query utilities
 
 /*
 TODO: Implementation Notes for Interns:
@@ -14,7 +13,7 @@ TODO: Implementation Notes for Interns:
    - POSTGRES_URL (if using Vercel Postgres)
 
 3. Configure Drizzle connection
-4. Implement CRUD operations for all entities
+
 5. Add proper error handling
 6. Set up connection pooling if needed
 
@@ -37,48 +36,20 @@ export const queries = {
 }
 */
 
-// Placeholder exports to prevent import errors
-export const db = "TODO: Implement database connection";
+// db/index.ts
+import { neon } from "@neondatabase/serverless";
+import { config } from "dotenv";
+import { drizzle } from "drizzle-orm/neon-http";
+import * as schema from "./schema";
 
-export const queries = {
-	projects: {
-		getAll: () => {
-			console.log("TODO: Task 4.1 - Implement project CRUD operations");
-			return [];
-		},
-		getById: (id: string) => {
-			console.log(`TODO: Get project by ID: ${id}`);
-			return null;
-		},
-		create: (data: any) => {
-			console.log("TODO: Create project", data);
-			return null;
-		},
-		update: (id: string, data: any) => {
-			console.log(`TODO: Update project ${id}`, data);
-			return null;
-		},
-		delete: (id: string) => {
-			console.log(`TODO: Delete project ${id}`);
-			return null;
-		},
-	},
-	tasks: {
-		getByProject: (projectId: string) => {
-			console.log(`TODO: Task 4.4 - Get tasks for project ${projectId}`);
-			return [];
-		},
-		create: (data: any) => {
-			console.log("TODO: Create task", data);
-			return null;
-		},
-		update: (id: string, data: any) => {
-			console.log(`TODO: Update task ${id}`, data);
-			return null;
-		},
-		delete: (id: string) => {
-			console.log(`TODO: Delete task ${id}`);
-			return null;
-		},
-	},
-};
+config({ path: ".env.local" });
+
+if (!process.env.DATABASE_URL) {
+	throw new Error("DATABASE_URL environment variable is missing or empty.");
+}
+
+// connect to the database using the environment variable
+const sql = neon(process.env.DATABASE_URL);
+
+// initialize and export the drizzle instance
+export const db = drizzle({ client: sql, schema });
