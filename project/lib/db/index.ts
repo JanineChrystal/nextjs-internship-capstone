@@ -36,7 +36,6 @@ export const queries = {
 }
 */
 
-// db/index.ts
 import { neon } from "@neondatabase/serverless";
 import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/neon-http";
