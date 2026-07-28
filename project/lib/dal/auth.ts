@@ -1,7 +1,7 @@
 import "server-only";
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
+import { unauthorized } from "next/navigation";
 import { cache } from "react";
 import { db } from "../db/index";
 import { users } from "../db/schema";
@@ -36,7 +36,7 @@ export const requireUser = cache(async () => {
 	const user = await getCurrentUser();
 
 	if (!user) {
-		redirect("/sign-in");
+		unauthorized();
 	}
 
 	return user;

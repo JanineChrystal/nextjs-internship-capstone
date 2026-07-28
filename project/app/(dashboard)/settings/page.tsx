@@ -69,6 +69,7 @@ export default function SettingsPage() {
 						/* Clerk's component handles Profile info AND Password Changes out of the box */
 						<div className="flex justify-center border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg overflow-hidden bg-white dark:bg-outer_space-500">
 							<UserProfile
+								routing="hash"
 								appearance={{
 									elements: {
 										rootBox: "w-full",
