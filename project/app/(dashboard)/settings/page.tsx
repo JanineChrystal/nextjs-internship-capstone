@@ -1,6 +1,15 @@
-import { Bell, Palette, Shield, User } from "lucide-react";
+"use client";
+
+import { UserProfile } from "@clerk/nextjs";
+import { Bell, Palette, User } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/buttons/button";
 
 export default function SettingsPage() {
+	const [activeTab, setActiveTab] = useState<
+		"profile" | "notifications" | "security" | "appearance"
+	>("profile");
+
 	return (
 		<div className="space-y-6">
 			<div>
@@ -26,84 +35,71 @@ export default function SettingsPage() {
 			</div>
 
 			{/* Settings Sections */}
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				{/* Settings Navigation */}
-				<div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
-					<h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-4">
+			<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+				{/* Settings Sidebar Navigation */}
+				<div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-4 h-fit">
+					<h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-4 px-2">
 						Settings
 					</h3>
-					<nav className="space-y-2">
+					<nav className="space-y-1">
 						{[
-							{ name: "Profile", icon: User, active: true },
-							{ name: "Notifications", icon: Bell, active: false },
-							{ name: "Security", icon: Shield, active: false },
-							{ name: "Appearance", icon: Palette, active: false },
+							{ id: "profile", name: "Account", icon: User },
+							{ id: "notifications", name: "Notifications", icon: Bell },
+							{ id: "appearance", name: "Appearance", icon: Palette },
 						].map((item) => (
-							<button
-								key={item.name}
-								className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-									item.active
+							<Button
+								key={item.id}
+								onClick={() => setActiveTab(item.id as typeof activeTab)}
+								className={`w-full flex items-center justify-start px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+									activeTab === item.id
 										? "bg-blue_munsell-100 dark:bg-blue_munsell-900 text-blue_munsell-700 dark:text-blue_munsell-300"
 										: "text-outer_space-500 dark:text-platinum-500 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400"
 								}`}
 							>
 								<item.icon className="mr-3" size={16} />
 								{item.name}
-							</button>
+							</Button>
 						))}
 					</nav>
 				</div>
 
-				{/* Settings Content */}
-				<div className="lg:col-span-2 bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
-					<h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-6">
-						Profile Settings
-					</h3>
-
-					<div className="space-y-6">
-						<div>
-							<label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2">
-								Full Name
-							</label>
-							<input
-								type="text"
-								defaultValue="John Doe"
-								className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+				{/* Settings Content Area */}
+				<div className="lg:col-span-3">
+					{activeTab === "profile" && (
+						/* Clerk's component handles Profile info AND Password Changes out of the box */
+						<div className="flex justify-center border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg overflow-hidden bg-white dark:bg-outer_space-500">
+							<UserProfile
+								appearance={{
+									elements: {
+										rootBox: "w-full",
+										cardBox: "w-full border-none shadow-none bg-transparent",
+									},
+								}}
 							/>
 						</div>
+					)}
 
-						<div>
-							<label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2">
-								Email Address
-							</label>
-							<input
-								type="email"
-								defaultValue="john@example.com"
-								className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
-							/>
+					{activeTab === "notifications" && (
+						<div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6 text-outer_space-500 dark:text-platinum-500">
+							<h3 className="text-lg font-semibold mb-2">
+								Notifications Settings
+							</h3>
+							<p className="text-sm text-gray-500">
+								Notification preferences draft placeholder...
+							</p>
 						</div>
+					)}
 
-						<div>
-							<label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2">
-								Role
-							</label>
-							<select className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500">
-								<option>Project Manager</option>
-								<option>Developer</option>
-								<option>Designer</option>
-								<option>QA Engineer</option>
-							</select>
+					{activeTab === "appearance" && (
+						<div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6 text-outer_space-500 dark:text-platinum-500">
+							<h3 className="text-lg font-semibold mb-2">
+								Appearance Settings
+							</h3>
+							<p className="text-sm text-gray-500">
+								Theme and UI settings draft placeholder...
+							</p>
 						</div>
-
-						<div className="flex justify-end space-x-3 pt-4">
-							<button className="px-4 py-2 text-payne's_gray-500 dark:text-french_gray-400 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors">
-								Cancel
-							</button>
-							<button className="px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors">
-								Save Changes
-							</button>
-						</div>
-					</div>
+					)}
 				</div>
 			</div>
 		</div>
