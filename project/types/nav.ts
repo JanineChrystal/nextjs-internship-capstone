@@ -5,4 +5,5 @@ export interface NavItem {
 	href: string;
 	icon: LucideIcon;
 	current: boolean;
+	subItems?: { name: string; href: string }[];
 }
