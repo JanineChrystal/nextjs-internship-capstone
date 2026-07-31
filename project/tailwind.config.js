@@ -43,7 +43,16 @@ module.exports = {
 					DEFAULT: "hsl(var(--card))",
 					foreground: "hsl(var(--card-foreground))",
 				},
-				// Custom color palette based on requirements - NO shadcn colors
+				sidebar: {
+					DEFAULT: "hsl(var(--sidebar-background))",
+					foreground: "hsl(var(--sidebar-foreground))",
+					primary: "hsl(var(--sidebar-primary))",
+					"primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+					accent: "hsl(var(--sidebar-accent))",
+					"accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+					border: "hsl(var(--sidebar-border))",
+					ring: "hsl(var(--sidebar-ring))",
+				},
 				platinum: {
 					DEFAULT: "#dcdcdd",
 					50: "#f8f8f8",
@@ -109,6 +118,15 @@ module.exports = {
 					800: "#051a20",
 					900: "#c7edf6",
 				},
+				takda: {
+					blue: "hsl(var(--takda-blue))",
+					red: "hsl(var(--takda-red))",
+					yellow: "hsl(var(--takda-yellow))",
+				},
+			},
+			boxShadow: {
+				"card-base": "4px 8px 15px -3px rgba(0, 0, 0, 0.1)",
+				"card-hover": "6px 12px 20px -3px rgba(0, 0, 0, 0.25)",
 			},
 			fontFamily: {
 				sans: ["Inter", "sans-serif"],

@@ -42,12 +42,12 @@ export default async function DashboardLayout({
 		<TooltipProvider>
 			<SidebarProvider
 				defaultOpen={false}
-				className="flex flex-col bg-slate-100 dark:bg-slate-950 min-h-screen p-4 gap-4"
+				className="flex flex-col bg-background min-h-screen p-4 gap-4"
 			>
 				<TopBar />
 				<div className="flex flex-1 overflow-hidden relative gap-4">
 					<AppSidebar className="absolute! top-0! left-0! h-full!" />
-					<main className="flex-1 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 p-6 shadow-md">
+					<main className="flex-1 overflow-y-auto rounded-xl p-6">
 						{children}
 					</main>
 				</div>

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const userInputSchema = z.object({
+export const userSchema = z.object({
 	email: z.email({ error: "Invalid email format" }),
 	password: z.string().min(8),
 });
@@ -11,5 +11,5 @@ export const userOutputSchema = z.object({
 	firstName: z.string().nullable(),
 });
 
-export type UserInputDTO = z.infer<typeof userInputSchema>;
+export type UserInputDTO = z.infer<typeof userSchema>;
 export type UserOutputDTO = z.infer<typeof userOutputSchema>;

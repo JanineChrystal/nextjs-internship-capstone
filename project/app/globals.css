@@ -3,14 +3,90 @@
 @import "shadcn/tailwind.css";
 
 @layer base {
-	* {
-		@apply border-border outline-ring/50;
+	:root {
+		/* LIGHT MODE (Dark Palette) */
+		/* Background: #FAFAFA (Off-white) */
+		--background: 0 0% 98%;
+
+		/* Foreground/Text: #263238 (Slate Ink) */
+		--foreground: 200 19% 18%;
+
+		/* Cards & Popovers */
+		--card: 0 0% 100%;
+		--card-foreground: 200 19% 18%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 200 19% 18%;
+
+		/* Primary: #0D47A1 (Midnight Navy) */
+		--primary: 216 85% 34%;
+		--primary-foreground: 0 0% 100%;
+
+		/* Destructive: #B71C1C (Crimson) */
+		--destructive: 0 74% 41%;
+		--destructive-foreground: 0 0% 100%;
+
+		/* Warning/Yellow: #F57F17 (Deep Amber) */
+		--warning: 28 92% 53%;
+		--warning-foreground: 0 0% 100%;
+
+		/* Borders & Inputs */
+		--border: 214 32% 91%;
+		--input: 214 32% 91%;
+		--ring: 216 85% 34%;
+
+		/* SIDEBAR (Light Mode) */
+		--sidebar-background: 0 0% 100%;
+		--sidebar-foreground: 200 19% 18%;
+		--sidebar-primary: 216 85% 34%;
+		--sidebar-primary-foreground: 0 0% 100%;
+		--sidebar-accent: 214 32% 96%;
+		--sidebar-accent-foreground: 200 19% 18%;
+		--sidebar-border: 214 32% 91%;
+		--sidebar-ring: 216 85% 34%;
+
+		--radius: 0.5rem;
 	}
-	body {
-		@apply bg-background text-foreground;
-	}
-	html {
-		@apply font-sans;
+
+	.dark {
+		/* DARK MODE (Pastel Palette) */
+		/* Background: #202124 (Deep Charcoal) */
+		--background: 225 6% 13%;
+
+		/* Foreground/Text: #E8EAED (Pearl) */
+		--foreground: 216 12% 92%;
+
+		/* Cards (Slightly lighter charcoal for contrast: #292A2D) */
+		--card: 0 0% 98%;
+		--card-foreground: 200 19% 18%;
+		--popover: 225 5% 17%;
+		--popover-foreground: 216 12% 92%;
+
+		/* Primary: #8AB4F8 (Soft Cornflower Blue) */
+		--primary: 217 89% 76%;
+		--primary-foreground: 225 6% 13%;
+
+		/* Destructive: #F28B82 (Coral Pink) */
+		--destructive: 5 83% 73%;
+		--destructive-foreground: 225 6% 13%;
+
+		/* Warning/Yellow: #FDE293 (Buttery Sun) */
+		--warning: 45 96% 78%;
+		--warning-foreground: 225 6% 13%;
+
+		/* Borders & Inputs */
+		--border: 225 5% 25%;
+		--input: 225 5% 25%;
+		--ring: 217 89% 76%;
+
+		/* SIDEBAR (Dark Mode) */
+		--sidebar-background: 225 6% 13%;
+		--sidebar-foreground: 216 12% 92%;
+		--sidebar-primary: 217 89% 76%;
+		--sidebar-primary-foreground: 225 6% 13%;
+		--sidebar-accent: 225 5% 20%;
+		--sidebar-accent-foreground: 216 12% 92%;
+		--sidebar-border: 225 5% 20%;
+		--sidebar-ring: 217 89% 76%;
 	}
 }
 

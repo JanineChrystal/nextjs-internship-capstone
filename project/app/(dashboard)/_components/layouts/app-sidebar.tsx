@@ -49,7 +49,7 @@ export function AppSidebar({ className }: { className?: string }) {
 											</DropdownMenuTrigger>
 											<DropdownMenuContent
 												side="right"
-												className="w-48 rounded-lg shadow-md"
+												className="w-48 rounded-lg shadow-md bg-popover text-popover-foreground border border-border"
 											>
 												{item.subItems.map((subItem) => (
 													<DropdownMenuItem key={subItem.name} asChild>
@@ -122,7 +122,7 @@ export function AppSidebar({ className }: { className?: string }) {
 											</DropdownMenuTrigger>
 											<DropdownMenuContent
 												side="right"
-												className="w-48 rounded-lg shadow-md"
+												className="w-48 rounded-lg shadow-md bg-popover text-popover-foreground border border-border"
 											>
 												{/* Map through the subItems dynamically */}
 												{item.subItems.map((subItem) => (
