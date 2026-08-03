@@ -5,12 +5,9 @@ import type { ActiveFilter } from "@/components/ui/filters/tag-filter";
 import type { Project } from "@/lib/validations/project-schema";
 
 export function useProjectFilters(projects: Project[]) {
-	// 1. All filter states live here
 	const [ownedActive, setOwnedActive] = useState(false);
 	const [assignedActive, setAssignedActive] = useState(false);
 	const [activeTags, setActiveTags] = useState<ActiveFilter[]>([]);
-
-	// 2. The useMemo logic (Now correctly using 'projects' instead of 'initialProjects')
 	const filteredProjects = useMemo(() => {
 		return projects.filter((project) => {
 			// --- Tag Filters Logic ---
@@ -30,7 +27,7 @@ export function useProjectFilters(projects: Project[]) {
 		});
 	}, [projects, activeTags]);
 
-	// 3. Helper functions for the TagFilter component
+	// Helper functions for the TagFilter component
 	const handleAddTag = (newFilter: ActiveFilter) => {
 		setActiveTags((prev) => [
 			...prev.filter((f) => f.key !== newFilter.key),
@@ -46,7 +43,6 @@ export function useProjectFilters(projects: Project[]) {
 		setActiveTags([]);
 	};
 
-	// 4. Expose only what the UI needs to render and interact
 	return {
 		filteredProjects,
 		ownedActive,
@@ -57,6 +53,6 @@ export function useProjectFilters(projects: Project[]) {
 		setActiveTags,
 		handleAddTag,
 		handleRemoveTag,
-		handleResetTags, // Fixed the syntax error and removed the duplicate 'resetTags'
+		handleResetTags,
 	};
 }

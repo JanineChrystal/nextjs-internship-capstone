@@ -25,7 +25,7 @@ export function PageHeader({
 			{/* Top Row: Title, Description, and Action Button */}
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
 				<div>
-					<h1 className="text-2xl font-bold">{title}</h1>
+					<h1 className="text-5xl font-bold mb-3">{title}</h1>
 					{description && (
 						<p className="text-sm text-card-foreground/70 mt-1">
 							{description}
