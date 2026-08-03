@@ -11,7 +11,10 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-	title: "Takda PH",
+	title: {
+		template: "%s | Takda PH", // If a page exports "Dashboard", it becomes "Dashboard | Takda PH"
+		default: "Takda PH", // Fallback if a specific page doesn't export a title
+	},
 	description: "Team collaboration and project management platform",
 	generator: "v0.dev",
 };

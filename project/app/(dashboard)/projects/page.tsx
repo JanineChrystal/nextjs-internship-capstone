@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { requireUser } from "@/lib/dal/auth";
 import { mockProjects } from "../_constants/mock-projects";
 import { ProjectsClient } from "./_components/projects-client";
+
+export const metadata: Metadata = {
+	title: "Projects Overview",
+};
 
 export default async function ProjectsPage() {
 	await requireUser();
