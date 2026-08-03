@@ -1,9 +1,9 @@
 import {
-	MoreHorizontal,
-	MessageSquare,
-	Paperclip,
-	Flag,
 	CheckSquare,
+	Flag,
+	MessageSquare,
+	MoreHorizontal,
+	Paperclip,
 } from "lucide-react";
 import { Button } from "@/components/ui/buttons/button";
 import { cn } from "@/lib/utils";
@@ -29,7 +29,6 @@ export function TaskCard({
 	priority,
 	progress,
 }: TaskCardProps) {
-	// Determine tag styling based on UI reference
 	const tagStyles = {
 		default: "bg-secondary/10 text-secondary-foreground",
 		urgent: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",

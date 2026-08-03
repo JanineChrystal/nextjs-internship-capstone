@@ -1,6 +1,6 @@
 import { MoreHorizontal, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/buttons/button";
+import { cn } from "@/lib/utils";
 
 interface BoardColumnProps {
 	title: string;

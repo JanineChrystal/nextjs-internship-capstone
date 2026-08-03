@@ -3,7 +3,13 @@ import { BaseCard } from "@/components/ui/cards/base-card";
 import { Progress } from "@/components/ui/progress";
 import type { Project } from "@/lib/validations/project-schema";
 
-export function ProjectCard({ project }: { project: Project }) {
+export function ProjectCard({
+	project,
+	isSelectMode = false, // 1. Added prop with default value
+}: {
+	project: Project;
+	isSelectMode?: boolean; // 2. Added type definition
+}) {
 	return (
 		<Link
 			href={`/projects/${project.id}`}
@@ -13,7 +19,10 @@ export function ProjectCard({ project }: { project: Project }) {
 				{/* Status Dot & Days Left */}
 				<div className="flex justify-between items-center">
 					<div className="w-3 h-3 rounded-full bg-primary" />
-					<span className="text-xs font-medium text-card-foreground/60">
+					{/* 3. Added conditional margin (mr-8) when in select mode */}
+					<span
+						className={`text-xs font-medium text-card-foreground/60 transition-all duration-200 ${isSelectMode ? "mr-8" : ""}`}
+					>
 						{project.daysLeft} days left
 					</span>
 				</div>
