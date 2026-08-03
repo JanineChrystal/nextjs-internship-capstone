@@ -11,7 +11,7 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-	title: "Project Management Tool",
+	title: "Takda PH",
 	description: "Team collaboration and project management platform",
 	generator: "v0.dev",
 };

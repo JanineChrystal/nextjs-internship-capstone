@@ -1,71 +1,69 @@
 "use client";
 
-import { SignOutButton } from "@clerk/nextjs";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
 	Sidebar,
 	SidebarContent,
+	SidebarFooter,
 	SidebarGroup,
+	SidebarHeader,
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarMenuSub,
+	SidebarMenuSubButton,
+	SidebarMenuSubItem,
+	useSidebar,
 } from "@/components/ui/sidebar";
-import type { NavItem } from "@/types/nav";
+import { cn } from "@/lib/utils";
 import { bottomNavigation, mainNavigation } from "../../_constants/nav";
 
 export function AppSidebar({ className }: { className?: string }) {
 	const pathname = usePathname();
+	const { state, setOpen } = useSidebar();
 
 	return (
-		<Sidebar collapsible="icon" className={className}>
-			<SidebarContent>
-				{/* UPPER SIDEBAR GROUP */}
-				<SidebarGroup>
-					<SidebarMenu>
-						{mainNavigation.map((item: NavItem) => {
-							const Icon = item.icon;
-							const isActive = pathname === item.href;
+		<Sidebar
+			collapsible="icon"
+			className={cn("border-r border-border bg-sidebar", className)}
+		>
+			{/* Top: Logo */}
+			<SidebarHeader>
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							size="lg"
+							className="hover:bg-transparent cursor-default group-data-[collapsible=icon]:justify-center"
+						>
+							<div className="flex aspect-square size-8 group-data-[collapsible=icon]:size-5 items-center justify-center rounded-lg group-data-[collapsible=icon]:rounded-md bg-[#0D47A1] text-white transition-all">
+								<span className="font-bold text-lg group-data-[collapsible=icon]:text-sm">
+									T
+								</span>
+							</div>
+							<div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
+								<span className="text-[22px] font-bold text-[#0D47A1] tracking-tight">
+									Takda PH
+								</span>
+							</div>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				</SidebarMenu>
+			</SidebarHeader>
 
-							// Check if the main item has a dropdown
-							if (item.subItems && item.subItems.length > 0) {
-								return (
-									<SidebarMenuItem key={item.name}>
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<SidebarMenuButton
-													tooltip={item.name}
-													isActive={pathname.startsWith(item.href)}
-												>
-													<Icon />
-													<span>{item.name}</span>
-												</SidebarMenuButton>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent
-												side="right"
-												className="w-48 rounded-lg shadow-md bg-popover text-popover-foreground border border-border"
-											>
-												{item.subItems.map((subItem) => (
-													<DropdownMenuItem key={subItem.name} asChild>
-														<Link
-															href={subItem.href}
-															className="cursor-pointer"
-														>
-															{subItem.name}
-														</Link>
-													</DropdownMenuItem>
-												))}
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</SidebarMenuItem>
-								);
-							}
+			{/* Middle: Navigation Links */}
+			<SidebarContent>
+				<SidebarGroup>
+					<SidebarMenu className="gap-1.5">
+						{mainNavigation.map((item) => {
+							const Icon = item.icon;
+							const isActive = pathname.startsWith(item.href);
 
 							return (
 								<SidebarMenuItem key={item.name}>
@@ -73,84 +71,14 @@ export function AppSidebar({ className }: { className?: string }) {
 										asChild
 										tooltip={item.name}
 										isActive={isActive}
+										className={
+											isActive
+												? "bg-[#0D47A1] text-white hover:bg-[#0D47A1]/90 hover:text-white font-medium rounded-lg"
+												: "text-muted-foreground hover:bg-accent hover:text-foreground font-medium rounded-lg transition-colors"
+										}
 									>
 										<Link href={item.href}>
-											<Icon />
-											<span>{item.name}</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							);
-						})}
-					</SidebarMenu>
-				</SidebarGroup>
-
-				{/* BOTTOM SIDEBAR GROUP */}
-				<SidebarGroup className="mt-auto">
-					<SidebarMenu>
-						{bottomNavigation.map((item: NavItem) => {
-							const Icon = item.icon;
-							const isActive = pathname.startsWith(item.href);
-
-							// LOGOUT LOGIC
-							if (item.name === "Log Out") {
-								return (
-									<SidebarMenuItem key={item.name}>
-										<SignOutButton redirectUrl="/sign-in">
-											<SidebarMenuButton tooltip={item.name}>
-												<Icon />
-												<span>{item.name}</span>
-											</SidebarMenuButton>
-										</SignOutButton>
-									</SidebarMenuItem>
-								);
-							}
-
-							// DYNAMIC DROPDOWN LOGIC (Automatically detects Settings subItems)
-							if (item.subItems && item.subItems.length > 0) {
-								return (
-									<SidebarMenuItem key={item.name}>
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<SidebarMenuButton
-													tooltip={item.name}
-													isActive={isActive}
-												>
-													<Icon />
-													<span>{item.name}</span>
-												</SidebarMenuButton>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent
-												side="right"
-												className="w-48 rounded-lg shadow-md bg-popover text-popover-foreground border border-border"
-											>
-												{/* Map through the subItems dynamically */}
-												{item.subItems.map((subItem) => (
-													<DropdownMenuItem key={subItem.name} asChild>
-														<Link
-															href={subItem.href}
-															className="cursor-pointer"
-														>
-															{subItem.name}
-														</Link>
-													</DropdownMenuItem>
-												))}
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</SidebarMenuItem>
-								);
-							}
-
-							// NORMAL BOTTOM LINK LOGIC
-							return (
-								<SidebarMenuItem key={item.name}>
-									<SidebarMenuButton
-										asChild
-										tooltip={item.name}
-										isActive={pathname === item.href}
-									>
-										<Link href={item.href}>
-											<Icon />
+											<Icon className="w-5 h-5" />
 											<span>{item.name}</span>
 										</Link>
 									</SidebarMenuButton>
@@ -160,6 +88,92 @@ export function AppSidebar({ className }: { className?: string }) {
 					</SidebarMenu>
 				</SidebarGroup>
 			</SidebarContent>
+
+			{/* Bottom: Settings with Expandable Submenus */}
+			<SidebarFooter className="p-4 pb-12 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:pb-12">
+				<SidebarMenu className="gap-1.5">
+					{bottomNavigation.map((item) => {
+						const Icon = item.icon;
+						const isActive = pathname.startsWith(item.href);
+						const hasSubItems = item.subItems && item.subItems.length > 0;
+
+						if (hasSubItems) {
+							return (
+								<Collapsible
+									key={item.name}
+									asChild
+									defaultOpen={isActive}
+									className="group/collapsible"
+								>
+									<SidebarMenuItem>
+										<CollapsibleTrigger asChild>
+											<SidebarMenuButton
+												size="lg"
+												tooltip={item.name}
+												isActive={isActive}
+												className="bg-blue_munsell-900 hover:bg-blue_munsell-900/90 text-white font-medium rounded-lg group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
+												onClick={() => {
+													if (state === "collapsed") {
+														setOpen(true);
+													}
+												}}
+											>
+												<Icon className="w-5 h-5 shrink-0" />
+												<span className="group-data-[collapsible=icon]:hidden">
+													{item.name}
+												</span>
+												<ChevronRight className="ml-auto w-4 h-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
+											</SidebarMenuButton>
+										</CollapsibleTrigger>
+
+										<CollapsibleContent>
+											<SidebarMenuSub className="mt-1 border-l-blue_munsell-900/20">
+												{item.subItems?.map((subItem) => (
+													<SidebarMenuSubItem key={subItem.name}>
+														<SidebarMenuSubButton
+															asChild
+															isActive={pathname === subItem.href}
+															className="font-medium hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+														>
+															<Link href={subItem.href}>
+																<span>{subItem.name}</span>
+															</Link>
+														</SidebarMenuSubButton>
+													</SidebarMenuSubItem>
+												))}
+											</SidebarMenuSub>
+										</CollapsibleContent>
+									</SidebarMenuItem>
+								</Collapsible>
+							);
+						}
+
+						return (
+							<SidebarMenuItem key={item.name}>
+								<SidebarMenuButton
+									asChild
+									size="lg"
+									tooltip={item.name}
+									isActive={isActive}
+									className="bg-blue_munsell-900 hover:bg-blue_munsell-900/90 text-white font-medium rounded-lg group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
+									onClick={() => {
+										if (state === "collapsed") {
+											setOpen(true);
+										}
+									}}
+								>
+									<Link href={item.href}>
+										<Icon className="w-5 h-5 shrink-0" />
+										<span className="group-data-[collapsible=icon]:hidden">
+											{item.name}
+										</span>
+									</Link>
+								</SidebarMenuButton>
+							</SidebarMenuItem>
+						);
+					})}
+				</SidebarMenu>
+			</SidebarFooter>
 		</Sidebar>
 	);
 }

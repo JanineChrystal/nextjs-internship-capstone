@@ -4,7 +4,6 @@ import {
 	Calendar,
 	FolderOpen,
 	Home,
-	LogOut,
 	Settings,
 	Users,
 } from "lucide-react";
@@ -18,8 +17,8 @@ export const mainNavigation: NavItem[] = [
 		current: true,
 	},
 	{
-		name: "Activity Feed",
-		href: "/activity-feed",
+		name: "Activities",
+		href: "/activities",
 		icon: Activity,
 		current: false,
 	},
@@ -60,11 +59,5 @@ export const bottomNavigation: NavItem[] = [
 			{ name: "Security Settings", href: "/settings/security" },
 			{ name: "Appearance", href: "/settings/appearance" },
 		],
-	},
-	{
-		name: "Log Out",
-		href: "#",
-		icon: LogOut,
-		current: false,
 	},
 ];

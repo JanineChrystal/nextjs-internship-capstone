@@ -22,7 +22,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "./_components/layouts/app-sidebar";
 import { TopBar } from "./_components/layouts/top-bar";
@@ -40,17 +40,12 @@ export default async function DashboardLayout({
 
 	return (
 		<TooltipProvider>
-			<SidebarProvider
-				defaultOpen={false}
-				className="flex flex-col bg-background min-h-screen p-4 gap-4"
-			>
-				<TopBar />
-				<div className="flex flex-1 overflow-hidden relative gap-4">
-					<AppSidebar className="absolute! top-0! left-0! h-full!" />
-					<main className="flex-1 overflow-y-auto rounded-xl p-6">
-						{children}
-					</main>
-				</div>
+			<SidebarProvider>
+				<AppSidebar />
+				<SidebarInset className="flex flex-col min-h-screen bg-background overflow-hidden">
+					<TopBar />
+					<main className="flex-1 overflow-y-auto p-4 md:p-8">{children}</main>
+				</SidebarInset>
 			</SidebarProvider>
 		</TooltipProvider>
 	);
