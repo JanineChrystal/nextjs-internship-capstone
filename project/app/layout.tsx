@@ -12,8 +12,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
 	title: {
-		template: "%s | Takda PH", // If a page exports "Dashboard", it becomes "Dashboard | Takda PH"
-		default: "Takda PH", // Fallback if a specific page doesn't export a title
+		template: "%s | Takda PH",
+		default: "Takda PH",
 	},
 	description: "Team collaboration and project management platform",
 	generator: "v0.dev",

@@ -3,6 +3,8 @@
 import { Plus } from "lucide-react";
 import { BaseModal } from "@/components/modals/base-modal";
 import { Button } from "@/components/ui/buttons/button";
+import { projectFormFields } from "../../../_constants/create-project";
+import { useCreateProject } from "../../../_hooks/use-create-project";
 
 interface CreateProjectModalProps {
 	isOpen: boolean;
@@ -13,6 +15,8 @@ export function CreateProjectModal({
 	isOpen,
 	onClose,
 }: CreateProjectModalProps) {
+	const { onSubmit } = useCreateProject({ onClose });
+
 	return (
 		<BaseModal
 			isOpen={isOpen}
@@ -20,84 +24,52 @@ export function CreateProjectModal({
 			title="Create New Project"
 			maxWidth="4xl"
 		>
-			<div className="p-6 space-y-8">
+			<form onSubmit={onSubmit} className="p-6 space-y-8">
 				{/* Project Title */}
 				<div className="space-y-2">
 					<input
 						type="text"
+						id="title"
 						placeholder="Enter project name..."
 						className="w-full bg-transparent border-none text-h2 font-h2 text-foreground placeholder:text-muted-foreground focus:ring-0 p-0 shadow-none outline-none"
 					/>
 				</div>
 
-				{/* Form Grid */}
+				{/* Form Grid mapped dynamically */}
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-					{/* Status */}
-					<div className="space-y-2">
-						<label
-							htmlFor="status"
-							className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider"
-						>
-							Status
-						</label>
-						<select
-							id="status"
-							className="w-full h-10 bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-						>
-							<option>Active</option>
-							<option>Planning</option>
-							<option>Completed</option>
-						</select>
-					</div>
+					{projectFormFields.map((field) => (
+						<div key={field.id} className="space-y-2">
+							<label
+								htmlFor={field.id}
+								className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider"
+							>
+								{field.label}
+							</label>
 
-					{/* Category */}
-					<div className="space-y-2">
-						<label
-							htmlFor="category"
-							className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider"
-						>
-							Category
-						</label>
-						<input
-							id="category"
-							type="text"
-							placeholder="e.g., Development"
-							className="w-full h-10 bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-						/>
-					</div>
-
-					{/* Start Date */}
-					<div className="space-y-2">
-						<label
-							htmlFor="startDate"
-							className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider"
-						>
-							Start Date
-						</label>
-						<input
-							id="startDate"
-							type="date"
-							className="w-full h-10 bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-						/>
-					</div>
-
-					{/* Due Date */}
-					<div className="space-y-2">
-						<label
-							htmlFor="dueDate"
-							className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider"
-						>
-							Due Date
-						</label>
-						<input
-							id="dueDate"
-							type="date"
-							className="w-full h-10 bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-						/>
-					</div>
+							{field.type === "select" ? (
+								<select
+									id={field.id}
+									className="w-full h-10 bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+								>
+									{field.options?.map((option) => (
+										<option key={option} value={option}>
+											{option}
+										</option>
+									))}
+								</select>
+							) : (
+								<input
+									id={field.id}
+									type={field.type}
+									placeholder={field.placeholder}
+									className="w-full h-10 bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+								/>
+							)}
+						</div>
+					))}
 				</div>
 
-				{/* Team Members */}
+				{/* Team Members : To be modified once the team page is done */}
 				<div className="space-y-2">
 					<span className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider">
 						Team Members
@@ -116,6 +88,7 @@ export function CreateProjectModal({
 					</div>
 				</div>
 
+				{/* Description */}
 				<div className="space-y-2">
 					<label
 						htmlFor="description"
@@ -130,24 +103,25 @@ export function CreateProjectModal({
 						className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-y"
 					/>
 				</div>
-			</div>
 
-			{/* Footer */}
-			<div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-muted/20 mt-4">
-				<Button
-					type="button"
-					onClick={onClose}
-					className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-md transition-colors"
-				>
-					Cancel
-				</Button>
-				<Button
-					type="submit"
-					className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-md shadow-sm transition-colors"
-				>
-					Create Project
-				</Button>
-			</div>
+				{/* Footer */}
+				<div className="flex items-center justify-end gap-3 pt-4 border-t border-border mt-4">
+					<Button
+						type="button"
+						onClick={onClose}
+						variant="outline"
+						className="px-4 py-2 text-sm font-medium transition-colors"
+					>
+						Cancel
+					</Button>
+					<Button
+						type="submit"
+						className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-md shadow-sm transition-colors"
+					>
+						Create Project
+					</Button>
+				</div>
+			</form>
 		</BaseModal>
 	);
 }

@@ -30,6 +30,7 @@
 	},
 	"dependencies": {
 		"@clerk/nextjs": "^7.5.20",
+		"@hookform/resolvers": "^5.7.1",
 		"@neondatabase/serverless": "^1.1.0",
 		"@upstash/ratelimit": "^2.0.8",
 		"@upstash/redis": "^1.38.0",
@@ -43,6 +44,7 @@
 		"radix-ui": "^1.6.4",
 		"react": "^19",
 		"react-dom": "^19",
+		"react-hook-form": "^7.84.0",
 		"shadcn": "^4.13.1",
 		"svix": "^1.99.1",
 		"tailwind-merge": "^2.5.5",

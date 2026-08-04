@@ -2,10 +2,13 @@ import type { Project } from "@/lib/validations/project-schema";
 
 export const mockProjects: Project[] = [
 	{
-		id: "1",
+		id: "11111111-1111-1111-1111-111111111111",
 		title: "Website Redesign",
 		description:
 			"Revamp the landing page to use the new floating card UI shell.",
+		category: "Design",
+		startDate: "2024-03-01",
+		dueDate: "2024-03-15",
 		membersCount: 6,
 		tasksCount: 17,
 		progress: 65,
@@ -16,28 +19,32 @@ export const mockProjects: Project[] = [
 		isAssigned: false,
 	},
 	{
-		id: "2",
+		id: "22222222-2222-2222-2222-222222222222",
 		title: "Database Migration",
 		description: "Move schemas to Drizzle ORM and Neon Postgres.",
+		category: "Backend",
+		startDate: "2024-02-15",
+		dueDate: "2024-04-01",
 		membersCount: 4,
 		tasksCount: 12,
 		progress: 30,
 		daysLeft: 17,
-		// New fields
 		status: "active",
 		priority: "low",
 		isOwned: false,
 		isAssigned: true,
 	},
 	{
-		id: "3",
+		id: "33333333-3333-3333-3333-333333333333",
 		title: "Auth Integration",
 		description: "Finalize Clerk webhooks and user synchronization logic.",
+		category: "Security",
+		startDate: "2024-01-10",
+		dueDate: "2024-01-30",
 		membersCount: 2,
 		tasksCount: 8,
 		progress: 100,
 		daysLeft: 5,
-		// New fields
 		status: "completed",
 		priority: "high",
 		isOwned: false,

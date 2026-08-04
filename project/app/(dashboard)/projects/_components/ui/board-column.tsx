@@ -7,7 +7,7 @@ interface BoardColumnProps {
 	count: number;
 	dotColor: string;
 	children: React.ReactNode;
-	isActive?: boolean; // For styling the "In Progress" column ring
+	isActive?: boolean;
 }
 
 export function BoardColumn({
@@ -20,7 +20,7 @@ export function BoardColumn({
 	return (
 		<div
 			className={cn(
-				"flex-shrink-0 w-80 flex flex-col gap-4 bg-muted/30 border border-border rounded-xl p-4 h-full",
+				"shrink-0 w-80 flex flex-col gap-4 bg-muted/30 border border-border rounded-xl p-4 h-full",
 				isActive && "ring-1 ring-primary/20 border-primary/20",
 			)}
 		>
