@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/buttons/button";
+import { ProjectHeader } from "../_components/ui/project-header";
+// import { ProjectViewControls } from "./_components/project-view-controls"; (We will build this next!)
 
 export default function ProjectPage({ params }: { params: { id: string } }) {
 	return (

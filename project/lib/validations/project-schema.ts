@@ -40,6 +40,11 @@ export type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
 export const editProjectSchema = projectSchema.pick({
 	title: true,
 	description: true,
+	status: true,
+	category: true,
+	startDate: true,
+	dueDate: true,
+	priority: true,
 });
 
 export type EditProjectFormValues = z.infer<typeof editProjectSchema>;

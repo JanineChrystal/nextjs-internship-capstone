@@ -1,91 +1,193 @@
 "use client";
 
-import { Check, Edit2, X } from "lucide-react";
+import { Calendar, Edit2 } from "lucide-react";
 import { useEffect } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbLink,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/buttons/button";
+import type { EditProjectFormValues } from "@/lib/validations/project-schema";
+import { projectStatusOptions } from "../../_constants/create-project";
 import { useEditProject } from "../../_hooks/use-edit-project";
 
 interface ProjectHeaderProps {
 	projectId: string;
-	title: string;
-	description?: string;
+	project: EditProjectFormValues;
 }
 
-export function ProjectHeader({
-	projectId,
-	title: initialTitle,
-	description: initialDescription = "",
-}: ProjectHeaderProps) {
+export function ProjectHeader({ projectId, project }: ProjectHeaderProps) {
 	const { isEditing, setIsEditing, form, onSubmit, onCancel } = useEditProject(
 		projectId,
-		{ title: initialTitle, description: initialDescription },
+		project,
 	);
+
 	useEffect(() => {
-		if (isEditing) {
-			form.setFocus("title");
-		}
+		if (isEditing) form.setFocus("title");
 	}, [isEditing, form]);
 
-	const titleContent = isEditing ? (
-		<div className="flex items-center gap-3 w-full max-w-xl">
-			<input
-				{...form.register("title")}
-				className="w-full bg-transparent border-b border-primary focus:outline-none pb-1 font-bold text-5xl"
-			/>
-			<Button
-				type="submit"
-				size="sm"
-				className="w-8 h-8 p-0 shrink-0 rounded-md"
-			>
-				<Check className="w-4 h-4" />
-			</Button>
-			<Button
-				type="button"
-				variant="outline"
-				size="sm"
-				onClick={onCancel}
-				className="w-8 h-8 p-0 shrink-0 rounded-md"
-			>
-				<X className="w-4 h-4" />
-			</Button>
-		</div>
-	) : (
-		<>
-			{initialTitle}
-			<Button
-				type="button"
-				variant="ghost"
-				size="sm"
-				onClick={() => setIsEditing(true)}
-				className="opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
-				aria-label="Edit project details"
-			>
-				<Edit2 className="w-5 h-5 text-muted-foreground" />
-			</Button>
-		</>
+	// --- 1. Shadcn Breadcrumbs ---
+	const projectBreadcrumbs = (
+		<Breadcrumb>
+			<BreadcrumbList>
+				<BreadcrumbItem>
+					<BreadcrumbLink href="/projects">Projects</BreadcrumbLink>
+				</BreadcrumbItem>
+				<BreadcrumbSeparator />
+				<BreadcrumbItem>
+					<BreadcrumbPage>{project.title}</BreadcrumbPage>
+				</BreadcrumbItem>
+			</BreadcrumbList>
+		</Breadcrumb>
 	);
 
-	const descriptionContent = isEditing ? (
-		<div className="w-full">
-			<textarea
-				{...form.register("description")}
-				className="w-full bg-transparent border border-input rounded-md p-3 focus:outline-none focus:border-primary resize-y text-base"
-				rows={3}
-			/>
-			{form.formState.errors.title && (
-				<span className="text-sm text-destructive block mt-1">
-					{form.formState.errors.title.message}
-				</span>
-			)}
-		</div>
-	) : (
-		<span>{initialDescription || "No description provided."}</span>
+	// --- 2. Action Button ---
+	const actionButton = !isEditing && (
+		<Button
+			type="button"
+			variant="ghost"
+			onClick={() => setIsEditing(true)}
+			className="flex items-center gap-2 text-secondary hover:bg-surface-variant font-label-md"
+		>
+			<Edit2 size={16} />
+			Edit
+		</Button>
 	);
 
+	// --- 3. View Mode Rendering ---
+	if (!isEditing) {
+		return (
+			<PageHeader
+				breadcrumbs={projectBreadcrumbs}
+				title={project.title}
+				description={project.description || "No description provided."}
+				action={actionButton}
+				className="border-b border-outline-variant pb-stack-md mb-stack-lg"
+			>
+				<div className="flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded-full text-label-sm font-medium capitalize">
+					<span
+						className={`w-2 h-2 rounded-full ${project.status === "active" ? "bg-green-500" : "bg-secondary"}`}
+					/>
+					{project.status}
+				</div>
+				<div className="flex items-center gap-2 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-sm font-medium">
+					{project.category}
+				</div>
+				<div className="flex items-center gap-2 text-secondary text-label-sm">
+					<Calendar size={14} />
+					{project.startDate}
+				</div>
+				<span className="text-outline-variant">•</span>
+				<div className="flex items-center gap-2 text-secondary text-label-sm">
+					<Calendar size={14} />
+					{project.dueDate}
+				</div>
+			</PageHeader>
+		);
+	}
+
+	// --- 4. Edit Mode Rendering ---
 	return (
 		<form onSubmit={onSubmit} className="w-full">
-			<PageHeader title={titleContent} description={descriptionContent} />
+			<PageHeader
+				breadcrumbs={projectBreadcrumbs}
+				className="border-b border-outline-variant pb-stack-md mb-stack-lg"
+				title={
+					<input
+						id="title"
+						{...form.register("title")}
+						className="w-full bg-transparent border-b border-primary focus:outline-none pb-1 font-bold text-h1"
+					/>
+				}
+				description={
+					<textarea
+						id="description"
+						{...form.register("description")}
+						className="w-full bg-transparent border border-outline-variant rounded-md p-3 focus:outline-none focus:border-primary resize-y text-body-md mt-2"
+						rows={2}
+					/>
+				}
+				action={
+					<div className="flex gap-2">
+						<Button type="button" variant="outline" onClick={onCancel}>
+							Cancel
+						</Button>
+						<Button type="submit">Save Changes</Button>
+					</div>
+				}
+			>
+				{/* Biome a11y Fix: Added htmlFor and id to all inputs */}
+				<div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+					<div className="flex flex-col gap-1">
+						<label
+							htmlFor="status"
+							className="text-[10px] font-bold uppercase tracking-wider text-secondary"
+						>
+							Status
+						</label>
+						<select
+							id="status"
+							{...form.register("status")}
+							className="h-10 w-full rounded-md border border-outline-variant bg-surface-container-low px-3 font-label-md"
+						>
+							{projectStatusOptions.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
+						</select>
+					</div>
+
+					<div className="flex flex-col gap-1">
+						<label
+							htmlFor="category"
+							className="text-[10px] font-bold uppercase tracking-wider text-secondary"
+						>
+							Category
+						</label>
+						<input
+							id="category"
+							{...form.register("category")}
+							className="h-10 w-full rounded-md border border-outline-variant bg-surface-container-low px-3 font-label-md"
+						/>
+					</div>
+
+					<div className="flex flex-col gap-1">
+						<label
+							htmlFor="startDate"
+							className="text-[10px] font-bold uppercase tracking-wider text-secondary"
+						>
+							Start Date
+						</label>
+						<input
+							id="startDate"
+							type="date"
+							{...form.register("startDate")}
+							className="h-10 w-full rounded-md border border-outline-variant bg-surface-container-low px-3 font-label-md"
+						/>
+					</div>
+
+					<div className="flex flex-col gap-1">
+						<label
+							htmlFor="dueDate"
+							className="text-[10px] font-bold uppercase tracking-wider text-secondary"
+						>
+							Due Date
+						</label>
+						<input
+							id="dueDate"
+							type="date"
+							{...form.register("dueDate")}
+							className="h-10 w-full rounded-md border border-outline-variant bg-surface-container-low px-3 font-label-md"
+						/>
+					</div>
+				</div>
+			</PageHeader>
 		</form>
 	);
 }

@@ -22,6 +22,7 @@ export function ProjectsClient() {
 			<PageHeader
 				title="Projects"
 				description="Manage and organize your team projects"
+				className="bg-surface border border-outline-variant rounded-xl p-6"
 				action={
 					<Button
 						className="w-full sm:w-auto"

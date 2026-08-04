@@ -2,17 +2,23 @@ import type React from "react";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
+	breadcrumbs?: React.ReactNode;
 	title: React.ReactNode;
 	description?: React.ReactNode;
 	action?: React.ReactNode;
 	filters?: React.ReactNode;
+	children?: React.ReactNode;
+	className?: string;
 }
 
 export function PageHeader({
+	breadcrumbs,
 	title,
 	description,
 	action,
 	filters,
+	children,
+	className,
 }: PageHeaderProps) {
 	return (
 		<div
@@ -20,11 +26,16 @@ export function PageHeader({
 				"bg-card text-card-foreground p-6 rounded-xl border border-border flex flex-col gap-4 shadow-card-base",
 				"transition-all duration-200 ease-in-out",
 				"hover:scale-[1.02]",
+				className,
 			)}
 		>
+			{/* Breadcrumbs Slot */}
+			{breadcrumbs && <div className="mb-2">{breadcrumbs}</div>}
+
+			{/* Title and Description */}
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
 				<div className="w-full">
-					<h1 className="text-5xl font-bold mb-3 flex items-center gap-4 group">
+					<h1 className="text-5xl font-bold mb-3 text-on-surface tracking-tight">
 						{title}
 					</h1>
 					{description && (
@@ -38,13 +49,13 @@ export function PageHeader({
 			<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
 				{action && <div className="w-full sm:w-auto">{action}</div>}
 				{filters && (
-					<>
-						<hr className="w-full border-border sm:hidden" />
-						<div className="hidden sm:block w-px h-8 bg-border" />
-						<div className="flex flex-wrap items-center gap-2">{filters}</div>
-					</>
+					<div className="flex flex-wrap items-center gap-2">{filters}</div>
 				)}
 			</div>
+
+			{children && (
+				<div className="flex flex-wrap items-center gap-4 mt-4">{children}</div>
+			)}
 		</div>
 	);
 }

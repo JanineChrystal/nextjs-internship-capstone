@@ -60,9 +60,8 @@ export function CreateProjectModal({
 									className="w-full h-10 bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
 								>
 									{field.options?.map((option) => (
-										<option key={option} value={option.toLowerCase()}>
-											{option.charAt(0).toUpperCase() +
-												option.slice(1).toLowerCase()}
+										<option key={option.value} value={option.value}>
+											{option.label}
 										</option>
 									))}
 								</select>

@@ -40,7 +40,7 @@ export default async function DashboardLayout({
 
 	return (
 		<TooltipProvider>
-			<SidebarProvider>
+			<SidebarProvider defaultOpen={false}>
 				<AppSidebar />
 				<SidebarInset className="flex flex-col min-h-screen bg-background overflow-hidden">
 					<TopBar />
