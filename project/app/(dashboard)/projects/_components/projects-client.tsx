@@ -7,17 +7,15 @@ import { ActionConfirmModal } from "@/components/modals/action-confirm-modal";
 import { Button } from "@/components/ui/buttons/button";
 import { FilterChip } from "@/components/ui/filters/filter-chip";
 import { TagFilter } from "@/components/ui/filters/tag-filter";
-import type { Project } from "@/lib/validations/project-schema";
 import { CreateProjectModal } from "../_components/ui/modals/create-project-modal";
 import { useProjectsClient } from "../_hooks/use-projects-client";
 import { ProjectCard } from "./ui/cards/project-card";
 
-interface ProjectsClientProps {
-	initialProjects: Project[];
-}
+export function ProjectsClient() {
+	const { modals, selection, filters } = useProjectsClient();
 
-export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
-	const { modals, selection, filters } = useProjectsClient(initialProjects);
+	const isSingleDelete = selection.projectToDelete !== null;
+	const deleteCount = isSingleDelete ? 1 : selection.selectedProjectIds.size;
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -71,7 +69,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 									variant="destructive"
 									size="sm"
 									className="gap-2"
-									onClick={() => modals.delete.setIsOpen(true)}
+									onClick={selection.initiateBulkDelete}
 								>
 									<Trash2 className="w-4 h-4" />
 									Delete ({selection.selectedProjectIds.size})
@@ -119,6 +117,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 							<ProjectCard
 								project={project}
 								isSelectMode={selection.isSelectMode}
+								onDelete={selection.initiateSingleDelete}
 							/>
 						</div>
 					))
@@ -137,11 +136,11 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 
 			<ActionConfirmModal
 				isOpen={modals.delete.isOpen}
-				onClose={() => modals.delete.setIsOpen(false)}
-				onConfirm={selection.handleDeleteSelected}
-				title="Delete Projects"
-				description={`Are you sure you want to delete ${selection.selectedProjectIds.size} selected project(s)? This action cannot be undone.`}
-				confirmText="Delete Projects"
+				onClose={modals.delete.close}
+				onConfirm={selection.confirmDelete}
+				title={isSingleDelete ? "Delete Project" : "Delete Projects"}
+				description={`Are you sure you want to delete ${deleteCount} selected project(s)? This action cannot be undone.`}
+				confirmText={isSingleDelete ? "Delete Project" : "Delete Projects"}
 				isDestructive={true}
 			/>
 		</div>

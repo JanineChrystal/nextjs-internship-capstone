@@ -4,13 +4,15 @@ import {
 	type CreateProjectFormValues,
 	createProjectSchema,
 } from "@/lib/validations/project-schema";
+import { useProjectStore } from "@/stores/use-project-store";
 
 interface UseCreateProjectProps {
 	onClose: () => void;
 }
 
 export function useCreateProject({ onClose }: UseCreateProjectProps) {
-	// Pass CreateProjectFormValues to generic type parameter
+	const addProject = useProjectStore((state) => state.addProject);
+
 	const form = useForm<CreateProjectFormValues>({
 		resolver: zodResolver(createProjectSchema),
 		defaultValues: {
@@ -23,11 +25,17 @@ export function useCreateProject({ onClose }: UseCreateProjectProps) {
 		},
 	});
 
-	// 'data' is now fully typed as CreateProjectFormValues (no 'any'!)
 	const onSubmit = form.handleSubmit((data: CreateProjectFormValues) => {
-		console.log("Validated Project Data:", data);
-
-		// TODO: Pass 'data' to Zustand store to save state
+		addProject({
+			...data,
+			daysLeft: 30,
+			membersCount: 1,
+			tasksCount: 0,
+			progress: 0,
+			priority: "low",
+			isOwned: true,
+			isAssigned: false,
+		});
 
 		form.reset();
 		onClose();
@@ -36,7 +44,6 @@ export function useCreateProject({ onClose }: UseCreateProjectProps) {
 	return {
 		form,
 		onSubmit,
-		// Expose errors easily for UI validation messages
 		errors: form.formState.errors,
 		isSubmitting: form.formState.isSubmitting,
 	};

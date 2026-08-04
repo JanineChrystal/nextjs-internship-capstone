@@ -33,9 +33,9 @@ export function ActionConfirmModal({
 }: ActionConfirmModalProps) {
 	return (
 		<AlertDialog open={isOpen} onOpenChange={onClose}>
-			<AlertDialogContent className="bg-surface border-surface-variant max-w-md">
+			<AlertDialogContent className="bg-background border-surface-variant max-w-md">
 				<AlertDialogHeader>
-					<AlertDialogTitle className="text-on-surface font-h3 text-h3">
+					<AlertDialogTitle className="text-foreground font-h3 text-h3">
 						{title}
 					</AlertDialogTitle>
 					<AlertDialogDescription className="text-secondary font-body-sm text-body-sm">

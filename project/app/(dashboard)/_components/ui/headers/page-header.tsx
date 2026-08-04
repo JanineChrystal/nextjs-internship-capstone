@@ -2,8 +2,8 @@ import type React from "react";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
-	title: string;
-	description?: string;
+	title: React.ReactNode;
+	description?: React.ReactNode;
 	action?: React.ReactNode;
 	filters?: React.ReactNode;
 }
@@ -22,23 +22,21 @@ export function PageHeader({
 				"hover:scale-[1.02]",
 			)}
 		>
-			{/* Top Row: Title, Description, and Action Button */}
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
-				<div>
-					<h1 className="text-5xl font-bold mb-3">{title}</h1>
+				<div className="w-full">
+					<h1 className="text-5xl font-bold mb-3 flex items-center gap-4 group">
+						{title}
+					</h1>
 					{description && (
-						<p className="text-sm text-card-foreground/70 mt-1">
+						<div className="text-sm text-card-foreground/70 mt-1 w-full max-w-3xl">
 							{description}
-						</p>
+						</div>
 					)}
 				</div>
 			</div>
 
 			<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-				{/* Render the action button slot if it exists */}
 				{action && <div className="w-full sm:w-auto">{action}</div>}
-
-				{/* Bottom Row: Filters */}
 				{filters && (
 					<>
 						<hr className="w-full border-border sm:hidden" />

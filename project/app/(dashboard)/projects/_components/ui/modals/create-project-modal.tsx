@@ -3,6 +3,7 @@
 import { Plus } from "lucide-react";
 import { BaseModal } from "@/components/modals/base-modal";
 import { Button } from "@/components/ui/buttons/button";
+import type { CreateProjectFormValues } from "@/lib/validations/project-schema";
 import { projectFormFields } from "../../../_constants/create-project";
 import { useCreateProject } from "../../../_hooks/use-create-project";
 
@@ -15,7 +16,7 @@ export function CreateProjectModal({
 	isOpen,
 	onClose,
 }: CreateProjectModalProps) {
-	const { onSubmit } = useCreateProject({ onClose });
+	const { form, onSubmit } = useCreateProject({ onClose });
 
 	return (
 		<BaseModal
@@ -30,9 +31,15 @@ export function CreateProjectModal({
 					<input
 						type="text"
 						id="title"
+						{...form.register("title")}
 						placeholder="Enter project name..."
 						className="w-full bg-transparent border-none text-h2 font-h2 text-foreground placeholder:text-muted-foreground focus:ring-0 p-0 shadow-none outline-none"
 					/>
+					{form.formState.errors.title && (
+						<p className="text-sm text-destructive">
+							{form.formState.errors.title.message}
+						</p>
+					)}
 				</div>
 
 				{/* Form Grid mapped dynamically */}
@@ -49,11 +56,13 @@ export function CreateProjectModal({
 							{field.type === "select" ? (
 								<select
 									id={field.id}
+									{...form.register(field.id as keyof CreateProjectFormValues)}
 									className="w-full h-10 bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
 								>
 									{field.options?.map((option) => (
-										<option key={option} value={option}>
-											{option}
+										<option key={option} value={option.toLowerCase()}>
+											{option.charAt(0).toUpperCase() +
+												option.slice(1).toLowerCase()}
 										</option>
 									))}
 								</select>
@@ -61,9 +70,21 @@ export function CreateProjectModal({
 								<input
 									id={field.id}
 									type={field.type}
+									{...form.register(field.id as keyof CreateProjectFormValues)}
 									placeholder={field.placeholder}
 									className="w-full h-10 bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
 								/>
+							)}
+							{form.formState.errors[
+								field.id as keyof CreateProjectFormValues
+							] && (
+								<p className="text-sm text-destructive">
+									{
+										form.formState.errors[
+											field.id as keyof CreateProjectFormValues
+										]?.message
+									}
+								</p>
 							)}
 						</div>
 					))}
@@ -98,6 +119,7 @@ export function CreateProjectModal({
 					</label>
 					<textarea
 						id="description"
+						{...form.register("description")}
 						rows={4}
 						placeholder="Briefly describe the project goals and deliverables..."
 						className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-y"
