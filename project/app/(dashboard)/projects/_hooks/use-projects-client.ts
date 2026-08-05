@@ -1,10 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useProjectFilters } from "@/app/(dashboard)/hooks/use-project-filters";
+import type { Project } from "@/lib/validations/project-schema";
 import { useProjectStore } from "@/stores/use-project-store";
 
-export function useProjectsClient() {
+export function useProjectsClient(initialProjects: Project[]) {
+	// Fetch state and actions from your Zustand store
 	const projects = useProjectStore((state) => state.projects);
 	const deleteProjects = useProjectStore((state) => state.deleteProjects);
+
+	// Add the setter action from your store so we can populate it
+	const setProjects = useProjectStore((state) => state.setProjects);
+
+	// Sync the server-fetched data into the client-side store on initial load
+	useEffect(() => {
+		if (initialProjects && initialProjects.length > 0) {
+			setProjects(initialProjects);
+		}
+	}, [initialProjects, setProjects]);
 
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);

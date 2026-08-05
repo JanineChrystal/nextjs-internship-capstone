@@ -31,7 +31,6 @@ export function ProjectHeader({ projectId, project }: ProjectHeaderProps) {
 		if (isEditing) form.setFocus("title");
 	}, [isEditing, form]);
 
-	// --- 1. Shadcn Breadcrumbs ---
 	const projectBreadcrumbs = (
 		<Breadcrumb>
 			<BreadcrumbList>
@@ -46,7 +45,6 @@ export function ProjectHeader({ projectId, project }: ProjectHeaderProps) {
 		</Breadcrumb>
 	);
 
-	// --- 2. Action Button ---
 	const actionButton = !isEditing && (
 		<Button
 			type="button"
@@ -59,7 +57,7 @@ export function ProjectHeader({ projectId, project }: ProjectHeaderProps) {
 		</Button>
 	);
 
-	// --- 3. View Mode Rendering ---
+	// View Mode Rendering
 	if (!isEditing) {
 		return (
 			<PageHeader
@@ -91,7 +89,7 @@ export function ProjectHeader({ projectId, project }: ProjectHeaderProps) {
 		);
 	}
 
-	// --- 4. Edit Mode Rendering ---
+	// Edit Mode
 	return (
 		<form onSubmit={onSubmit} className="w-full">
 			<PageHeader
@@ -121,7 +119,6 @@ export function ProjectHeader({ projectId, project }: ProjectHeaderProps) {
 					</div>
 				}
 			>
-				{/* Biome a11y Fix: Added htmlFor and id to all inputs */}
 				<div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
 					<div className="flex flex-col gap-1">
 						<label

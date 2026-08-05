@@ -7,12 +7,22 @@ import { ActionConfirmModal } from "@/components/modals/action-confirm-modal";
 import { Button } from "@/components/ui/buttons/button";
 import { FilterChip } from "@/components/ui/filters/filter-chip";
 import { TagFilter } from "@/components/ui/filters/tag-filter";
-import { CreateProjectModal } from "../_components/ui/modals/create-project-modal";
-import { useProjectsClient } from "../_hooks/use-projects-client";
-import { ProjectCard } from "./ui/cards/project-card";
+import type { Project } from "@/lib/validations/project-schema";
+import { useProjectsClient } from "../../_hooks/use-projects-client";
+import { ProjectCard } from "../ui/cards/project-card";
+import { CreateProjectModal } from "../ui/modals/create-project-modal";
 
-export function ProjectsClient() {
-	const { modals, selection, filters } = useProjectsClient();
+// 1. Define the props interface to satisfy TypeScript
+// Replace `any` with your actual Project type (e.g., `Project[]`) if you have it exported
+export interface ProjectsClientProps {
+	initialProjects: Project[];
+}
+
+// 2. Accept the prop in the component signature
+export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
+	// 3. (Optional but recommended) Pass the initial data into your custom hook
+	// so it can use the server-fetched data as its starting state.
+	const { modals, selection, filters } = useProjectsClient(initialProjects);
 
 	const isSingleDelete = selection.projectToDelete !== null;
 	const deleteCount = isSingleDelete ? 1 : selection.selectedProjectIds.size;

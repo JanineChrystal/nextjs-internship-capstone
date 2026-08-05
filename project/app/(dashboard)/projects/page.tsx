@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/dal/auth";
 import { mockProjects } from "../_constants/mock-projects";
-import { ProjectsClient } from "./_components/projects-client";
+import { ProjectsClient } from "./_components/views/projects-client";
 
 export const metadata: Metadata = {
 	title: "Projects Overview",
