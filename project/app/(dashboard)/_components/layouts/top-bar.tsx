@@ -84,6 +84,7 @@ export function TopBar() {
 							elements: {
 								userButtonBox:
 									"flex flex-row-reverse gap-2 font-medium text-sm whitespace-nowrap",
+								userButtonOuterIdentifier: "text-primary",
 								userButtonPopoverActionButton__manageAccount: "!hidden",
 								userButtonPopoverFooter: "!hidden",
 							},

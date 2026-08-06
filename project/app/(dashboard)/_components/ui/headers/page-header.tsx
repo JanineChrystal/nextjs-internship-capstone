@@ -5,6 +5,7 @@ interface PageHeaderProps {
 	breadcrumbs?: React.ReactNode;
 	title: React.ReactNode;
 	description?: React.ReactNode;
+	topAction?: React.ReactNode;
 	action?: React.ReactNode;
 	filters?: React.ReactNode;
 	children?: React.ReactNode;
@@ -15,6 +16,7 @@ export function PageHeader({
 	breadcrumbs,
 	title,
 	description,
+	topAction,
 	action,
 	filters,
 	children,
@@ -23,7 +25,7 @@ export function PageHeader({
 	return (
 		<div
 			className={cn(
-				"bg-card text-card-foreground p-6 rounded-xl border border-border flex flex-col gap-4 shadow-card-base",
+				"bg-card text-card-foreground p-6 rounded-xl border border-border flex flex-col gap-2 shadow-card-base",
 				"transition-all duration-200 ease-in-out",
 				"hover:scale-[1.02]",
 				className,
@@ -31,7 +33,6 @@ export function PageHeader({
 		>
 			{/* Breadcrumbs Slot */}
 			{breadcrumbs && <div className="mb-2">{breadcrumbs}</div>}
-
 			{/* Title and Description */}
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
 				<div className="w-full">
@@ -44,6 +45,7 @@ export function PageHeader({
 						</div>
 					)}
 				</div>
+				{topAction && <div className="shrink-0">{topAction}</div>}
 			</div>
 
 			<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -54,7 +56,7 @@ export function PageHeader({
 			</div>
 
 			{children && (
-				<div className="flex flex-wrap items-center gap-4 mt-4">{children}</div>
+				<div className="flex flex-wrap items-center gap-4 mt-2">{children}</div>
 			)}
 		</div>
 	);

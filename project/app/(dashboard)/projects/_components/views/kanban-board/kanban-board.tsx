@@ -31,7 +31,7 @@ export function KanbanBoard({ projectId: _projectId }: { projectId: string }) {
 			onDragOver={handleDragOver}
 			onDragEnd={handleDragEnd}
 		>
-			<div className="flex gap-gutter overflow-x-auto pb-4 items-start w-full min-h-[calc(100vh-250px)] hide-scrollbar">
+			<div className="flex flex-col md:flex-row gap-gutter overflow-y-auto md:overflow-x-auto pb-4 items-center md:items-start w-full min-h-[calc(100vh-250px)] hide-scrollbar">
 				{columnsConfig.map((col) => (
 					<Column
 						key={col.id}

@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import { mockProjects } from "../../_constants/mock-projects";
-import { ProjectHeader } from "../_components/ui/project-header";
+import { ProjectHeader } from "../_components/ui/project-header/project-header";
 import { ProjectToolbar } from "../_components/ui/project-toolbar";
 // Import your draft view components (we will build these next)
 import { KanbanBoard } from "../_components/views/kanban-board/kanban-board";

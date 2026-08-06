@@ -6,6 +6,20 @@ export const columnsConfig = [
 	{ id: "in-progress", title: "In Progress", dotColor: "bg-primary" },
 ];
 
+export const projectPriorityOptions = [
+	{ label: "Low", value: "low" },
+	{ label: "Medium", value: "medium" },
+	{ label: "High", value: "high" },
+	{ label: "Urgent", value: "urgent" },
+];
+
+export const PRIORITY_BADGE_STYLES: Record<string, string> = {
+	urgent: "bg-error/10 text-error border-error/20",
+	high: "bg-error/10 text-error border-error/20",
+	medium: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+	low: "bg-surface-container-high text-secondary border-outline-variant",
+};
+
 export const initialTasks: TaskItem[] = [
 	{
 		id: "task-1",
