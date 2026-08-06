@@ -4,9 +4,9 @@ import { use, useState } from "react";
 import { useProjectStore } from "@/stores/use-project-store";
 import { ProjectHeader } from "../_components/ui/project-header/project-header";
 import { ProjectToolbar } from "../_components/ui/project-toolbar";
+import { GridView } from "../_components/views/grid-view/grid-view";
 // Import your draft view components (we will build these next)
 import { KanbanBoard } from "../_components/views/kanban-board/kanban-board";
-// import { GridView } from "./_components/views/grid-view";
 // import { CalendarView } from "./_components/views/calendar-view";
 // import { ChartsView } from "./_components/views/charts-view";
 // import { SettingsView } from "./_components/views/settings-view";
@@ -63,7 +63,7 @@ export default function ProjectPage({
 				{activeView === "board" && (
 					<KanbanBoard projectId={resolvedParams.id} />
 				)}
-				{activeView === "grid" && <div>Grid View Draft</div>}
+				{activeView === "grid" && <GridView />}
 				{activeView === "calendar" && <div>Calendar View Draft</div>}
 				{activeView === "charts" && <div>Charts View Draft</div>}
 				{activeView === "settings" && <div>Project Settings Draft</div>}
