@@ -1,3 +1,12 @@
+import type { z } from "zod";
+import type {
+	GridTaskSchema,
+	TaskBoardEnum,
+	TaskPriorityEnum,
+	TaskStatusEnum,
+	TaskTagEnum,
+} from "@/lib/validations/task-schema";
+
 export type PriorityType = "low" | "medium" | "high" | "urgent";
 
 export interface TaskItem {
@@ -13,20 +22,8 @@ export interface TaskItem {
 	tasksTotal?: number;
 }
 
-export type TaskStatus = "In Progress" | "Completed" | "Not Started";
-export type TaskPriority = "Urgent" | "High" | "Medium" | "Low";
-export type TaskTag = "Design" | "Research" | "Analytics" | "Content";
-export type TaskBoard = "In Progress" | "Completed" | "Up Next" | "Backlog";
-
-export type GridTask = {
-	id: string;
-	name: string;
-	assignee: { name: string; avatarUrl: string };
-	startDate: string;
-	dueDate: string;
-	board: TaskBoard;
-	status: TaskStatus;
-	priority: TaskPriority;
-	tag: TaskTag;
-	isCompleted: boolean;
-};
+export type TaskStatus = z.infer<typeof TaskStatusEnum>;
+export type TaskPriority = z.infer<typeof TaskPriorityEnum>;
+export type TaskTag = z.infer<typeof TaskTagEnum>;
+export type TaskBoard = z.infer<typeof TaskBoardEnum>;
+export type GridTask = z.infer<typeof GridTaskSchema>;

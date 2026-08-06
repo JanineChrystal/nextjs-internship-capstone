@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,8 @@ interface GridTableProps<T> {
 	renderRow: (item: T, index: number) => ReactNode;
 	renderFooter?: () => ReactNode;
 	className?: string;
+	sortConfig?: { key: string; direction: "asc" | "desc" } | null;
+	onSort?: (key: string) => void;
 }
 
 export function GridTable<T extends { id: string | number }>({
@@ -19,6 +22,8 @@ export function GridTable<T extends { id: string | number }>({
 	renderRow,
 	renderFooter,
 	className,
+	sortConfig,
+	onSort,
 }: GridTableProps<T>) {
 	return (
 		<div
@@ -30,15 +35,33 @@ export function GridTable<T extends { id: string | number }>({
 			{/* Header */}
 			<div className="flex w-full items-center px-4 py-3 border-b border-outline-variant bg-surface-container-lowest">
 				{columns.map((col) => (
-					<div
+					<button
 						key={col.key}
+						type="button"
 						className={cn(
-							"font-medium text-secondary text-sm",
+							"font-medium text-secondary text-sm flex items-center group/header text-left",
 							col.className || "flex-1",
+							col.sortable
+								? "cursor-pointer select-none"
+								: "cursor-default outline-none",
 						)}
+						onClick={() => col.sortable && onSort?.(col.key)}
 					>
 						{col.renderHeader ? col.renderHeader() : col.title}
-					</div>
+						{col.sortable && (
+							<div className="ml-1 flex items-center">
+								{sortConfig?.key === col.key ? (
+									sortConfig.direction === "asc" ? (
+										<ArrowUp className="h-3.5 w-3.5 text-foreground" />
+									) : (
+										<ArrowDown className="h-3.5 w-3.5 text-foreground" />
+									)
+								) : (
+									<ArrowUpDown className="h-3.5 w-3.5 opacity-0 group-hover/header:opacity-50 transition-opacity" />
+								)}
+							</div>
+						)}
+					</button>
 				))}
 			</div>
 

@@ -21,9 +21,9 @@ export function PriorityBadge({ priority, className }: PriorityBadgeProps) {
 		"chevrons-up": ChevronsUp,
 		"chevron-up": ChevronUp,
 		"chevron-down": ChevronDown,
-		clock: AlertTriangle, // fallback
-		"check-circle": AlertTriangle, // fallback
-		circle: AlertTriangle, // fallback
+		clock: AlertTriangle,
+		"check-circle": AlertTriangle,
+		circle: AlertTriangle,
 	};
 
 	const Icon = IconMap[icon];
