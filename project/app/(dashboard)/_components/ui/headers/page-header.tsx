@@ -34,7 +34,7 @@ export function PageHeader({
 			{/* Breadcrumbs Slot */}
 			{breadcrumbs && <div className="mb-2">{breadcrumbs}</div>}
 			{/* Title and Description */}
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 m-3">
 				<div className="w-full">
 					<h1 className="text-5xl font-bold mb-3 text-on-surface tracking-tight">
 						{title}
@@ -48,7 +48,7 @@ export function PageHeader({
 				{topAction && <div className="shrink-0">{topAction}</div>}
 			</div>
 
-			<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+			<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-2">
 				{action && <div className="w-full sm:w-auto">{action}</div>}
 				{filters && (
 					<div className="flex flex-wrap items-center gap-2">{filters}</div>
@@ -56,7 +56,9 @@ export function PageHeader({
 			</div>
 
 			{children && (
-				<div className="flex flex-wrap items-center gap-4 mt-2">{children}</div>
+				<div className="flex flex-wrap items-center gap-4 mx-3 mb-2">
+					{children}
+				</div>
 			)}
 		</div>
 	);

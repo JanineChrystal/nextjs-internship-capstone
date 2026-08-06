@@ -1,4 +1,3 @@
-// src/app/(dashboard)/projects/[id]/_components/ui/project-toolbar.tsx
 "use client";
 
 import { Filter, Plus, UserPlus } from "lucide-react";
@@ -24,7 +23,6 @@ export function ProjectToolbar({
 	onViewChange,
 }: ProjectToolbarProps) {
 	return (
-		// Container for the entire toolbar row
 		<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-stack-md w-full">
 			<div className="flex bg-surface-container-low p-1 rounded-lg border border-outline-variant overflow-x-auto hide-scrollbar">
 				{VIEW_TABS.map((tab) => {
@@ -34,7 +32,6 @@ export function ProjectToolbar({
 						<Button
 							key={tab.value}
 							onClick={() => onViewChange(tab.value)}
-							// Apply dynamic classes based on whether the tab is active
 							className={`px-4 py-1.5 font-label-md text-label-md rounded-md transition-colors whitespace-nowrap ${
 								isActive
 									? "bg-surface text-primary shadow-sm border border-outline-variant/50"

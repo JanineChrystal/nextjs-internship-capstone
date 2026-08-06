@@ -51,7 +51,6 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 			breadcrumbs={projectBreadcrumbs}
 			title={project.title}
 			description={project.description || "No description provided."}
-			topAction={editButton}
 			className="border-b border-outline-variant pb-stack-md mb-stack-lg transition-all"
 		>
 			{/* Status Badge */}
@@ -105,6 +104,8 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 					{project.dueDate}
 				</div>
 			)}
+
+			<div className="ml-auto">{editButton}</div>
 		</PageHeader>
 	);
 }

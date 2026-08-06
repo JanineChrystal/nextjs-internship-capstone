@@ -94,7 +94,6 @@ export function ProjectEditForm({
 				breadcrumbs={projectBreadcrumbs}
 				title={titleElement}
 				description={descriptionElement}
-				topAction={actions}
 				className="border-b border-outline-variant pb-stack-md mb-stack-lg transition-all ring-1 ring-primary/30"
 			>
 				{/* Status Badge */}
@@ -167,6 +166,8 @@ export function ProjectEditForm({
 						className="appearance-none bg-transparent outline-none py-0 w-full text-secondary"
 					/>
 				</div>
+
+				<div className="ml-auto">{actions}</div>
 			</PageHeader>
 		</form>
 	);

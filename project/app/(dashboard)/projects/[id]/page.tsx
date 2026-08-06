@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
-import { mockProjects } from "../../_constants/mock-projects";
+import { useProjectStore } from "@/stores/use-project-store";
 import { ProjectHeader } from "../_components/ui/project-header/project-header";
 import { ProjectToolbar } from "../_components/ui/project-toolbar";
 // Import your draft view components (we will build these next)
@@ -28,8 +28,9 @@ export default function ProjectPage({
 }) {
 	const resolvedParams = use(params);
 
+	const projects = useProjectStore((state) => state.projects);
 	const currentProject =
-		mockProjects.find((p) => p.id === resolvedParams.id) || mockProjects[0];
+		projects.find((p) => p.id === resolvedParams.id) || projects[0];
 	// 1. State to track which tab is currently active
 	const [activeView, setActiveView] = useState<ProjectViewType>("board");
 
