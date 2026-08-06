@@ -51,7 +51,7 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 			breadcrumbs={projectBreadcrumbs}
 			title={project.title}
 			description={project.description || "No description provided."}
-			className="border-b border-outline-variant pb-stack-md mb-stack-lg transition-all"
+			className="transition-all"
 		>
 			{/* Status Badge */}
 			{project.status && (

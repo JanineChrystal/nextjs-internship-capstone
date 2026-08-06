@@ -94,7 +94,7 @@ export function ProjectEditForm({
 				breadcrumbs={projectBreadcrumbs}
 				title={titleElement}
 				description={descriptionElement}
-				className="border-b border-outline-variant pb-stack-md mb-stack-lg transition-all ring-1 ring-primary/30"
+				className="transition-all ring-1 ring-primary/30"
 			>
 				{/* Status Badge */}
 				<div className="relative flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded-full text-label-sm font-medium capitalize transition-all focus-within:ring-2 focus-within:ring-primary">

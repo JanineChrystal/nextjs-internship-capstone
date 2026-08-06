@@ -48,17 +48,17 @@ export function PageHeader({
 				{topAction && <div className="shrink-0">{topAction}</div>}
 			</div>
 
-			<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-2">
-				{action && <div className="w-full sm:w-auto">{action}</div>}
-				{filters && (
-					<div className="flex flex-wrap items-center gap-2">{filters}</div>
-				)}
-			</div>
+			{(action || filters) && (
+				<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-2">
+					{action && <div className="w-full sm:w-auto">{action}</div>}
+					{filters && (
+						<div className="flex flex-wrap items-center gap-2">{filters}</div>
+					)}
+				</div>
+			)}
 
 			{children && (
-				<div className="flex flex-wrap items-center gap-4 mx-3 mb-2">
-					{children}
-				</div>
+				<div className="flex flex-wrap items-center gap-4 mx-3">{children}</div>
 			)}
 		</div>
 	);
