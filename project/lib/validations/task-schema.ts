@@ -26,12 +26,31 @@ export const TASK_BOARDS = TaskBoardEnum.options;
 
 export const AssigneeSchema = z.object({
 	name: z.string(),
-	avatarUrl: z.string().url(),
+	avatarUrl: z.url(),
+});
+
+export const ChecklistItemSchema = z.object({
+	id: z.string(),
+	title: z.string(),
+	completed: z.boolean(),
+});
+
+export const AttachmentSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	url: z.url(),
+});
+
+export const LinkSchema = z.object({
+	id: z.string(),
+	title: z.string(),
+	url: z.string().url(),
 });
 
 export const GridTaskSchema = z.object({
 	id: z.string(),
 	name: z.string(),
+	description: z.string().optional(),
 	assignee: AssigneeSchema,
 	startDate: z.string(),
 	dueDate: z.string(),
@@ -40,4 +59,7 @@ export const GridTaskSchema = z.object({
 	priority: TaskPriorityEnum,
 	tag: TaskTagEnum,
 	isCompleted: z.boolean(),
+	checklist: z.array(ChecklistItemSchema).optional(),
+	attachments: z.array(AttachmentSchema).optional(),
+	links: z.array(LinkSchema).optional(),
 });

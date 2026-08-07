@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import { useProjectStore } from "@/stores/use-project-store";
+import { TaskModal } from "../_components/ui/modals/task-modal/task-modal";
 import { ProjectHeader } from "../_components/ui/project-header/project-header";
 import { ProjectToolbar } from "../_components/ui/project-toolbar";
 import { GridView } from "../_components/views/grid-view/grid-view";
@@ -68,6 +69,9 @@ export default function ProjectPage({
 				{activeView === "charts" && <div>Charts View Draft</div>}
 				{activeView === "settings" && <div>Project Settings Draft</div>}
 			</div>
+
+			{/* Global Task Modal */}
+			<TaskModal />
 		</div>
 	);
 }

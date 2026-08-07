@@ -4,6 +4,11 @@ import type { GridTask } from "@/types/task";
 
 interface TaskState {
 	tasks: GridTask[];
+	isTaskModalOpen: boolean;
+	selectedTaskId: string | null;
+	openTaskModal: (taskId?: string) => void;
+	closeTaskModal: () => void;
+	createTask: (task: Omit<GridTask, "id">) => void;
 	updateTask: (id: string, updates: Partial<GridTask>) => void;
 	deleteTask: (id: string) => void;
 	duplicateTask: (id: string) => void;
@@ -14,6 +19,21 @@ interface TaskState {
 
 export const useTaskStore = create<TaskState>((set) => ({
 	tasks: MOCK_TASKS,
+	isTaskModalOpen: false,
+	selectedTaskId: null,
+
+	openTaskModal: (taskId) =>
+		set({ isTaskModalOpen: true, selectedTaskId: taskId || null }),
+	closeTaskModal: () => set({ isTaskModalOpen: false, selectedTaskId: null }),
+
+	createTask: (taskData) =>
+		set((state) => {
+			const newTask: GridTask = {
+				...taskData,
+				id: crypto.randomUUID(),
+			};
+			return { tasks: [newTask, ...state.tasks] };
+		}),
 
 	updateTask: (id, updates) =>
 		set((state) => ({
@@ -32,10 +52,38 @@ export const useTaskStore = create<TaskState>((set) => ({
 			const taskToDuplicate = state.tasks.find((t) => t.id === id);
 			if (!taskToDuplicate) return state;
 
+			// Logic to append (1), (2) etc.
+			const baseName = taskToDuplicate.name.replace(/\s\(\d+\)$/, "");
+			const similarTasks = state.tasks.filter((t) =>
+				t.name.startsWith(baseName),
+			);
+
+			let nextIndex = 1;
+			const regex = new RegExp(
+				`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s\\((\\d+)\\)$`,
+			);
+
+			for (const t of similarTasks) {
+				if (t.name === baseName) {
+					// Base exists, so at least 1 is needed
+					if (nextIndex < 1) nextIndex = 1;
+				} else {
+					const match = t.name.match(regex);
+					if (match) {
+						const num = parseInt(match[1], 10);
+						if (num >= nextIndex) {
+							nextIndex = num + 1;
+						}
+					}
+				}
+			}
+
+			const newName = `${baseName} (${nextIndex})`;
+
 			const duplicatedTask: GridTask = {
 				...taskToDuplicate,
 				id: crypto.randomUUID(),
-				name: `${taskToDuplicate.name} (Copy)`,
+				name: newName,
 			};
 
 			// Insert duplicate right after original

@@ -1,22 +1,15 @@
 "use client";
 
-import { Filter, Plus, UserPlus } from "lucide-react";
+import { Filter, UserPlus } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/buttons/button";
+import { VIEW_TABS } from "../../_constants/project";
 import type { ProjectViewType } from "../../[id]/page";
 
 interface ProjectToolbarProps {
 	activeView: ProjectViewType;
 	onViewChange: (view: ProjectViewType) => void;
 }
-
-const VIEW_TABS: { label: string; value: ProjectViewType }[] = [
-	{ label: "Grid", value: "grid" },
-	{ label: "Board", value: "board" },
-	{ label: "Calendar", value: "calendar" },
-	{ label: "Charts", value: "charts" },
-	{ label: "Settings", value: "settings" },
-];
 
 export function ProjectToolbar({
 	activeView,
@@ -51,10 +44,6 @@ export function ProjectToolbar({
 				>
 					<Filter size={18} />
 					Filters
-				</Button>
-				<Button className="h-10 px-5 flex items-center gap-2">
-					<Plus size={18} />
-					Create Task
 				</Button>
 				<div className="flex items-center gap-2 ml-2 border-l border-outline-variant pl-4">
 					<div className="flex -space-x-3">

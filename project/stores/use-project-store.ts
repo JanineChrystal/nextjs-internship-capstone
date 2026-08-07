@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { mockProjects } from "@/app/(dashboard)/_constants/mock-projects";
+import { mockProjects } from "@/app/(dashboard)/projects/_constants/project";
 import type { Project } from "@/lib/validations/project-schema";
 
 interface ProjectState {
@@ -18,7 +18,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
 		set((state) => {
 			const newProject: Project = {
 				...projectData,
-				id: crypto.randomUUID(), // Standard browser API for generating UUIDs
+				id: crypto.randomUUID(),
 			};
 			return { projects: [newProject, ...state.projects] };
 		}),

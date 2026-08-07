@@ -1,4 +1,5 @@
 import type { Project } from "@/lib/validations/project-schema";
+import type { ProjectViewType } from "../[id]/page";
 
 export const mockProjects: Project[] = [
 	{
@@ -50,4 +51,12 @@ export const mockProjects: Project[] = [
 		isOwned: false,
 		isAssigned: false,
 	},
+];
+
+export const VIEW_TABS: { label: string; value: ProjectViewType }[] = [
+	{ label: "Grid", value: "grid" },
+	{ label: "Board", value: "board" },
+	{ label: "Calendar", value: "calendar" },
+	{ label: "Charts", value: "charts" },
+	{ label: "Settings", value: "settings" },
 ];

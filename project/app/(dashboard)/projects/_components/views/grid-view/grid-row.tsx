@@ -45,7 +45,8 @@ interface GridRowProps {
 }
 
 export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
-	const { updateTask, duplicateTask, deleteTask } = useTaskStore();
+	const { updateTask, duplicateTask, deleteTask, openTaskModal } =
+		useTaskStore();
 
 	return (
 		<>
@@ -67,7 +68,7 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 						variant="ghost"
 						size="icon"
 						className="h-6 w-6 text-secondary hover:text-foreground mr-1"
-						onClick={() => console.log("TODO: Open Details Modal")}
+						onClick={() => openTaskModal(task.id)}
 					>
 						<Info className="h-4 w-4" />
 					</Button>
@@ -83,16 +84,6 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="w-48">
 							<DropdownMenuItem
-								onClick={() => console.log("TODO: Open Details Modal")}
-							>
-								<Info className="h-4 w-4 mr-2" />
-								Open details
-							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => duplicateTask(task.id)}>
-								<Copy className="h-4 w-4 mr-2" />
-								Duplicate task
-							</DropdownMenuItem>
-							<DropdownMenuItem
 								onClick={() =>
 									updateTask(task.id, {
 										isCompleted: true,
@@ -103,7 +94,11 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 								className="text-green-600 dark:text-green-400"
 							>
 								<CheckCircle className="h-4 w-4 mr-2" />
-								Complete task
+								Mark as done
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => duplicateTask(task.id)}>
+								<Copy className="h-4 w-4 mr-2" />
+								Duplicate task
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() => deleteTask(task.id)}

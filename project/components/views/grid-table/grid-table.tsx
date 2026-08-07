@@ -3,7 +3,6 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-
 import type { ColumnDef } from "@/types/grid-table";
 
 interface GridTableProps<T> {
@@ -34,35 +33,54 @@ export function GridTable<T extends { id: string | number }>({
 		>
 			{/* Header */}
 			<div className="flex w-full items-center px-4 py-3 border-b border-outline-variant bg-surface-container-lowest">
-				{columns.map((col) => (
-					<button
-						key={col.key}
-						type="button"
-						className={cn(
-							"font-medium text-secondary text-sm flex items-center group/header text-left",
-							col.className || "flex-1",
-							col.sortable
-								? "cursor-pointer select-none"
-								: "cursor-default outline-none",
-						)}
-						onClick={() => col.sortable && onSort?.(col.key)}
-					>
-						{col.renderHeader ? col.renderHeader() : col.title}
-						{col.sortable && (
-							<div className="ml-1 flex items-center">
-								{sortConfig?.key === col.key ? (
-									sortConfig.direction === "asc" ? (
-										<ArrowUp className="h-3.5 w-3.5 text-foreground" />
+				{columns.map((col) => {
+					const HeaderContent = (
+						<>
+							{col.renderHeader ? col.renderHeader() : col.title}
+							{col.sortable && (
+								<div className="ml-1 flex items-center">
+									{sortConfig?.key === col.key ? (
+										sortConfig.direction === "asc" ? (
+											<ArrowUp className="h-3.5 w-3.5 text-foreground" />
+										) : (
+											<ArrowDown className="h-3.5 w-3.5 text-foreground" />
+										)
 									) : (
-										<ArrowDown className="h-3.5 w-3.5 text-foreground" />
-									)
-								) : (
-									<ArrowUpDown className="h-3.5 w-3.5 opacity-0 group-hover/header:opacity-50 transition-opacity" />
+										<ArrowUpDown className="h-3.5 w-3.5 opacity-0 group-hover/header:opacity-50 transition-opacity" />
+									)}
+								</div>
+							)}
+						</>
+					);
+
+					if (col.sortable) {
+						return (
+							<button
+								key={col.key}
+								type="button"
+								className={cn(
+									"font-medium text-secondary text-sm flex items-center group/header text-left cursor-pointer select-none bg-transparent hover:bg-surface-variant/50 px-2 py-1.5 -ml-2 rounded-md transition-colors",
+									col.className || "flex-1",
 								)}
-							</div>
-						)}
-					</button>
-				))}
+								onClick={() => onSort?.(col.key)}
+							>
+								{HeaderContent}
+							</button>
+						);
+					}
+
+					return (
+						<div
+							key={col.key}
+							className={cn(
+								"font-medium text-secondary text-sm flex items-center text-left px-2 py-1.5 -ml-2",
+								col.className || "flex-1",
+							)}
+						>
+							{HeaderContent}
+						</div>
+					);
+				})}
 			</div>
 
 			{/* Rows */}
@@ -77,7 +95,7 @@ export function GridTable<T extends { id: string | number }>({
 				))}
 			</div>
 
-			{/* Footer (e.g. Add Task row) */}
+			{/* Footer */}
 			{renderFooter && (
 				<div className="flex w-full items-center px-4 py-3 hover:bg-surface-container-low transition-colors">
 					{renderFooter()}
