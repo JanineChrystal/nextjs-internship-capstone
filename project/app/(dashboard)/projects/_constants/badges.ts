@@ -66,8 +66,12 @@ export const TAG_CONFIG: Record<TaskTag, string> = {
 };
 
 export const BOARD_CONFIG: Record<TaskBoard, string> = {
-	"In Progress": "",
-	Completed: "",
-	"Up Next": "",
-	Backlog: "",
+	"In Progress":
+		"text-sky-700 bg-sky-100 border-sky-200 dark:text-sky-300 dark:bg-sky-950/40 dark:border-sky-800/30",
+	Completed:
+		"text-emerald-700 bg-emerald-100 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800/30",
+	"Up Next":
+		"text-indigo-700 bg-indigo-100 border-indigo-200 dark:text-indigo-300 dark:bg-indigo-950/40 dark:border-indigo-800/30",
+	Backlog:
+		"text-slate-700 bg-slate-100 border-slate-200 dark:text-slate-300 dark:bg-slate-800/40 dark:border-slate-700/30",
 };

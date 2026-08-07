@@ -1,6 +1,10 @@
 import type { z } from "zod";
 import type {
+	AssigneeSchema,
+	AttachmentSchema,
+	ChecklistItemSchema,
 	GridTaskSchema,
+	LinkSchema,
 	TaskBoardEnum,
 	TaskPriorityEnum,
 	TaskStatusEnum,
@@ -26,4 +30,8 @@ export type TaskStatus = z.infer<typeof TaskStatusEnum>;
 export type TaskPriority = z.infer<typeof TaskPriorityEnum>;
 export type TaskTag = z.infer<typeof TaskTagEnum>;
 export type TaskBoard = z.infer<typeof TaskBoardEnum>;
+export type Assignee = z.infer<typeof AssigneeSchema>;
+export type ChecklistItem = z.infer<typeof ChecklistItemSchema>;
+export type TaskAttachment = z.infer<typeof AttachmentSchema>;
+export type TaskLink = z.infer<typeof LinkSchema>;
 export type GridTask = z.infer<typeof GridTaskSchema>;

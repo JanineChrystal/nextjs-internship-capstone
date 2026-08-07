@@ -4,7 +4,7 @@ import type { GridTask } from "@/types/task";
 export const gridColumnClasses = {
 	checkbox: "w-10 shrink-0",
 	taskName: "flex-1 min-w-[200px]",
-	assignee: "w-24 shrink-0",
+	assignee: "w-40 shrink-0",
 	start: "w-24 shrink-0",
 	due: "w-24 shrink-0",
 	board: "w-32 shrink-0",
@@ -30,10 +30,12 @@ export const MOCK_TASKS: GridTask[] = [
 	{
 		id: "1",
 		name: "Finalize campaign creatives",
-		assignee: {
-			name: "Sarah",
-			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-		},
+		assignees: [
+			{
+				name: "Sarah",
+				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
+			},
+		],
 		startDate: "Oct 12",
 		dueDate: "Oct 18",
 		board: "In Progress",
@@ -45,10 +47,12 @@ export const MOCK_TASKS: GridTask[] = [
 	{
 		id: "2",
 		name: "Define target audience segments",
-		assignee: {
-			name: "Mike",
-			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
-		},
+		assignees: [
+			{
+				name: "Mike",
+				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
+			},
+		],
 		startDate: "Oct 01",
 		dueDate: "Oct 05",
 		board: "Completed",
@@ -60,10 +64,12 @@ export const MOCK_TASKS: GridTask[] = [
 	{
 		id: "3",
 		name: "Setup tracking dashboards",
-		assignee: {
-			name: "Alex",
-			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-		},
+		assignees: [
+			{
+				name: "Alex",
+				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
+			},
+		],
 		startDate: "Oct 15",
 		dueDate: "Oct 20",
 		board: "Up Next",
@@ -75,10 +81,12 @@ export const MOCK_TASKS: GridTask[] = [
 	{
 		id: "4",
 		name: "Draft press release",
-		assignee: {
-			name: "Emma",
-			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma",
-		},
+		assignees: [
+			{
+				name: "Emma",
+				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma",
+			},
+		],
 		startDate: "--",
 		dueDate: "Oct 25",
 		board: "Backlog",

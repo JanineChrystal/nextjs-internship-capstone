@@ -27,6 +27,7 @@ export const TASK_BOARDS = TaskBoardEnum.options;
 export const AssigneeSchema = z.object({
 	name: z.string(),
 	avatarUrl: z.url(),
+	email: z.string().email().optional(),
 });
 
 export const ChecklistItemSchema = z.object({
@@ -51,7 +52,7 @@ export const GridTaskSchema = z.object({
 	id: z.string(),
 	name: z.string(),
 	description: z.string().optional(),
-	assignee: AssigneeSchema,
+	assignees: z.array(AssigneeSchema),
 	startDate: z.string(),
 	dueDate: z.string(),
 	board: TaskBoardEnum,

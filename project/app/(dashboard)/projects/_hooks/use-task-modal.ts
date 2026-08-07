@@ -78,14 +78,23 @@ export function useTaskModal() {
 		});
 	};
 
-	const addAttachment = () => {
-		const newAttachment = {
-			id: crypto.randomUUID(),
-			name: `Document_${Math.floor(Math.random() * 1000)}.pdf`,
-			url: "https://example.com/doc.pdf",
-		};
-		const newAttachments = [...(taskData.attachments || []), newAttachment];
-		handleChange({ attachments: newAttachments });
+	const fileInputRef = React.useRef<HTMLInputElement>(null);
+	const [isAddingLink, setIsAddingLink] = React.useState(false);
+	const [linkUrl, setLinkUrl] = React.useState("");
+
+	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const files = e.target.files;
+		if (files && files.length > 0) {
+			const newAttachments = Array.from(files).map((f) => ({
+				id: crypto.randomUUID(),
+				name: f.name,
+				url: URL.createObjectURL(f),
+			}));
+			const updated = [...(taskData.attachments || []), ...newAttachments];
+			setTaskData({ ...taskData, attachments: updated });
+			if (isEditMode) handleChange({ attachments: updated });
+		}
+		if (fileInputRef.current) fileInputRef.current.value = "";
 	};
 
 	const removeAttachment = (id: string) => {
@@ -95,14 +104,22 @@ export function useTaskModal() {
 		handleChange({ attachments: newAttachments });
 	};
 
-	const addLink = () => {
+	const submitLink = () => {
+		if (!linkUrl.trim()) {
+			setIsAddingLink(false);
+			return;
+		}
+		const urlStr = linkUrl.trim();
 		const newLink = {
 			id: crypto.randomUUID(),
-			title: "Reference Link",
-			url: "https://example.com",
+			title: urlStr.replace(/^https?:\/\//, "").split("/")[0] || urlStr,
+			url: urlStr.startsWith("http") ? urlStr : `https://${urlStr}`,
 		};
-		const newLinks = [...(taskData.links || []), newLink];
-		handleChange({ links: newLinks });
+		const updated = [...(taskData.links || []), newLink];
+		setTaskData({ ...taskData, links: updated });
+		if (isEditMode) handleChange({ links: updated });
+		setLinkUrl("");
+		setIsAddingLink(false);
 	};
 
 	const removeLink = (id: string) => {
@@ -140,9 +157,14 @@ export function useTaskModal() {
 		updateChecklistItem,
 		removeChecklistItem,
 		toggleTaskCompletion,
-		addAttachment,
+		fileInputRef,
+		isAddingLink,
+		setIsAddingLink,
+		linkUrl,
+		setLinkUrl,
+		handleFileChange,
 		removeAttachment,
-		addLink,
+		submitLink,
 		removeLink,
 		handleDuplicate,
 		handleDelete,

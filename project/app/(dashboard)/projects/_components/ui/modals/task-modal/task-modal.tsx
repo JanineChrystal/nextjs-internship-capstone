@@ -11,7 +11,6 @@ import {
 	Paperclip,
 	Plus,
 	Trash2,
-	UserPlus,
 	X,
 } from "lucide-react";
 import Image from "next/image";
@@ -43,12 +42,14 @@ import {
 	TASK_TAGS,
 } from "@/lib/validations/task-schema";
 import type {
+	Assignee,
 	TaskBoard,
 	TaskPriority,
 	TaskStatus,
 	TaskTag,
 } from "@/types/task";
 import { useTaskModal } from "../../../../_hooks/use-task-modal";
+import { AssigneeSelector } from "../../assignee-selector";
 import { BoardBadge } from "../../badges/board-badge";
 import { PriorityBadge } from "../../badges/priority-badge";
 import { StatusBadge } from "../../badges/status-badge";
@@ -68,9 +69,14 @@ export function TaskModal() {
 		updateChecklistItem,
 		removeChecklistItem,
 		toggleTaskCompletion,
-		addAttachment,
+		fileInputRef,
+		isAddingLink,
+		setIsAddingLink,
+		linkUrl,
+		setLinkUrl,
+		handleFileChange,
 		removeAttachment,
-		addLink,
+		submitLink,
 		removeLink,
 		handleDuplicate,
 		handleDelete,
@@ -188,7 +194,7 @@ export function TaskModal() {
 							{/* Row 1 & 2 Dynamically */}
 							<div className="space-y-1">
 								<span className="block text-xs font-medium text-secondary uppercase tracking-wider">
-									Tag / Category
+									Category
 								</span>
 								<DropdownMenu>
 									<DropdownMenuTrigger className="w-full focus:outline-none flex items-center justify-between p-2 rounded-md border border-outline-variant hover:bg-surface-variant transition-colors">
@@ -277,7 +283,7 @@ export function TaskModal() {
 									<PopoverTrigger asChild>
 										<Button
 											variant="outline"
-											className="w-full justify-start font-normal"
+											className="w-full justify-start font-normal h-9.5 px-2 py-2 border-outline-variant"
 										>
 											{formatDate(taskData.startDate)}
 										</Button>
@@ -306,7 +312,7 @@ export function TaskModal() {
 									<PopoverTrigger asChild>
 										<Button
 											variant="outline"
-											className="w-full justify-start font-normal"
+											className="w-full justify-start font-normal h-9.5 px-2 py-2 border-outline-variant"
 										>
 											{formatDate(taskData.dueDate)}
 										</Button>
@@ -335,55 +341,29 @@ export function TaskModal() {
 								Assignees
 							</span>
 							<div className="flex items-center gap-2 flex-wrap">
-								<DropdownMenu>
-									<DropdownMenuTrigger className="focus:outline-none flex items-center justify-center h-8 w-8 rounded-full border border-dashed border-outline-variant hover:bg-surface-variant transition-colors text-secondary">
-										<UserPlus className="h-4 w-4" />
-									</DropdownMenuTrigger>
-									<DropdownMenuContent align="start">
-										<DropdownMenuItem
-											onClick={() =>
-												handleChange({
-													assignee: {
-														name: "Jane Doe",
-														avatarUrl: "https://i.pravatar.cc/150?u=jane",
-													},
-												})
-											}
-										>
-											Jane Doe
-										</DropdownMenuItem>
-										<DropdownMenuItem
-											onClick={() =>
-												handleChange({
-													assignee: {
-														name: "Alex Chen",
-														avatarUrl: "https://i.pravatar.cc/150?u=alex",
-													},
-												})
-											}
-										>
-											Alex Chen
-										</DropdownMenuItem>
-									</DropdownMenuContent>
-								</DropdownMenu>
+								<AssigneeSelector
+									assignees={taskData.assignees || []}
+									onAssigneesChange={(newAssignees) => {
+										setTaskData({ ...taskData, assignees: newAssignees });
+										if (isEditMode) handleChange({ assignees: newAssignees });
+									}}
+								/>
 
-								{taskData.assignee && (
-									<div className="flex items-center gap-2 p-1.5 px-3 rounded-full border border-outline-variant bg-surface-container-lowest">
+								{(taskData.assignees || []).map((assignee: Assignee) => (
+									<div
+										key={assignee.name}
+										className="flex items-center gap-2 p-1.5 px-3 rounded-full border border-outline-variant bg-surface-container-lowest"
+									>
 										<Image
-											src={
-												taskData.assignee.avatarUrl ||
-												"https://api.dicebear.com/7.x/avataaars/svg"
-											}
+											src={assignee.avatarUrl}
 											alt="Avatar"
 											width={20}
 											height={20}
-											className="rounded-full bg-surface-variant"
+											className="rounded-full bg-surface-variant shrink-0"
 										/>
-										<span className="text-sm font-medium">
-											{taskData.assignee.name}
-										</span>
+										<span className="text-sm font-medium">{assignee.name}</span>
 									</div>
-								)}
+								))}
 							</div>
 						</div>
 
@@ -422,10 +402,17 @@ export function TaskModal() {
 											</div>
 										),
 									)}
+									<input
+										type="file"
+										multiple
+										className="hidden"
+										ref={fileInputRef}
+										onChange={handleFileChange}
+									/>
 									<Button
 										variant="outline"
 										className="w-full justify-start text-secondary border-dashed"
-										onClick={addAttachment}
+										onClick={() => fileInputRef.current?.click()}
 									>
 										<Plus className="h-4 w-4 mr-2" />
 										Add attachment
@@ -465,14 +452,29 @@ export function TaskModal() {
 											</div>
 										),
 									)}
-									<Button
-										variant="outline"
-										className="w-full justify-start text-secondary border-dashed"
-										onClick={addLink}
-									>
-										<Plus className="h-4 w-4 mr-2" />
-										Add link
-									</Button>
+									{isAddingLink ? (
+										<Input
+											autoFocus
+											placeholder="Paste link and press Enter"
+											value={linkUrl}
+											onChange={(e) => setLinkUrl(e.target.value)}
+											onKeyDown={(e) => {
+												if (e.key === "Enter") submitLink();
+												if (e.key === "Escape") setIsAddingLink(false);
+											}}
+											onBlur={submitLink}
+											className="h-9.5 text-sm"
+										/>
+									) : (
+										<Button
+											variant="outline"
+											className="w-full justify-start text-secondary border-dashed"
+											onClick={() => setIsAddingLink(true)}
+										>
+											<Plus className="h-4 w-4 mr-2" />
+											Add link
+										</Button>
+									)}
 								</div>
 							</div>
 						</div>

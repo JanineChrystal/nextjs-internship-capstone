@@ -1,13 +1,6 @@
 "use client";
 
-import {
-	CheckCircle,
-	Copy,
-	Info,
-	MoreHorizontal,
-	PlusCircle,
-	Trash2,
-} from "lucide-react";
+import { CheckCircle, Copy, Info, MoreHorizontal, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/buttons/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -33,6 +26,7 @@ import {
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask } from "@/types/task";
 import { gridColumnClasses } from "../../../_constants/grid-view-constants";
+import { AssigneeSelector } from "../../ui/assignee-selector";
 import { BoardBadge } from "../../ui/badges/board-badge";
 import { PriorityBadge } from "../../ui/badges/priority-badge";
 import { StatusBadge } from "../../ui/badges/status-badge";
@@ -115,40 +109,39 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 			<div
 				className={`${gridColumnClasses.assignee} flex items-center gap-1 group/assignee`}
 			>
-				<DropdownMenu>
-					<DropdownMenuTrigger className="focus:outline-none">
-						<Image
-							src={task.assignee.avatarUrl}
-							alt={task.assignee.name}
-							width={24}
-							height={24}
-							className="rounded-full bg-surface-variant border border-outline-variant/20 hover:ring-2 ring-primary/30 transition-all"
-						/>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start">
-						<DropdownMenuItem
-							onClick={() =>
-								updateTask(task.id, {
-									assignee: {
-										name: "Jane Doe",
-										avatarUrl: "https://i.pravatar.cc/150?u=jane",
-									},
-								})
-							}
+				<div className="flex -space-x-2">
+					{task.assignees.slice(0, 3).map((assignee) => (
+						<div
+							key={assignee.name}
+							className="relative inline-block hover:z-10 group/tooltip"
 						>
-							Jane Doe
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
+							<Image
+								src={assignee.avatarUrl}
+								alt={assignee.name}
+								width={24}
+								height={24}
+								className="rounded-full bg-surface-variant border-2 border-surface hover:ring-2 ring-primary/30 transition-all object-cover"
+							/>
+							{/* Custom CSS Tooltip */}
+							<div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-max opacity-0 transition-opacity group-hover/tooltip:opacity-100 bg-surface-container-highest text-foreground text-xs px-2 py-1 rounded shadow-sm z-50">
+								{assignee.name}
+							</div>
+						</div>
+					))}
+					{task.assignees.length > 3 && (
+						<div className="relative inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-variant border-2 border-surface text-[10px] font-medium text-secondary hover:z-10 z-0">
+							+{task.assignees.length - 3}
+						</div>
+					)}
+				</div>
 
-				<Button
-					variant="ghost"
-					size="icon"
-					className="h-6 w-6 rounded-full text-secondary hover:text-foreground opacity-0 group-hover/assignee:opacity-100 transition-opacity"
-					onClick={() => console.log("TODO: Add Assignee Modal")}
-				>
-					<PlusCircle className="h-4 w-4" />
-				</Button>
+				<AssigneeSelector
+					assignees={task.assignees}
+					onAssigneesChange={(newAssignees) =>
+						updateTask(task.id, { assignees: newAssignees })
+					}
+					triggerClassName="h-6 w-6 opacity-0 group-hover/assignee:opacity-100 bg-surface z-20"
+				/>
 			</div>
 
 			<div className={gridColumnClasses.start}>
