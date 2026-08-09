@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/buttons/button";
 import { VIEW_TABS } from "../../_constants/project";
@@ -9,11 +9,13 @@ import type { ProjectViewType } from "../../[id]/page";
 interface ProjectToolbarProps {
 	activeView: ProjectViewType;
 	onViewChange: (view: ProjectViewType) => void;
+	renderFilter?: React.ReactNode;
 }
 
 export function ProjectToolbar({
 	activeView,
 	onViewChange,
+	renderFilter,
 }: ProjectToolbarProps) {
 	return (
 		<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
@@ -25,10 +27,11 @@ export function ProjectToolbar({
 						<Button
 							key={tab.value}
 							onClick={() => onViewChange(tab.value)}
-							className={`px-4 py-1.5 font-label-md text-label-md rounded-md transition-colors whitespace-nowrap ${
+							variant="ghost"
+							className={`px-4 py-1.5 font-label-md text-label-md rounded-md transition-all whitespace-nowrap h-auto ${
 								isActive
-									? "bg-surface text-primary shadow-sm border border-outline-variant/50"
-									: "text-secondary hover:text-on-surface"
+									? "bg-surface text-on-surface shadow-sm border border-outline-variant/50 font-semibold hover:bg-surface"
+									: "text-secondary hover:text-on-surface hover:bg-surface-variant/50 border border-transparent shadow-none"
 							}`}
 						>
 							{tab.label}
@@ -38,14 +41,9 @@ export function ProjectToolbar({
 			</div>
 
 			<div className="flex flex-wrap items-center gap-3 shrink-0">
-				<Button
-					variant="outline"
-					className="h-10 px-4 flex items-center gap-2 bg-surface border-outline-variant text-on-surface hover:bg-surface-variant transition-colors"
-				>
-					<Filter size={18} />
-					Filters
-				</Button>
-				<div className="flex items-center gap-2 ml-2 border-l border-outline-variant pl-4">
+				{renderFilter}
+
+				<div className="flex items-center gap-2 ml-1 border-l border-outline-variant pl-4">
 					<div className="flex -space-x-3">
 						<Image
 							alt="Member 1"
@@ -65,7 +63,11 @@ export function ProjectToolbar({
 							+4
 						</div>
 					</div>
-					<Button className="w-9 h-9 rounded-full border border-dashed border-outline-variant flex items-center justify-center text-secondary hover:bg-surface-variant transition-colors">
+					<Button
+						variant="outline"
+						size="icon"
+						className="w-9 h-9 rounded-full border border-dashed border-outline flex items-center justify-center text-secondary hover:text-on-surface hover:bg-surface-variant transition-colors hover:border-outline-variant"
+					>
 						<UserPlus size={18} />
 					</Button>
 				</div>

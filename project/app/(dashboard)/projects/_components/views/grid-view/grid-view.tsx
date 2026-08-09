@@ -8,7 +8,11 @@ import { AddTaskRow } from "./add-task-row";
 import { BulkActionBar } from "./bulk-action-bar";
 import { GridRow } from "./grid-row";
 
-export function GridView() {
+export function GridView({
+	externalFilters,
+}: {
+	externalFilters?: Record<string, string[]>;
+}) {
 	const {
 		tasks: sortedTasks,
 		sortConfig,
@@ -21,7 +25,7 @@ export function GridView() {
 		handleClearSelection,
 		handleBulkDelete,
 		handleBulkComplete,
-	} = useGridView();
+	} = useGridView(externalFilters);
 
 	const viewColumns = GRID_COLUMNS.map((col) => {
 		if (col.key === "select") {

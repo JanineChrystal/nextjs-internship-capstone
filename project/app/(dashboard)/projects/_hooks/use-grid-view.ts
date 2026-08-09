@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTaskStore } from "@/stores/use-task-store";
 
-export function useGridView() {
+export function useGridView(externalFilters?: Record<string, string[]>) {
 	// External Stores
 	const { tasks, bulkDeleteTasks, bulkCompleteTasks } = useTaskStore();
 
@@ -13,17 +13,38 @@ export function useGridView() {
 		key: string;
 		direction: "asc" | "desc";
 	} | null>(null);
+	const [internalFilters, setInternalFilters] = useState<
+		Record<string, string[]>
+	>({});
+
+	const filters = externalFilters || internalFilters;
 
 	// Derived State & Memoized Calculations
-	const isAllSelected =
-		tasks.length > 0 && selectedTaskIds.size === tasks.length;
-	const isIndeterminate =
-		selectedTaskIds.size > 0 && selectedTaskIds.size < tasks.length;
+	const filteredTasks = useMemo(() => {
+		return tasks.filter((task) => {
+			for (const [key, selectedValues] of Object.entries(filters)) {
+				if (selectedValues.length === 0) continue; // no filter active for this category
+
+				const taskValue = task[key as keyof typeof task];
+				// Handle tags array if taskValue is an array (although grid task schema says it's a single enum, we use String just in case)
+				if (Array.isArray(taskValue)) {
+					if (!taskValue.some((val) => selectedValues.includes(String(val)))) {
+						return false;
+					}
+				} else {
+					if (!selectedValues.includes(String(taskValue))) {
+						return false;
+					}
+				}
+			}
+			return true;
+		});
+	}, [tasks, filters]);
 
 	const sortedTasks = useMemo(() => {
-		if (!sortConfig) return tasks;
+		if (!sortConfig) return filteredTasks;
 
-		return [...tasks].sort((a, b) => {
+		return [...filteredTasks].sort((a, b) => {
 			const aValue = a[sortConfig.key as keyof typeof a];
 			const bValue = b[sortConfig.key as keyof typeof b];
 
@@ -35,12 +56,17 @@ export function useGridView() {
 			if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
 			return 0;
 		});
-	}, [tasks, sortConfig]);
+	}, [filteredTasks, sortConfig]);
+
+	const isAllSelected =
+		sortedTasks.length > 0 && selectedTaskIds.size === sortedTasks.length;
+	const isIndeterminate =
+		selectedTaskIds.size > 0 && selectedTaskIds.size < sortedTasks.length;
 
 	// Action Handlers
 	const handleSelectAll = (checked: boolean) => {
 		if (checked) {
-			setSelectedTaskIds(new Set(tasks.map((t) => t.id)));
+			setSelectedTaskIds(new Set(sortedTasks.map((t) => t.id)));
 		} else {
 			setSelectedTaskIds(new Set());
 		}
@@ -77,17 +103,38 @@ export function useGridView() {
 		});
 	};
 
+	const handleToggleFilter = (fieldId: string, value: string) => {
+		setInternalFilters((prev) => {
+			const currentValues = prev[fieldId] || [];
+			const nextValues = currentValues.includes(value)
+				? currentValues.filter((v) => v !== value)
+				: [...currentValues, value];
+
+			return {
+				...prev,
+				[fieldId]: nextValues,
+			};
+		});
+	};
+
+	const handleResetFilters = () => {
+		setInternalFilters({});
+	};
+
 	return {
 		tasks: sortedTasks,
 		sortConfig,
 		selectedTaskIds,
 		isAllSelected,
 		isIndeterminate,
+		filters,
 		handleSort,
 		handleSelectAll,
 		handleToggleSelect,
 		handleClearSelection,
 		handleBulkDelete,
 		handleBulkComplete,
+		handleToggleFilter,
+		handleResetFilters,
 	};
 }
