@@ -23,14 +23,27 @@ export function useTaskModal() {
 		React.useState<Partial<GridTask>>(DEFAULT_TASK_DATA);
 	const [isCommentsOpen, setIsCommentsOpen] = React.useState(true);
 
+	const isInitializedRef = React.useRef(false);
+
 	React.useEffect(() => {
-		if (isTaskModalOpen) {
+		if (isTaskModalOpen && !isInitializedRef.current) {
+			isInitializedRef.current = true;
 			if (isEditMode && existingTask) {
 				setTaskData(existingTask);
 			} else {
 				// Reset for create mode
-				setTaskData(DEFAULT_TASK_DATA);
+				setTaskData({
+					...DEFAULT_TASK_DATA,
+					assignees: [],
+					checklist: [],
+					attachments: [],
+					links: [],
+				});
 			}
+		}
+
+		if (!isTaskModalOpen) {
+			isInitializedRef.current = false;
 		}
 	}, [isTaskModalOpen, isEditMode, existingTask]);
 

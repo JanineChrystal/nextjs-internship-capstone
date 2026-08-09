@@ -343,10 +343,9 @@ export function TaskModal() {
 							<div className="flex items-center gap-2 flex-wrap">
 								<AssigneeSelector
 									assignees={taskData.assignees || []}
-									onAssigneesChange={(newAssignees) => {
-										setTaskData({ ...taskData, assignees: newAssignees });
-										if (isEditMode) handleChange({ assignees: newAssignees });
-									}}
+									onAssigneesChange={(newAssignees) =>
+										handleChange({ assignees: newAssignees })
+									}
 								/>
 
 								{(taskData.assignees || []).map((assignee: Assignee) => (
