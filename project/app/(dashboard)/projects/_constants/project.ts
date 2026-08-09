@@ -60,3 +60,35 @@ export const VIEW_TABS: { label: string; value: ProjectViewType }[] = [
 	{ label: "Charts", value: "charts" },
 	{ label: "Settings", value: "settings" },
 ];
+
+export const PROJECT_MEMBERS: {
+	name: string;
+	email: string;
+	avatarUrl: string;
+}[] = [
+	{
+		name: "Sarah",
+		email: "sarah@example.com",
+		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
+	},
+	{
+		name: "Mike",
+		email: "mike@example.com",
+		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
+	},
+	{
+		name: "Alex",
+		email: "alex@example.com",
+		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
+	},
+	{
+		name: "John",
+		email: "john@example.com",
+		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+	},
+	{
+		name: "Emily",
+		email: "emily@example.com",
+		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily",
+	},
+];

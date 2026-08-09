@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useTaskStore } from "@/stores/use-task-store";
-import type { GridTask } from "@/types/task";
+import type { GridTask, TaskModalActionId } from "@/types/task";
 import { DEFAULT_TASK_DATA } from "../_constants/task-modal-constants";
 
 export function useTaskModal() {
@@ -158,6 +158,43 @@ export function useTaskModal() {
 		setIsCommentsOpen((prev) => !prev);
 	};
 
+	const handleAction = (actionId: TaskModalActionId, targetTaskId?: string) => {
+		const targetId = targetTaskId || selectedTaskId;
+		if (!targetId) return;
+
+		switch (actionId) {
+			case "TOGGLE_COMPLETION": {
+				if (targetTaskId && targetTaskId !== selectedTaskId) {
+					const targetTask = tasks.find((t) => t.id === targetTaskId);
+					if (targetTask) {
+						updateTask(targetTaskId, {
+							isCompleted: !targetTask.isCompleted,
+							status: !targetTask.isCompleted ? "Completed" : "In Progress",
+							board: !targetTask.isCompleted ? "Completed" : targetTask.board,
+						});
+					}
+				} else {
+					toggleTaskCompletion();
+				}
+				break;
+			}
+			case "DUPLICATE":
+				if (targetTaskId && targetTaskId !== selectedTaskId) {
+					duplicateTask(targetTaskId);
+				} else {
+					handleDuplicate();
+				}
+				break;
+			case "DELETE":
+				if (targetTaskId && targetTaskId !== selectedTaskId) {
+					deleteTask(targetTaskId);
+				} else {
+					handleDelete();
+				}
+				break;
+		}
+	};
+
 	return {
 		isTaskModalOpen,
 		closeTaskModal,
@@ -183,5 +220,6 @@ export function useTaskModal() {
 		handleDelete,
 		isCommentsOpen,
 		toggleComments,
+		handleAction,
 	};
 }

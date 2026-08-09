@@ -4,22 +4,21 @@ import type { GridTask } from "@/types/task";
 export const gridColumnClasses = {
 	checkbox: "w-10 shrink-0",
 	taskName: "flex-1 min-w-[200px]",
-	assignee: "w-40 shrink-0",
-	start: "w-24 shrink-0",
-	due: "w-24 shrink-0",
-	board: "w-32 shrink-0",
+	assignee: "w-40 shrink-0 flex justify-center",
+	start: "w-24 shrink-0 flex justify-center",
+	due: "w-24 shrink-0 flex justify-center",
+	board: "w-32 shrink-0 flex justify-center",
 	status: "w-36 shrink-0",
 	priority: "w-28 shrink-0",
 	tag: "w-28 shrink-0",
 };
 
-// We store pure data here. View layer will inject JSX where needed.
 export const GRID_COLUMNS: ColumnDef[] = [
 	{ key: "select", title: "", className: gridColumnClasses.checkbox },
 	{ key: "name", title: "Task Name", className: gridColumnClasses.taskName },
 	{ key: "assignee", title: "Assignee", className: gridColumnClasses.assignee },
-	{ key: "start", title: "Start", className: gridColumnClasses.start },
-	{ key: "due", title: "Due", className: gridColumnClasses.due },
+	{ key: "startDate", title: "Start", className: gridColumnClasses.start },
+	{ key: "dueDate", title: "Due", className: gridColumnClasses.due },
 	{ key: "board", title: "Board", className: gridColumnClasses.board },
 	{ key: "status", title: "Status", className: gridColumnClasses.status },
 	{ key: "priority", title: "Priority", className: gridColumnClasses.priority },

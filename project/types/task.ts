@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import type { z } from "zod";
 import type {
 	AssigneeSchema,
@@ -11,8 +12,6 @@ import type {
 	TaskTagEnum,
 } from "@/lib/validations/task-schema";
 
-export type PriorityType = "low" | "medium" | "high" | "urgent";
-
 export interface TaskItem {
 	id: string;
 	title: string;
@@ -25,6 +24,24 @@ export interface TaskItem {
 	tasksCompleted?: number;
 	tasksTotal?: number;
 }
+
+export interface TaskModalAction {
+	id: TaskModalActionId;
+	label: string;
+	icon: LucideIcon;
+	className?: string;
+	completedLabel?: string;
+}
+
+export interface TaskPropertyConfig {
+	id: TaskPropertyId;
+	label: string;
+	options: readonly string[];
+}
+
+export type TaskModalActionId = "TOGGLE_COMPLETION" | "DUPLICATE" | "DELETE";
+export type TaskPropertyId = "tag" | "status" | "priority" | "board";
+export type PriorityType = "low" | "medium" | "high" | "urgent";
 
 export type TaskStatus = z.infer<typeof TaskStatusEnum>;
 export type TaskPriority = z.infer<typeof TaskPriorityEnum>;

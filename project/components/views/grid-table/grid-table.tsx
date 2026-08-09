@@ -59,7 +59,7 @@ export function GridTable<T extends { id: string | number }>({
 								key={col.key}
 								type="button"
 								className={cn(
-									"font-medium text-secondary text-sm flex items-center group/header text-left cursor-pointer select-none bg-transparent hover:bg-surface-variant/50 px-2 py-1.5 -ml-2 rounded-md transition-colors",
+									"font-medium text-secondary text-sm flex items-center group/header cursor-pointer select-none bg-transparent hover:bg-surface-variant/50 py-1.5 rounded-md transition-colors",
 									col.className || "flex-1",
 								)}
 								onClick={() => onSort?.(col.key)}
@@ -73,7 +73,7 @@ export function GridTable<T extends { id: string | number }>({
 						<div
 							key={col.key}
 							className={cn(
-								"font-medium text-secondary text-sm flex items-center text-left px-2 py-1.5 -ml-2",
+								"font-medium text-secondary text-sm flex items-center py-1.5",
 								col.className || "flex-1",
 							)}
 						>

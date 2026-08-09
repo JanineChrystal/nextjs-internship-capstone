@@ -2,7 +2,6 @@
 
 import { Check, Search, UserPlus } from "lucide-react";
 import Image from "next/image";
-import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { Assignee } from "@/types/task";
-import { PROJECT_MEMBERS } from "../../_constants/task-modal-constants";
+import { useAssigneeSelector } from "../../_hooks/use-assignee-selector";
 
 interface AssigneeSelectorProps {
 	assignees: Assignee[];
@@ -25,23 +24,14 @@ export function AssigneeSelector({
 	onAssigneesChange,
 	triggerClassName,
 }: AssigneeSelectorProps) {
-	const [open, setOpen] = React.useState(false);
-	const [searchQuery, setSearchQuery] = React.useState("");
-
-	const handleSelect = (member: Assignee) => {
-		const isAssigned = assignees.some((a) => a.name === member.name);
-		if (isAssigned) {
-			onAssigneesChange(assignees.filter((a) => a.name !== member.name));
-		} else {
-			onAssigneesChange([...assignees, member]);
-		}
-	};
-
-	const filteredMembers = PROJECT_MEMBERS.filter(
-		(member) =>
-			member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			member.email?.toLowerCase().includes(searchQuery.toLowerCase()),
-	);
+	const {
+		open,
+		setOpen,
+		searchQuery,
+		setSearchQuery,
+		handleSelect,
+		filteredMembers,
+	} = useAssigneeSelector(assignees, onAssigneesChange);
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import type { TaskItem } from "@/types/task";
 import { useDraggableTask } from "../../../_hooks/use-drag-task";
-import { TaskBadge } from "../../ui/task-badge";
+import { TaskBadge } from "../../ui/modals/task-modal/task-badge";
 
 interface TaskCardProps {
 	task: TaskItem;
