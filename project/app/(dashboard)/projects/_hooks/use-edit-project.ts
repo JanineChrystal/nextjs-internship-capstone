@@ -11,14 +11,17 @@ export function useEditProject(
 	projectId: string,
 	initialData: EditProjectFormValues,
 ) {
-	const [isEditing, setIsEditing] = useState(false);
+	// External Stores
 	const updateProject = useProjectStore((state) => state.updateProject);
 
+	// Local/External Hooks
+	const [isEditing, setIsEditing] = useState(false);
 	const form = useForm<EditProjectFormValues>({
 		resolver: zodResolver(editProjectSchema),
 		defaultValues: initialData,
 	});
 
+	// Handlers
 	const onSubmit = form.handleSubmit((data) => {
 		updateProject(projectId, data);
 		setIsEditing(false);

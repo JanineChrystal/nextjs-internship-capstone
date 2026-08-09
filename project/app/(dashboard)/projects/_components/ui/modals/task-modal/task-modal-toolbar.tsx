@@ -12,7 +12,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { TaskModalActionId } from "@/types/task";
-import { TASK_MODAL_ACTIONS } from "../../../../_constants/task-modal-constants";
+import { TASK_MODAL_ACTIONS } from "../../../../_constants/task-modal";
 
 interface TaskModalToolbarProps {
 	isCommentsOpen: boolean;

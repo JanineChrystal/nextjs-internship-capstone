@@ -4,33 +4,24 @@ import type { Project } from "@/lib/validations/project-schema";
 import { useProjectStore } from "@/stores/use-project-store";
 
 export function useProjectsClient(initialProjects: Project[]) {
-	// Fetch state and actions from your Zustand store
+	// External Stores
 	const projects = useProjectStore((state) => state.projects);
 	const deleteProjects = useProjectStore((state) => state.deleteProjects);
-
-	// Add the setter action from your store so we can populate it
 	const setProjects = useProjectStore((state) => state.setProjects);
 
-	// Sync the server-fetched data into the client-side store on initial load
-	useEffect(() => {
-		if (initialProjects && initialProjects.length > 0) {
-			setProjects(initialProjects);
-		}
-	}, [initialProjects, setProjects]);
-
+	// Local State
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
 	const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
-
 	const [isSelectMode, setIsSelectMode] = useState(false);
 	const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(
 		new Set(),
 	);
 
+	// Derived State & Hooks
 	const filters = useProjectFilters(projects);
 
-	// Handlers
+	// Action Handlers
 	const toggleSelection = (projectId: string) => {
 		const newSet = new Set(selectedProjectIds);
 		if (newSet.has(projectId)) {
@@ -48,26 +39,21 @@ export function useProjectsClient(initialProjects: Project[]) {
 		}
 	};
 
-	// Opens modal for a single project
 	const initiateSingleDelete = (projectId: string) => {
 		setProjectToDelete(projectId);
 		setIsDeleteModalOpen(true);
 	};
 
-	// Opens modal for multiple projects
 	const initiateBulkDelete = () => {
 		setProjectToDelete(null);
 		setIsDeleteModalOpen(true);
 	};
 
-	// Deletes the data when the user clicks "Confirm" in the modal
 	const confirmDelete = () => {
 		if (projectToDelete) {
-			// Single Delete
 			deleteProjects(new Set([projectToDelete]));
 			setProjectToDelete(null);
 		} else {
-			// Bulk Delete
 			deleteProjects(selectedProjectIds);
 			setSelectedProjectIds(new Set());
 			setIsSelectMode(false);
@@ -75,11 +61,17 @@ export function useProjectsClient(initialProjects: Project[]) {
 		setIsDeleteModalOpen(false);
 	};
 
-	// Handles if the user clicks "Cancel" on the modal
 	const closeDeleteModal = () => {
 		setIsDeleteModalOpen(false);
 		setProjectToDelete(null);
 	};
+
+	// Effects
+	useEffect(() => {
+		if (initialProjects && initialProjects.length > 0) {
+			setProjects(initialProjects);
+		}
+	}, [initialProjects, setProjects]);
 
 	return {
 		modals: {

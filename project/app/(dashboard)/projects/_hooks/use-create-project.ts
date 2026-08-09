@@ -11,8 +11,10 @@ interface UseCreateProjectProps {
 }
 
 export function useCreateProject({ onClose }: UseCreateProjectProps) {
+	// External Stores
 	const addProject = useProjectStore((state) => state.addProject);
 
+	// Local/External Hooks (State equivalent)
 	const form = useForm<CreateProjectFormValues>({
 		resolver: zodResolver(createProjectSchema),
 		defaultValues: {
@@ -25,6 +27,7 @@ export function useCreateProject({ onClose }: UseCreateProjectProps) {
 		},
 	});
 
+	// Handlers
 	const onSubmit = form.handleSubmit((data: CreateProjectFormValues) => {
 		addProject({
 			...data,
@@ -43,8 +46,8 @@ export function useCreateProject({ onClose }: UseCreateProjectProps) {
 
 	return {
 		form,
-		onSubmit,
 		errors: form.formState.errors,
 		isSubmitting: form.formState.isSubmitting,
+		onSubmit,
 	};
 }

@@ -8,9 +8,11 @@ import { useState } from "react";
 import type { TaskItem } from "@/types/task";
 
 export function useKanbanDnd(initialData: TaskItem[]) {
+	// Local State
 	const [tasks, setTasks] = useState<TaskItem[]>(initialData);
 	const [activeId, setActiveId] = useState<string | null>(null);
 
+	// Action Handlers
 	const handleDragStart = (event: DragStartEvent) => {
 		setActiveId(event.active.id as string);
 	};
@@ -56,7 +58,6 @@ export function useKanbanDnd(initialData: TaskItem[]) {
 		}
 	};
 
-	// Clean up active state and use the DragEndEvent type safely
 	const handleDragEnd = (_event: DragEndEvent) => {
 		setActiveId(null);
 	};

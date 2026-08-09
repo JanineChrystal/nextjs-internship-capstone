@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@/types/grid-table";
 import type { GridTask } from "@/types/task";
 
-export const gridColumnClasses = {
+export const GRID_COLUMN_CLASSES = {
 	checkbox: "w-10 shrink-0",
 	taskName: "flex-1 min-w-[200px]",
 	assignee: "w-40 shrink-0 flex justify-center",
@@ -14,18 +14,26 @@ export const gridColumnClasses = {
 };
 
 export const GRID_COLUMNS: ColumnDef[] = [
-	{ key: "select", title: "", className: gridColumnClasses.checkbox },
-	{ key: "name", title: "Task Name", className: gridColumnClasses.taskName },
-	{ key: "assignee", title: "Assignee", className: gridColumnClasses.assignee },
-	{ key: "startDate", title: "Start", className: gridColumnClasses.start },
-	{ key: "dueDate", title: "Due", className: gridColumnClasses.due },
-	{ key: "board", title: "Board", className: gridColumnClasses.board },
-	{ key: "status", title: "Status", className: gridColumnClasses.status },
-	{ key: "priority", title: "Priority", className: gridColumnClasses.priority },
-	{ key: "tag", title: "Tag", className: gridColumnClasses.tag },
+	{ key: "select", title: "", className: GRID_COLUMN_CLASSES.checkbox },
+	{ key: "name", title: "Task Name", className: GRID_COLUMN_CLASSES.taskName },
+	{
+		key: "assignee",
+		title: "Assignee",
+		className: GRID_COLUMN_CLASSES.assignee,
+	},
+	{ key: "startDate", title: "Start", className: GRID_COLUMN_CLASSES.start },
+	{ key: "dueDate", title: "Due", className: GRID_COLUMN_CLASSES.due },
+	{ key: "board", title: "Board", className: GRID_COLUMN_CLASSES.board },
+	{ key: "status", title: "Status", className: GRID_COLUMN_CLASSES.status },
+	{
+		key: "priority",
+		title: "Priority",
+		className: GRID_COLUMN_CLASSES.priority,
+	},
+	{ key: "tag", title: "Tag", className: GRID_COLUMN_CLASSES.tag },
 ];
 
-export const MOCK_TASKS: GridTask[] = [
+export const mockTasks: GridTask[] = [
 	{
 		id: "1",
 		name: "Finalize campaign creatives",

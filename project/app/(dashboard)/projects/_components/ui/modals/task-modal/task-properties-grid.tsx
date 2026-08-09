@@ -19,7 +19,7 @@ import type {
 	TaskStatus,
 	TaskTag,
 } from "@/types/task";
-import { TASK_PROPERTIES_CONFIG } from "../../../../_constants/task-modal-constants";
+import { TASK_PROPERTIES_CONFIG } from "../../../../_constants/task-modal";
 import { BoardBadge } from "../../badges/board-badge";
 import { PriorityBadge } from "../../badges/priority-badge";
 import { StatusBadge } from "../../badges/status-badge";

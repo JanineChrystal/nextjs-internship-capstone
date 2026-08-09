@@ -2,7 +2,7 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { GridTable } from "@/components/views/grid-table/grid-table";
-import { GRID_COLUMNS } from "../../../_constants/grid-view-constants";
+import { GRID_COLUMNS } from "../../../_constants/grid-view";
 import { useGridView } from "../../../_hooks/use-grid-view";
 import { AddTaskRow } from "./add-task-row";
 import { BulkActionBar } from "./bulk-action-bar";

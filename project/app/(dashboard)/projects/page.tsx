@@ -15,5 +15,5 @@ export default async function ProjectsPage() {
 
 	const initialData = mockProjects;
 
-	return <ProjectsClient initialProjects={initialData} />;
+	return <ProjectsClient initialProjects={mockProjects} />;
 }

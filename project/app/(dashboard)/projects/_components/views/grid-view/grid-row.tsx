@@ -9,7 +9,7 @@ import {
 } from "@/lib/validations/task-schema";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask } from "@/types/task";
-import { gridColumnClasses } from "../../../_constants/grid-view-constants";
+import { GRID_COLUMN_CLASSES } from "../../../_constants/grid-view";
 import { BoardBadge } from "../../ui/badges/board-badge";
 import { PriorityBadge } from "../../ui/badges/priority-badge";
 import { StatusBadge } from "../../ui/badges/status-badge";
@@ -30,7 +30,7 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 
 	return (
 		<>
-			<div className={gridColumnClasses.checkbox}>
+			<div className={GRID_COLUMN_CLASSES.checkbox}>
 				<Checkbox
 					checked={isSelected}
 					onCheckedChange={(c) => onToggleSelect(c as boolean)}
@@ -38,13 +38,13 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 			</div>
 
 			<GridNameCell
-				className={gridColumnClasses.taskName}
+				className={GRID_COLUMN_CLASSES.taskName}
 				taskId={task.id}
 				taskName={task.name}
 			/>
 
 			<GridAssigneeCell
-				className={gridColumnClasses.assignee}
+				className={GRID_COLUMN_CLASSES.assignee}
 				assignees={task.assignees}
 				onAssigneesChange={(newAssignees) =>
 					updateTask(task.id, { assignees: newAssignees })
@@ -52,19 +52,19 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 			/>
 
 			<GridDateCell
-				className={gridColumnClasses.start}
+				className={GRID_COLUMN_CLASSES.start}
 				date={task.startDate}
 				onSelect={(date) => updateTask(task.id, { startDate: date })}
 			/>
 
 			<GridDateCell
-				className={gridColumnClasses.due}
+				className={GRID_COLUMN_CLASSES.due}
 				date={task.dueDate}
 				onSelect={(date) => updateTask(task.id, { dueDate: date })}
 			/>
 
 			<GridDropdownCell
-				className={gridColumnClasses.board}
+				className={GRID_COLUMN_CLASSES.board}
 				options={TASK_BOARDS}
 				onSelect={(board) => updateTask(task.id, { board })}
 			>
@@ -72,7 +72,7 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 			</GridDropdownCell>
 
 			<GridDropdownCell
-				className={gridColumnClasses.status}
+				className={GRID_COLUMN_CLASSES.status}
 				options={TASK_STATUSES}
 				onSelect={(status) => updateTask(task.id, { status })}
 			>
@@ -80,7 +80,7 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 			</GridDropdownCell>
 
 			<GridDropdownCell
-				className={gridColumnClasses.priority}
+				className={GRID_COLUMN_CLASSES.priority}
 				options={TASK_PRIORITIES}
 				onSelect={(priority) => updateTask(task.id, { priority })}
 			>
@@ -88,7 +88,7 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 			</GridDropdownCell>
 
 			<GridDropdownCell
-				className={gridColumnClasses.tag}
+				className={GRID_COLUMN_CLASSES.tag}
 				options={TASK_TAGS}
 				onSelect={(tag) => updateTask(task.id, { tag })}
 			>

@@ -1,9 +1,10 @@
 import * as React from "react";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask, TaskModalActionId } from "@/types/task";
-import { DEFAULT_TASK_DATA } from "../_constants/task-modal-constants";
+import { DEFAULT_TASK_DATA } from "../_constants/task-modal";
 
 export function useTaskModal() {
+	// External Stores
 	const {
 		tasks,
 		isTaskModalOpen,
@@ -15,38 +16,21 @@ export function useTaskModal() {
 		deleteTask,
 	} = useTaskStore();
 
-	const isEditMode = !!selectedTaskId;
-	const existingTask = tasks.find((t) => t.id === selectedTaskId);
-
-	// Local state for the form
+	// Local State & Refs
 	const [taskData, setTaskData] =
 		React.useState<Partial<GridTask>>(DEFAULT_TASK_DATA);
 	const [isCommentsOpen, setIsCommentsOpen] = React.useState(true);
+	const [isAddingLink, setIsAddingLink] = React.useState(false);
+	const [linkUrl, setLinkUrl] = React.useState("");
 
 	const isInitializedRef = React.useRef(false);
+	const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-	React.useEffect(() => {
-		if (isTaskModalOpen && !isInitializedRef.current) {
-			isInitializedRef.current = true;
-			if (isEditMode && existingTask) {
-				setTaskData(existingTask);
-			} else {
-				// Reset for create mode
-				setTaskData({
-					...DEFAULT_TASK_DATA,
-					assignees: [],
-					checklist: [],
-					attachments: [],
-					links: [],
-				});
-			}
-		}
+	// Derived State
+	const isEditMode = !!selectedTaskId;
+	const existingTask = tasks.find((t) => t.id === selectedTaskId);
 
-		if (!isTaskModalOpen) {
-			isInitializedRef.current = false;
-		}
-	}, [isTaskModalOpen, isEditMode, existingTask]);
-
+	// Action Handlers
 	const handleChange = (updates: Partial<GridTask>) => {
 		const newData = { ...taskData, ...updates };
 		setTaskData(newData);
@@ -90,10 +74,6 @@ export function useTaskModal() {
 			board: !taskData.isCompleted ? "Completed" : taskData.board,
 		});
 	};
-
-	const fileInputRef = React.useRef<HTMLInputElement>(null);
-	const [isAddingLink, setIsAddingLink] = React.useState(false);
-	const [linkUrl, setLinkUrl] = React.useState("");
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const files = e.target.files;
@@ -194,6 +174,29 @@ export function useTaskModal() {
 				break;
 		}
 	};
+
+	// Effects
+	React.useEffect(() => {
+		if (isTaskModalOpen && !isInitializedRef.current) {
+			isInitializedRef.current = true;
+			if (isEditMode && existingTask) {
+				setTaskData(existingTask);
+			} else {
+				// Reset for create mode
+				setTaskData({
+					...DEFAULT_TASK_DATA,
+					assignees: [],
+					checklist: [],
+					attachments: [],
+					links: [],
+				});
+			}
+		}
+
+		if (!isTaskModalOpen) {
+			isInitializedRef.current = false;
+		}
+	}, [isTaskModalOpen, isEditMode, existingTask]);
 
 	return {
 		isTaskModalOpen,

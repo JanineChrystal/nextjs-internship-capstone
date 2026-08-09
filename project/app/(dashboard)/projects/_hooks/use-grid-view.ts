@@ -2,8 +2,10 @@ import { useMemo, useState } from "react";
 import { useTaskStore } from "@/stores/use-task-store";
 
 export function useGridView() {
+	// External Stores
 	const { tasks, bulkDeleteTasks, bulkCompleteTasks } = useTaskStore();
 
+	// Local State
 	const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(
 		new Set(),
 	);
@@ -12,11 +14,30 @@ export function useGridView() {
 		direction: "asc" | "desc";
 	} | null>(null);
 
+	// Derived State & Memoized Calculations
 	const isAllSelected =
 		tasks.length > 0 && selectedTaskIds.size === tasks.length;
 	const isIndeterminate =
 		selectedTaskIds.size > 0 && selectedTaskIds.size < tasks.length;
 
+	const sortedTasks = useMemo(() => {
+		if (!sortConfig) return tasks;
+
+		return [...tasks].sort((a, b) => {
+			const aValue = a[sortConfig.key as keyof typeof a];
+			const bValue = b[sortConfig.key as keyof typeof b];
+
+			if (aValue === bValue) return 0;
+			if (aValue === undefined || aValue === null) return 1;
+			if (bValue === undefined || bValue === null) return -1;
+
+			if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+			if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+			return 0;
+		});
+	}, [tasks, sortConfig]);
+
+	// Action Handlers
 	const handleSelectAll = (checked: boolean) => {
 		if (checked) {
 			setSelectedTaskIds(new Set(tasks.map((t) => t.id)));
@@ -55,23 +76,6 @@ export function useGridView() {
 			return { key, direction: "asc" };
 		});
 	};
-
-	const sortedTasks = useMemo(() => {
-		if (!sortConfig) return tasks;
-
-		return [...tasks].sort((a, b) => {
-			const aValue = a[sortConfig.key as keyof typeof a];
-			const bValue = b[sortConfig.key as keyof typeof b];
-
-			if (aValue === bValue) return 0;
-			if (aValue === undefined || aValue === null) return 1;
-			if (bValue === undefined || bValue === null) return -1;
-
-			if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-			if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-			return 0;
-		});
-	}, [tasks, sortConfig]);
 
 	return {
 		tasks: sortedTasks,

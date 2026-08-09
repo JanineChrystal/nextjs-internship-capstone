@@ -3,6 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { TaskItem } from "@/types/task";
 
 export function useDraggableTask(task: TaskItem) {
+	// External Hooks
 	const {
 		attributes,
 		listeners,
@@ -12,6 +13,7 @@ export function useDraggableTask(task: TaskItem) {
 		isDragging,
 	} = useSortable({ id: task.id, data: { type: "Task", task } });
 
+	// Derived State
 	const style = {
 		transform: CSS.Transform.toString(transform),
 		transition,

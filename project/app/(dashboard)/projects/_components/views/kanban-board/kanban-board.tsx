@@ -12,7 +12,7 @@ import { useKanbanDnd } from "../../../_hooks/use-kanban-dnd";
 import { Column } from "./column";
 
 export function KanbanBoard({ projectId: _projectId }: { projectId: string }) {
-	const { tasks, handleDragStart, handleDragOver, handleDragEnd } =
+	const { tasks, activeId, handleDragStart, handleDragOver, handleDragEnd } =
 		useKanbanDnd(initialTasks);
 
 	const sensors = useSensors(

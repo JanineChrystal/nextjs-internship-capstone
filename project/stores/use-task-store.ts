@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { MOCK_TASKS } from "@/app/(dashboard)/projects/_constants/grid-view-constants";
+import { mockTasks } from "@/app/(dashboard)/projects/_constants/grid-view";
 import type { GridTask } from "@/types/task";
 
 interface TaskState {
@@ -18,7 +18,7 @@ interface TaskState {
 }
 
 export const useTaskStore = create<TaskState>((set) => ({
-	tasks: MOCK_TASKS,
+	tasks: mockTasks,
 	isTaskModalOpen: false,
 	selectedTaskId: null,
 

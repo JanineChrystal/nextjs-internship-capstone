@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { TaskModalActionId } from "@/types/task";
-import { TASK_MODAL_ACTIONS } from "../../../../_constants/task-modal-constants";
+import { TASK_MODAL_ACTIONS } from "../../../../_constants/task-modal";
 import { useTaskModal } from "../../../../_hooks/use-task-modal";
 
 interface GridNameCellProps {
