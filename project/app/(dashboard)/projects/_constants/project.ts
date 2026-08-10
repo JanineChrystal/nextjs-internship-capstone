@@ -9,6 +9,12 @@ export const VIEW_TABS: { label: string; value: ProjectViewType }[] = [
 	{ label: "Settings", value: "settings" },
 ];
 
+export const FILTERABLE_VIEWS: ProjectViewType[] = [
+	"grid",
+	"board",
+	"calendar",
+];
+
 export const PROJECT_MEMBERS: {
 	name: string;
 	email: string;

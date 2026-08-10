@@ -29,3 +29,4 @@ next-env.d.ts
 
 # Local documentation for code review
 GEMINI.md
+.agents/

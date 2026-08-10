@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useProjectFilters } from "@/app/(dashboard)/hooks/use-project-filters";
+import { useProjectFilters } from "@/app/(dashboard)/_hooks/use-project-filters";
 import type { Project } from "@/lib/validations/project-schema";
 import { useProjectStore } from "@/stores/use-project-store";
 

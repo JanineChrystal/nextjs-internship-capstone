@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useMemo, useState } from "react";
+import { ProjectToolbar } from "@/app/(dashboard)/_components/ui/project-toolbar";
 import {
 	type FilterField,
 	FilterPopover,
@@ -14,16 +15,14 @@ import {
 import { useProjectStore } from "@/stores/use-project-store";
 import { TaskModal } from "../_components/ui/modals/task-modal/task-modal";
 import { ProjectHeader } from "../_components/ui/project-header/project-header";
-import { ProjectToolbar } from "../_components/ui/project-toolbar";
 import { GridView } from "../_components/views/grid-view/grid-view";
 // Import your draft view components (we will build these next)
 import { KanbanBoard } from "../_components/views/kanban-board/kanban-board";
 
 // import { CalendarView } from "./_components/views/calendar-view";
 // import { ChartsView } from "./_components/views/charts-view";
-// import { SettingsView } from "./_components/views/settings-view";
+import { SettingsView } from "../_components/views/settings-view/settings-view";
 
-// Define our valid view types
 export type ProjectViewType =
 	| "grid"
 	| "board"
@@ -79,6 +78,7 @@ export default function ProjectPage({
 			<ProjectHeader projectId={resolvedParams.id} project={currentProject} />
 			{/* 2. The Toolbar (Tabs and Actions) */}
 			<ProjectToolbar
+				projectId={resolvedParams.id}
 				activeView={activeView}
 				onViewChange={setActiveView}
 				renderFilter={
@@ -116,7 +116,9 @@ export default function ProjectPage({
 				{activeView === "grid" && <GridView externalFilters={filters} />}
 				{activeView === "calendar" && <div>Calendar View Draft</div>}
 				{activeView === "charts" && <div>Charts View Draft</div>}
-				{activeView === "settings" && <div>Project Settings Draft</div>}
+				{activeView === "settings" && (
+					<SettingsView projectId={resolvedParams.id} />
+				)}
 			</div>
 
 			{/* Global Task Modal */}
