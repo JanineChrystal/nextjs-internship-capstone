@@ -1,5 +1,4 @@
-// TypeScript type definitions
-// Task 1.3: Set up project structure and folder organization
+export * from "./project";
 
 export interface Project {
 	id: string;

@@ -9,6 +9,8 @@ export function useGridView(externalFilters?: Record<string, string[]>) {
 	const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(
 		new Set(),
 	);
+	const [isSelectionModeActive, setIsSelectionModeActive] =
+		useState<boolean>(false);
 	const [sortConfig, setSortConfig] = useState<{
 		key: string;
 		direction: "asc" | "desc";
@@ -64,11 +66,20 @@ export function useGridView(externalFilters?: Record<string, string[]>) {
 		selectedTaskIds.size > 0 && selectedTaskIds.size < sortedTasks.length;
 
 	// Action Handlers
+	const handleToggleSelectionMode = (checked: boolean) => {
+		setIsSelectionModeActive(checked);
+		if (!checked) {
+			setSelectedTaskIds(new Set());
+		}
+	};
+
 	const handleSelectAll = (checked: boolean) => {
 		if (checked) {
 			setSelectedTaskIds(new Set(sortedTasks.map((t) => t.id)));
+			setIsSelectionModeActive(true);
 		} else {
 			setSelectedTaskIds(new Set());
+			setIsSelectionModeActive(false);
 		}
 	};
 
@@ -77,11 +88,20 @@ export function useGridView(externalFilters?: Record<string, string[]>) {
 			const next = new Set(prev);
 			if (checked) next.add(taskId);
 			else next.delete(taskId);
+
+			if (next.size > 0) {
+				setIsSelectionModeActive(true);
+			} else {
+				setIsSelectionModeActive(false);
+			}
 			return next;
 		});
 	};
 
-	const handleClearSelection = () => setSelectedTaskIds(new Set());
+	const handleClearSelection = () => {
+		setSelectedTaskIds(new Set());
+		setIsSelectionModeActive(false);
+	};
 
 	const handleBulkDelete = () => {
 		bulkDeleteTasks(selectedTaskIds);
@@ -125,10 +145,12 @@ export function useGridView(externalFilters?: Record<string, string[]>) {
 		tasks: sortedTasks,
 		sortConfig,
 		selectedTaskIds,
+		isSelectionModeActive,
 		isAllSelected,
 		isIndeterminate,
 		filters,
 		handleSort,
+		handleToggleSelectionMode,
 		handleSelectAll,
 		handleToggleSelect,
 		handleClearSelection,

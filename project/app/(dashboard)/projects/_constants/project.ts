@@ -1,6 +1,8 @@
 import type { Project } from "@/lib/validations/project-schema";
 import type { ProjectViewType } from "../[id]/page";
 
+export const MAX_VISIBLE_MEMBERS = 5;
+
 export const VIEW_TABS: { label: string; value: ProjectViewType }[] = [
 	{ label: "Grid", value: "grid" },
 	{ label: "Board", value: "board" },

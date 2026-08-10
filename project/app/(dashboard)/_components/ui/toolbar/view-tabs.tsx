@@ -1,19 +1,32 @@
-import { VIEW_TABS } from "@/app/(dashboard)/projects/_constants/project";
-import type { ProjectViewType } from "@/app/(dashboard)/projects/[id]/page";
 import { Button } from "@/components/ui/buttons/button";
+import { cn } from "@/lib/utils";
 
-interface ProjectViewTabsProps {
-	activeView: ProjectViewType;
-	onViewChange: (view: ProjectViewType) => void;
+export interface TabOption<T extends string = string> {
+	label: string;
+	value: T;
 }
 
-export function ProjectViewTabs({
+interface ViewTabsProps<T extends string = string> {
+	tabs: readonly TabOption<T>[];
+	activeView: T;
+	onViewChange: (view: T) => void;
+	className?: string;
+}
+
+export function ViewTabs<T extends string = string>({
+	tabs,
 	activeView,
 	onViewChange,
-}: ProjectViewTabsProps) {
+	className,
+}: ViewTabsProps<T>) {
 	return (
-		<div className="flex bg-surface-container-low p-1 rounded-lg border border-outline-variant overflow-x-auto hide-scrollbar">
-			{VIEW_TABS.map((tab) => {
+		<div
+			className={cn(
+				"flex bg-surface-container-low p-1 rounded-lg border border-outline-variant overflow-x-auto hide-scrollbar",
+				className,
+			)}
+		>
+			{tabs.map((tab) => {
 				const isActive = activeView === tab.value;
 
 				return (

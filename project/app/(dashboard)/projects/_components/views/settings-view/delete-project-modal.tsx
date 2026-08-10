@@ -1,7 +1,6 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/buttons/button";
 import {
 	Dialog,
@@ -12,6 +11,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useDeleteProjectModal } from "../../../_hooks/use-delete-project-modal";
 
 interface DeleteProjectModalProps {
 	open: boolean;
@@ -26,23 +26,13 @@ export function DeleteProjectModal({
 	projectName,
 	onConfirmDelete,
 }: DeleteProjectModalProps) {
-	const [confirmationText, setConfirmationText] = useState("");
-
-	const isConfirmed = confirmationText === projectName;
-
-	const handleConfirm = () => {
-		if (isConfirmed) {
-			onConfirmDelete();
-			onOpenChange(false);
-		}
-	};
-
-	const handleOpenChange = (newOpen: boolean) => {
-		if (!newOpen) {
-			setConfirmationText("");
-		}
-		onOpenChange(newOpen);
-	};
+	const {
+		confirmationText,
+		setConfirmationText,
+		isConfirmed,
+		handleConfirm,
+		handleOpenChange,
+	} = useDeleteProjectModal(projectName, onOpenChange, onConfirmDelete);
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
@@ -81,6 +71,7 @@ export function DeleteProjectModal({
 
 				<DialogFooter>
 					<Button
+						type="button"
 						variant="outline"
 						onClick={() => handleOpenChange(false)}
 						className="border-outline-variant text-secondary"
@@ -88,6 +79,7 @@ export function DeleteProjectModal({
 						Cancel
 					</Button>
 					<Button
+						type="button"
 						variant="destructive"
 						disabled={!isConfirmed}
 						onClick={handleConfirm}

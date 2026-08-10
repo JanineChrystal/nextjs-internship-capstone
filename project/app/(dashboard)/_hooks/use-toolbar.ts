@@ -1,17 +1,15 @@
 import { useMemo, useState } from "react";
+import { MAX_VISIBLE_MEMBERS } from "@/app/(dashboard)/projects/_constants/project";
+import { emptyMembers } from "@/app/(dashboard)/projects/_constants/settings-view";
 import { useMemberStore } from "@/stores/use-member-store";
-import type { ProjectMember } from "@/types/member";
 
-const MAX_VISIBLE_MEMBERS = 5;
-const EMPTY_MEMBERS: ProjectMember[] = [];
-
-export function useProjectToolbar(projectId: string) {
+export function useToolbar(projectId: string) {
 	// Local state for modal display toggle
 	const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
 
 	// Select members using static empty array fallback to prevent getSnapshot reference loops
 	const members = useMemberStore(
-		(state) => state.projectMembers[projectId] ?? EMPTY_MEMBERS,
+		(state) => state.projectMembers[projectId] ?? emptyMembers,
 	);
 
 	// Derived state for visible members subset and overflow count
@@ -34,3 +32,6 @@ export function useProjectToolbar(projectId: string) {
 		remainingCount,
 	};
 }
+
+// Alias for backwards compatibility
+export const useProjectToolbar = useToolbar;

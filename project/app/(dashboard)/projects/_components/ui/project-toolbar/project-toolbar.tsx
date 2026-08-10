@@ -1,13 +1,15 @@
 "use client";
 
-import { FILTERABLE_VIEWS } from "@/app/(dashboard)/projects/_constants/project";
+import type React from "react";
 import { AddMemberModal } from "@/app/(dashboard)/_components/ui/modals/add-member-modal";
+import { Toolbar } from "@/app/(dashboard)/_components/ui/toolbar";
+import { useToolbar } from "@/app/(dashboard)/_hooks/use-toolbar";
+import { FILTERABLE_VIEWS } from "@/app/(dashboard)/projects/_constants/project";
 import type { ProjectViewType } from "@/app/(dashboard)/projects/[id]/page";
-import { useProjectToolbar } from "../../../_hooks/use-project-toolbar";
 import { ProjectMembersGroup } from "./project-members-group";
 import { ProjectViewTabs } from "./project-view-tabs";
 
-interface ProjectToolbarProps {
+export interface ProjectToolbarProps {
 	projectId: string;
 	activeView: ProjectViewType;
 	onViewChange: (view: ProjectViewType) => void;
@@ -25,23 +27,30 @@ export function ProjectToolbar({
 		setIsAddMemberModalOpen,
 		visibleMembers,
 		remainingCount,
-	} = useProjectToolbar(projectId);
+	} = useToolbar(projectId);
 
 	const isFilterable = FILTERABLE_VIEWS.includes(activeView);
 
 	return (
-		<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
-			<ProjectViewTabs activeView={activeView} onViewChange={onViewChange} />
-
-			<div className="flex flex-wrap items-center gap-3 shrink-0">
-				{isFilterable && renderFilter}
-
-				<ProjectMembersGroup
-					visibleMembers={visibleMembers}
-					remainingCount={remainingCount}
-					onAddMember={() => setIsAddMemberModalOpen(true)}
-				/>
-			</div>
+		<>
+			<Toolbar
+				leftSection={
+					<ProjectViewTabs
+						activeView={activeView}
+						onViewChange={onViewChange}
+					/>
+				}
+				rightSection={
+					<>
+						{isFilterable && renderFilter}
+						<ProjectMembersGroup
+							visibleMembers={visibleMembers}
+							remainingCount={remainingCount}
+							onAddMember={() => setIsAddMemberModalOpen(true)}
+						/>
+					</>
+				}
+			/>
 
 			<AddMemberModal
 				open={isAddMemberModalOpen}
@@ -49,6 +58,6 @@ export function ProjectToolbar({
 				scope="project"
 				targetId={projectId}
 			/>
-		</div>
+		</>
 	);
 }

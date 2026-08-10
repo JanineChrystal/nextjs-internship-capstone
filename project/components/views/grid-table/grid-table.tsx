@@ -9,16 +9,20 @@ interface GridTableProps<T> {
 	data: T[];
 	columns: ColumnDef[];
 	renderRow: (item: T, index: number) => ReactNode;
+	keyExtractor?: (item: T) => string | number;
+	renderEmptyState?: () => ReactNode;
 	renderFooter?: () => ReactNode;
 	className?: string;
 	sortConfig?: { key: string; direction: "asc" | "desc" } | null;
 	onSort?: (key: string) => void;
 }
 
-export function GridTable<T extends { id: string | number }>({
+export function GridTable<T>({
 	data,
 	columns,
 	renderRow,
+	keyExtractor,
+	renderEmptyState,
 	renderFooter,
 	className,
 	sortConfig,
@@ -84,16 +88,30 @@ export function GridTable<T extends { id: string | number }>({
 			</div>
 
 			{/* Rows */}
-			<div className="flex flex-col w-full">
-				{data.map((item, index) => (
-					<div
-						key={item.id}
-						className="flex w-full items-center px-4 py-3 border-b border-outline-variant/50 hover:bg-surface-container-lowest/50 transition-colors group"
-					>
-						{renderRow(item, index)}
-					</div>
-				))}
-			</div>
+			{data.length === 0 && renderEmptyState ? (
+				<div className="flex flex-col w-full">{renderEmptyState()}</div>
+			) : (
+				<div className="flex flex-col w-full">
+					{data.map((item, index) => {
+						const itemKey = keyExtractor
+							? keyExtractor(item)
+							: typeof item === "object" &&
+									item !== null &&
+									"id" in item &&
+									(typeof item.id === "string" || typeof item.id === "number")
+								? item.id
+								: index;
+						return (
+							<div
+								key={itemKey}
+								className="flex w-full items-center px-4 py-3 border-b border-outline-variant/50 hover:bg-surface-container-lowest/50 transition-colors group"
+							>
+								{renderRow(item, index)}
+							</div>
+						);
+					})}
+				</div>
+			)}
 
 			{/* Footer */}
 			{renderFooter && (

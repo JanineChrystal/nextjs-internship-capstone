@@ -1,7 +1,9 @@
 "use client";
 
+import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { Checkbox } from "@/components/ui/checkbox";
 import { GridTable } from "@/components/views/grid-table/grid-table";
+import { useProjectStore } from "@/stores/use-project-store";
 import { GRID_COLUMNS } from "../../../_constants/grid-view";
 import { useGridView } from "../../../_hooks/use-grid-view";
 import { AddTaskRow } from "./add-task-row";
@@ -9,23 +11,29 @@ import { BulkActionBar } from "./bulk-action-bar";
 import { GridRow } from "./grid-row";
 
 export function GridView({
+	projectId,
 	externalFilters,
 }: {
+	projectId?: string;
 	externalFilters?: Record<string, string[]>;
 }) {
+	const projects = useProjectStore((state) => state.projects);
+	const currentProject = projects.find((p) => p.id === projectId);
+
 	const {
 		tasks: sortedTasks,
 		sortConfig,
 		selectedTaskIds,
-		isAllSelected,
-		isIndeterminate,
+		isSelectionModeActive,
 		handleSort,
-		handleSelectAll,
+		handleToggleSelectionMode,
 		handleToggleSelect,
 		handleClearSelection,
 		handleBulkDelete,
 		handleBulkComplete,
 	} = useGridView(externalFilters);
+
+	const isSelectionActive = isSelectionModeActive || selectedTaskIds.size > 0;
 
 	const viewColumns = GRID_COLUMNS.map((col) => {
 		if (col.key === "select") {
@@ -33,9 +41,11 @@ export function GridView({
 				...col,
 				renderHeader: () => (
 					<Checkbox
-						aria-label="Select all"
-						checked={isAllSelected || (isIndeterminate && "indeterminate")}
-						onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+						aria-label="Toggle selection mode"
+						checked={isSelectionActive}
+						onCheckedChange={(checked) =>
+							handleToggleSelectionMode(Boolean(checked))
+						}
 					/>
 				),
 			};
@@ -45,7 +55,12 @@ export function GridView({
 	});
 
 	return (
-		<div className="w-full mt-2 relative">
+		<div className="flex flex-col gap-6 w-full relative">
+			<PageHeader
+				title="Task Grid"
+				description={`View and manage all tasks for ${currentProject?.title || "this project"} in a structured grid table.`}
+			/>
+
 			<GridTable
 				data={sortedTasks}
 				columns={viewColumns}
@@ -55,6 +70,7 @@ export function GridView({
 					<GridRow
 						task={task}
 						isSelected={selectedTaskIds.has(task.id)}
+						isSelectionActive={isSelectionActive}
 						onToggleSelect={(checked) => handleToggleSelect(task.id, checked)}
 					/>
 				)}

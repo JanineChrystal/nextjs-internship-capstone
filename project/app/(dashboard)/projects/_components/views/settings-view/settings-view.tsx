@@ -1,12 +1,11 @@
 "use client";
 
+import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { useProjectStore } from "@/stores/use-project-store";
+import { mockCurrentUserRole } from "../../../_constants/settings-view";
 import { CommentModerationSection } from "./comment-moderation-section";
 import { DangerZoneSection } from "./danger-zone-section";
 import { TeamAccessSection } from "./team-access-section";
-
-// This would be fetched from auth context later on
-const MOCK_CURRENT_USER_ROLE = "owner";
 
 export function SettingsView({ projectId }: { projectId: string }) {
 	const projects = useProjectStore((state) => state.projects);
@@ -17,18 +16,15 @@ export function SettingsView({ projectId }: { projectId: string }) {
 	}
 
 	return (
-		<div className="flex flex-col gap-8 max-w-5xl mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-			<div>
-				<h1 className="text-3xl font-bold text-on-surface">Project Settings</h1>
-				<p className="text-secondary mt-1">
-					Manage {currentProject.title} access, moderation, and advanced
-					settings.
-				</p>
-			</div>
+		<div className="flex flex-col gap-6 w-full mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+			<PageHeader
+				title="Project Settings"
+				description={`Manage ${currentProject.title} access, moderation, and advanced settings.`}
+			/>
 
 			<TeamAccessSection
 				projectId={projectId}
-				currentUserRole={MOCK_CURRENT_USER_ROLE}
+				currentUserRole={mockCurrentUserRole}
 			/>
 
 			<CommentModerationSection projectId={projectId} />
@@ -36,7 +32,7 @@ export function SettingsView({ projectId }: { projectId: string }) {
 			<DangerZoneSection
 				projectId={projectId}
 				projectName={currentProject.title}
-				currentUserRole={MOCK_CURRENT_USER_ROLE}
+				currentUserRole={mockCurrentUserRole}
 			/>
 		</div>
 	);

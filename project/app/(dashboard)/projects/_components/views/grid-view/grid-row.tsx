@@ -1,6 +1,7 @@
 "use client";
 
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import {
 	TASK_BOARDS,
 	TASK_PRIORITIES,
@@ -14,18 +15,26 @@ import { BoardBadge } from "../../ui/badges/board-badge";
 import { PriorityBadge } from "../../ui/badges/priority-badge";
 import { StatusBadge } from "../../ui/badges/status-badge";
 import { TagBadge } from "../../ui/badges/tag-badge";
-import { GridAssigneeCell } from "./cells/grid-assignee-cell";
-import { GridDateCell } from "./cells/grid-date-cell";
-import { GridDropdownCell } from "./cells/grid-dropdown-cell";
-import { GridNameCell } from "./cells/grid-name-cell";
+import {
+	GridAssigneeCell,
+	GridDateCell,
+	GridDropdownCell,
+	GridNameCell,
+} from "./cells";
 
 interface GridRowProps {
 	task: GridTask;
 	isSelected: boolean;
+	isSelectionActive?: boolean;
 	onToggleSelect: (checked: boolean) => void;
 }
 
-export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
+export function GridRow({
+	task,
+	isSelected,
+	isSelectionActive,
+	onToggleSelect,
+}: GridRowProps) {
 	const { updateTask } = useTaskStore();
 
 	return (
@@ -34,6 +43,12 @@ export function GridRow({ task, isSelected, onToggleSelect }: GridRowProps) {
 				<Checkbox
 					checked={isSelected}
 					onCheckedChange={(c) => onToggleSelect(c as boolean)}
+					className={cn(
+						"transition-opacity duration-150",
+						isSelected || isSelectionActive
+							? "opacity-100"
+							: "opacity-0 pointer-events-none",
+					)}
 				/>
 			</div>
 
