@@ -29,13 +29,14 @@ export const settingsSectionTexts = {
 
 // Column definitions for GridTable usages
 export const TEAM_ACCESS_COLUMNS: ColumnDef[] = [
-	{ key: "member", title: "Member", className: "flex-1 min-w-[200px]" },
-	{ key: "position", title: "Position", className: "w-48" },
-	{ key: "role", title: "Access Level", className: "w-36" },
+	{ key: "member", title: "Member", className: "flex-2 min-w-[200px]" },
+	{ key: "position", title: "Position", className: "w-44" },
+	{ key: "role", title: "Access Level", className: "w-44" },
+	{ key: "status", title: "Status", className: "w-32" },
 	{
 		key: "actions",
 		title: "Actions",
-		className: "w-20 text-right justify-end",
+		className: "w-16 text-right justify-end",
 	},
 ];
 

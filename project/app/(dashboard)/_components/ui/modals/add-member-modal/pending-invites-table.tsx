@@ -5,11 +5,13 @@ import type { PendingInviteItem } from "@/types/member";
 interface PendingInvitesTableProps {
 	invites: PendingInviteItem[];
 	onRemove: (recipient: string) => void;
+	scope?: "project" | "workspace";
 }
 
 export function PendingInvitesTable({
 	invites,
 	onRemove,
+	scope = "project",
 }: PendingInvitesTableProps) {
 	return (
 		<div className="flex flex-col gap-2">
@@ -33,10 +35,14 @@ export function PendingInvitesTable({
 									<td className="px-4 py-3 font-medium text-on-surface">
 										{invite.recipient}
 									</td>
-									<td className="px-4 py-3 text-secondary">{invite.jobRole}</td>
-									<td className="px-4 py-3 text-secondary capitalize">
-										{invite.roleAccess}
-									</td>
+									{scope === "project" && (
+										<td className="px-4 py-3 text-secondary">{invite.jobRole}</td>
+									)}
+									{scope === "project" && (
+										<td className="px-4 py-3 text-secondary capitalize">
+											{invite.roleAccess}
+										</td>
+									)}
 									<td className="px-4 py-3 text-right">
 										<Button
 											type="button"

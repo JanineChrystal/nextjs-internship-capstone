@@ -5,7 +5,8 @@ interface BulkActionBarProps {
 	selectedCount: number;
 	onClearSelection: () => void;
 	onDelete: () => void;
-	onComplete: () => void;
+	onComplete?: () => void;
+	deleteLabel?: string;
 }
 
 export function BulkActionBar({
@@ -13,6 +14,7 @@ export function BulkActionBar({
 	onClearSelection,
 	onDelete,
 	onComplete,
+	deleteLabel = "Delete",
 }: BulkActionBarProps) {
 	if (selectedCount === 0) return null;
 
@@ -34,15 +36,17 @@ export function BulkActionBar({
 					</Button>
 				</div>
 				<div className="flex items-center gap-2">
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={onComplete}
-						className="h-8 text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30"
-					>
-						<CheckCircle className="w-4 h-4 mr-2" />
-						Mark as Done
-					</Button>
+					{onComplete && (
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={onComplete}
+							className="h-8 text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30"
+						>
+							<CheckCircle className="w-4 h-4 mr-2" />
+							Mark as Done
+						</Button>
+					)}
 					<Button
 						variant="ghost"
 						size="sm"
@@ -50,7 +54,7 @@ export function BulkActionBar({
 						className="h-8 text-error hover:text-error hover:bg-error/10"
 					>
 						<Trash2 className="w-4 h-4 mr-2" />
-						Delete
+						{deleteLabel}
 					</Button>
 				</div>
 			</div>

@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 interface AddMemberFormProps {
 	form: UseFormReturn<AddInviteFormValues>;
 	onSubmit: (values: AddInviteFormValues) => void;
+	scope: "project" | "workspace";
 }
 
-export function AddMemberForm({ form, onSubmit }: AddMemberFormProps) {
+export function AddMemberForm({ form, onSubmit, scope }: AddMemberFormProps) {
 	const {
 		register,
 		handleSubmit,
@@ -22,7 +23,9 @@ export function AddMemberForm({ form, onSubmit }: AddMemberFormProps) {
 	const jobRole = watch("jobRole");
 
 	const isSubmitDisabled =
-		!recipient?.trim() || !jobRole?.trim() || isSubmitting;
+		scope === "project"
+			? !recipient?.trim() || !jobRole?.trim() || isSubmitting
+			: !recipient?.trim() || isSubmitting;
 
 	return (
 		<form
@@ -41,34 +44,38 @@ export function AddMemberForm({ form, onSubmit }: AddMemberFormProps) {
 				/>
 			</div>
 
-			<div className="flex-1 w-full">
-				<label htmlFor="jobRole" className="sr-only">
-					Job Role
-				</label>
-				<Input
-					id="jobRole"
-					placeholder="Position (Job Role)"
-					{...register("jobRole")}
-					className="bg-surface border-outline-variant text-on-surface focus-visible:ring-primary h-10 w-full"
-				/>
-			</div>
+			{scope === "project" && (
+				<div className="flex-1 w-full">
+					<label htmlFor="jobRole" className="sr-only">
+						Job Role
+					</label>
+					<Input
+						id="jobRole"
+						placeholder="Position (Job Role)"
+						{...register("jobRole")}
+						className="bg-surface border-outline-variant text-on-surface focus-visible:ring-primary h-10 w-full"
+					/>
+				</div>
+			)}
 
-			<div className="w-full sm:w-32 shrink-0">
-				<label htmlFor="roleAccess" className="sr-only">
-					Role Access
-				</label>
-				<select
-					id="roleAccess"
-					{...register("roleAccess")}
-					className="h-10 px-3 py-2 bg-surface border border-outline-variant rounded-md text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full"
-				>
-					{ROLE_OPTIONS.map((option) => (
-						<option key={option.value} value={option.value}>
-							{option.label}
-						</option>
-					))}
-				</select>
-			</div>
+			{scope === "project" && (
+				<div className="w-full sm:w-32 shrink-0">
+					<label htmlFor="roleAccess" className="sr-only">
+						Role Access
+					</label>
+					<select
+						id="roleAccess"
+						{...register("roleAccess")}
+						className="h-10 px-3 py-2 bg-surface border border-outline-variant rounded-md text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full"
+					>
+						{ROLE_OPTIONS.map((option) => (
+							<option key={option.value} value={option.value}>
+								{option.label}
+							</option>
+						))}
+					</select>
+				</div>
+			)}
 
 			<Button
 				type="submit"

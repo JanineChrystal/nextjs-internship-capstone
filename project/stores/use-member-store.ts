@@ -17,6 +17,7 @@ const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {
 			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Janine",
 			jobRole: "Project Owner",
 			roleAccess: "owner",
+			status: "joined",
 			joinedAt: new Date().toISOString(),
 		},
 		{
@@ -26,6 +27,7 @@ const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {
 			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
 			jobRole: "Frontend Developer",
 			roleAccess: "member",
+			status: "joined",
 			joinedAt: new Date(Date.now() - 86400000).toISOString(),
 		},
 		{
@@ -35,6 +37,7 @@ const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {
 			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
 			jobRole: "UI/UX Designer",
 			roleAccess: "co-owner",
+			status: "joined",
 			joinedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
 		},
 		{
@@ -44,6 +47,7 @@ const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {
 			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest",
 			jobRole: "External Consultant",
 			roleAccess: "guest",
+			status: "invited",
 			joinedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
 		},
 	],
@@ -151,6 +155,7 @@ export const useMemberStore = create<MemberState>((set) => ({
 					avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${invite.recipient}`,
 					jobRole: invite.jobRole,
 					roleAccess: invite.roleAccess,
+					status: "invited" as const,
 					joinedAt: new Date().toISOString(),
 				}));
 

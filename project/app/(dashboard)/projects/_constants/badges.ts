@@ -15,7 +15,7 @@ export type IconName =
 	| "chevron-down";
 
 export const STATUS_CONFIG: Record<
-	TaskStatus,
+	TaskStatus | "To Do",
 	{ color: string; icon: IconName }
 > = {
 	"In Progress": {
@@ -28,6 +28,10 @@ export const STATUS_CONFIG: Record<
 		icon: "check-circle",
 	},
 	"Not Started": {
+		color: "text-secondary bg-surface-container-high border-outline-variant/30",
+		icon: "circle",
+	},
+	"To Do": {
 		color: "text-secondary bg-surface-container-high border-outline-variant/30",
 		icon: "circle",
 	},
@@ -55,7 +59,7 @@ export const PRIORITY_CONFIG: Record<
 	},
 };
 
-export const TAG_CONFIG: Record<TaskTag, string> = {
+export const TAG_CONFIG: Record<TaskTag | string, string> = {
 	Design:
 		"text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-900/30",
 	Research: "text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30",
@@ -64,6 +68,26 @@ export const TAG_CONFIG: Record<TaskTag, string> = {
 	Content:
 		"text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30",
 };
+
+export const DYNAMIC_BADGE_PALETTES = [
+	"text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800/30",
+	"text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/30",
+	"text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/30",
+	"text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/30",
+	"text-rose-700 bg-rose-100 dark:text-rose-300 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800/30",
+	"text-indigo-700 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800/30",
+	"text-cyan-700 bg-cyan-100 dark:text-cyan-300 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800/30",
+	"text-teal-700 bg-teal-100 dark:text-teal-300 dark:bg-teal-900/30 border-teal-200 dark:border-teal-800/30",
+];
+
+export function getDynamicBadgeColor(text: string): string {
+	let hash = 0;
+	for (let i = 0; i < text.length; i++) {
+		hash = text.charCodeAt(i) + ((hash << 5) - hash);
+	}
+	const index = Math.abs(hash) % DYNAMIC_BADGE_PALETTES.length;
+	return DYNAMIC_BADGE_PALETTES[index];
+}
 
 export const BOARD_CONFIG: Record<TaskBoard, string> = {
 	"In Progress":

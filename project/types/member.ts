@@ -11,6 +11,8 @@ export interface ProjectMember {
 	jobRole: string;
 	// System authorization role
 	roleAccess: RoleAccess;
+	// Membership status
+	status?: "invited" | "joined";
 	joinedAt: string;
 }
 
@@ -18,7 +20,7 @@ export interface ProjectMember {
 export interface PendingInviteItem {
 	recipient: string; // email or username
 	jobRole: string;
-	roleAccess: Exclude<RoleAccess, "guest" | "owner">;
+	roleAccess: Exclude<RoleAccess, "owner">;
 }
 
 // Payload for bulk invite server action
@@ -44,4 +46,16 @@ export interface FlaggedCommentItem {
 	commentSnippet: string;
 	flagReason: string;
 	flaggedAt: string;
+}
+
+// User representation in the Team grid
+export interface WorkspaceUser {
+	id: string;
+	name: string;
+	email: string;
+	avatarUrl?: string;
+	roles: string[]; // Deduplicated unique job roles
+	projectIds: string[]; // Handled projects
+	projectCount: number;
+	status: "active" | "inactive";
 }

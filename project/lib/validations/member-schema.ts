@@ -9,13 +9,14 @@ export const ProjectMemberSchema = z.object({
 	avatarUrl: z.string().url().optional(),
 	jobRole: z.string(),
 	roleAccess: RoleAccessEnum,
+	status: z.enum(["invited", "joined"]).optional(),
 	joinedAt: z.string(),
 });
 
 export const AddInviteItemSchema = z.object({
 	recipient: z.string().min(1, "Email or username is required"),
-	jobRole: z.string().min(1, "Job role is required"),
-	roleAccess: z.enum(["co-owner", "member"]),
+	jobRole: z.string(),
+	roleAccess: z.enum(["co-owner", "member", "guest"]),
 });
 
 export const BulkInvitePayloadSchema = z.object({

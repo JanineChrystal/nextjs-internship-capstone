@@ -102,7 +102,7 @@ export function TeamAccessSection({
 
 					return (
 						<>
-							<div className="flex-1 min-w-50">
+							<div className="flex-2 min-w-50">
 								<div className="flex items-center gap-3">
 									{member.avatarUrl ? (
 										<Image
@@ -125,14 +125,14 @@ export function TeamAccessSection({
 									</div>
 								</div>
 							</div>
-							<div className="w-48">
+							<div className="w-44">
 								{canEditRow ? (
 									<Input
 										value={member.jobRole}
 										onChange={(e) =>
 											handleJobRoleChange(member.userId, e.target.value)
 										}
-										className="h-8 text-sm bg-transparent border-transparent hover:border-outline-variant focus-visible:border-primary w-full min-w-30"
+										className="h-8 text-sm bg-transparent border-transparent hover:border-outline-variant focus-visible:border-primary w-full max-w-36"
 									/>
 								) : (
 									<span className="text-on-surface px-3 py-1 text-sm">
@@ -140,7 +140,7 @@ export function TeamAccessSection({
 									</span>
 								)}
 							</div>
-							<div className="w-36">
+							<div className="w-44">
 								{canEditRow ? (
 									<select
 										value={member.roleAccess}
@@ -150,7 +150,7 @@ export function TeamAccessSection({
 												e.target.value as RoleAccess,
 											)
 										}
-										className="h-8 px-2 bg-transparent border border-transparent hover:border-outline-variant focus:border-primary rounded text-sm text-on-surface cursor-pointer focus:outline-none w-full"
+										className="h-8 px-2 bg-transparent border border-transparent hover:border-outline-variant focus:border-primary rounded text-sm text-on-surface cursor-pointer focus:outline-none w-32"
 									>
 										<option value="co-owner">Co-Owner</option>
 										<option value="member">Member</option>
@@ -162,7 +162,18 @@ export function TeamAccessSection({
 									</span>
 								)}
 							</div>
-							<div className="w-20 flex justify-end">
+							<div className="w-32">
+								<span
+									className={`px-2.5 py-0.5 text-xs font-medium rounded-full border inline-block capitalize ${
+										(member.status || "joined") === "invited"
+											? "text-amber-700 bg-amber-100 border-amber-200 dark:text-amber-300 dark:bg-amber-900/30 dark:border-amber-800/30"
+											: "text-emerald-700 bg-emerald-100 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800/30"
+									}`}
+								>
+									{member.status || "joined"}
+								</span>
+							</div>
+							<div className="w-16 flex justify-end">
 								{canEditRow && (
 									<Button
 										variant="ghost"

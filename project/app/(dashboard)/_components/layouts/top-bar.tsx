@@ -1,7 +1,7 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { Search, X } from "lucide-react";
+import { Search, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/buttons/button";
@@ -89,7 +89,15 @@ export function TopBar() {
 								userButtonPopoverFooter: "!hidden",
 							},
 						}}
-					/>
+					>
+						<UserButton.MenuItems>
+							<UserButton.Link
+								label="Workspace Profile"
+								labelIcon={<User className="w-4 h-4" />}
+								href="/profile/u1"
+							/>
+						</UserButton.MenuItems>
+					</UserButton>
 				</div>
 			</div>
 		</header>

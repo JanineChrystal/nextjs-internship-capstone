@@ -1,118 +1,198 @@
-import { Mail, MoreHorizontal, UserPlus } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
+import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
+import { BulkActionBar } from "@/app/(dashboard)/projects/_components/views/grid-view/bulk-action-bar";
+import {
+	TeamToolbar,
+	type TeamViewType,
+} from "@/app/(dashboard)/team/_components/team-toolbar";
+import { BoardView } from "@/app/(dashboard)/team/_components/views/board-view";
+import { GridView } from "@/app/(dashboard)/team/_components/views/grid-view";
+import type { WorkspaceUser } from "@/types/member";
+
+// Mock Data
+const mockWorkspaceUsers: WorkspaceUser[] = [
+	{
+		id: "u1",
+		name: "Janine Chrystal",
+		email: "janine@example.com",
+		roles: ["Project Manager", "Developer"],
+		projectIds: ["p1", "p2", "p3"],
+		projectCount: 3,
+		status: "active",
+	},
+	{
+		id: "u2",
+		name: "Alex Johnson",
+		email: "alex@example.com",
+		roles: ["Developer"],
+		projectIds: ["p1"],
+		projectCount: 1,
+		status: "active",
+	},
+	{
+		id: "u3",
+		name: "Sam Smith",
+		email: "sam@example.com",
+		roles: ["Designer", "Project Manager"],
+		projectIds: ["p2", "p4"],
+		projectCount: 2,
+		status: "active",
+	},
+];
 
 export default function TeamPage() {
+	const [users, setUsers] = useState<WorkspaceUser[]>(mockWorkspaceUsers);
+	const [selectedIds, setSelectedIds] = useState<string[]>([]);
+	const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+	const [userToRemove, setUserToRemove] = useState<string | null>(null);
+	const [activeView, setActiveView] = useState<TeamViewType>("Grid");
+	const [sortConfig, setSortConfig] = useState<{
+		key: string;
+		direction: "asc" | "desc";
+	} | null>(null);
+
+	// Selection Handlers
+	const handleToggleSelect = (userId: string) => {
+		setSelectedIds((prev) =>
+			prev.includes(userId)
+				? prev.filter((id) => id !== userId)
+				: [...prev, userId],
+		);
+	};
+	const handleSelectAll = (checked: boolean) => {
+		if (checked) {
+			setSelectedIds(users.map((u) => u.id));
+		} else {
+			setSelectedIds([]);
+		}
+	};
+	const handleClearSelection = () => {
+		setSelectedIds([]);
+	};
+
+	// Removal Handlers
+	const handleRemoveSelected = () => {
+		// Just open warning modal for bulk removal
+		setUserToRemove(null); // null means bulk
+		setIsWarningModalOpen(true);
+	};
+
+	const handleRemoveIndividual = (userId: string) => {
+		setUserToRemove(userId);
+		setIsWarningModalOpen(true);
+	};
+
+	const confirmRemoval = () => {
+		if (userToRemove) {
+			// Remove single user
+			setUsers(users.filter((u) => u.id !== userToRemove));
+			setSelectedIds(selectedIds.filter((id) => id !== userToRemove));
+		} else {
+			// Remove bulk
+			setUsers(users.filter((u) => !selectedIds.includes(u.id)));
+			setSelectedIds([]);
+		}
+		setIsWarningModalOpen(false);
+		setUserToRemove(null);
+	};
+
+	const handleSort = (key: string) => {
+		let direction: "asc" | "desc" = "asc";
+		if (
+			sortConfig &&
+			sortConfig.key === key &&
+			sortConfig.direction === "asc"
+		) {
+			direction = "desc";
+		}
+		setSortConfig({ key, direction });
+
+		const sorted = [...users].sort((a, b) => {
+			const valA = a[key as keyof WorkspaceUser];
+			const valB = b[key as keyof WorkspaceUser];
+
+			if (typeof valA === "string" && typeof valB === "string") {
+				return direction === "asc"
+					? valA.localeCompare(valB)
+					: valB.localeCompare(valA);
+			}
+			if (typeof valA === "number" && typeof valB === "number") {
+				return direction === "asc" ? valA - valB : valB - valA;
+			}
+			return 0;
+		});
+		setUsers(sorted);
+	};
+
+	const availableRoles = Array.from(
+		new Set(users.flatMap((u) => u.roles)),
+	).sort();
+
 	return (
-		<div className="space-y-6">
-			<div className="flex justify-between items-center">
-				<div>
-					<h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">
-						Team
-					</h1>
-					<p className="text-payne's_gray-500 dark:text-french_gray-500 mt-2">
-						Manage team members and permissions
-					</p>
-				</div>
-				<button className="inline-flex items-center px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors">
-					<UserPlus size={20} className="mr-2" />
-					Invite Member
-				</button>
+		<div className="flex flex-col gap-6 w-full relative h-full">
+			<PageHeader
+				title="Team"
+				description="Manage workspace members and their roles across all projects."
+			/>
+
+			<div className="flex-1 overflow-auto">
+				<TeamToolbar
+					activeView={activeView}
+					onViewChange={setActiveView}
+					onToggleSort={() => handleSort("name")}
+					availableRoles={availableRoles}
+				/>
+
+				{activeView === "Grid" ? (
+					<GridView
+						users={users}
+						selectedIds={selectedIds}
+						onToggleSelect={handleToggleSelect}
+						onSelectAll={handleSelectAll}
+						onRemove={handleRemoveIndividual}
+						sortConfig={sortConfig}
+						onSort={handleSort}
+					/>
+				) : (
+					<BoardView
+						users={users}
+						selectedIds={selectedIds}
+						onToggleSelect={handleToggleSelect}
+						onRemove={handleRemoveIndividual}
+					/>
+				)}
 			</div>
 
-			{/* Implementation Tasks Banner */}
-			<div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-				<h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-					📋 Team Management Implementation Tasks
-				</h3>
-				<ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-					<li>
-						• Task 6.1: Implement task assignment and user collaboration
-						features
-					</li>
-					<li>
-						• Task 6.4: Implement project member management and permissions
-					</li>
-				</ul>
-			</div>
+			<BulkActionBar
+				selectedCount={selectedIds.length}
+				onClearSelection={handleClearSelection}
+				onDelete={handleRemoveSelected}
+				deleteLabel="Remove User(s)"
+			/>
 
-			{/* Team Members Grid */}
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				{[
-					{
-						name: "John Doe",
-						role: "Project Manager",
-						email: "john@example.com",
-						avatar: "JD",
-					},
-					{
-						name: "Jane Smith",
-						role: "Developer",
-						email: "jane@example.com",
-						avatar: "JS",
-					},
-					{
-						name: "Mike Johnson",
-						role: "Designer",
-						email: "mike@example.com",
-						avatar: "MJ",
-					},
-					{
-						name: "Sarah Wilson",
-						role: "Developer",
-						email: "sarah@example.com",
-						avatar: "SW",
-					},
-					{
-						name: "Tom Brown",
-						role: "QA Engineer",
-						email: "tom@example.com",
-						avatar: "TB",
-					},
-					{
-						name: "Lisa Davis",
-						role: "Designer",
-						email: "lisa@example.com",
-						avatar: "LD",
-					},
-				].map((member, index) => (
-					<div
-						key={index}
-						className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6"
-					>
-						<div className="flex items-start justify-between mb-4">
-							<div className="flex items-center space-x-3">
-								<div className="w-12 h-12 bg-blue_munsell-500 rounded-full flex items-center justify-center text-white font-semibold">
-									{member.avatar}
-								</div>
-								<div>
-									<h3 className="font-semibold text-outer_space-500 dark:text-platinum-500">
-										{member.name}
-									</h3>
-									<p className="text-sm text-payne's_gray-500 dark:text-french_gray-400">
-										{member.role}
-									</p>
-								</div>
-							</div>
-							<button className="p-1 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded">
-								<MoreHorizontal size={16} />
-							</button>
-						</div>
-
-						<div className="flex items-center text-sm text-payne's_gray-500 dark:text-french_gray-400 mb-4">
-							<Mail size={16} className="mr-2" />
-							{member.email}
-						</div>
-
-						<div className="flex items-center justify-between">
-							<span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-								Active
-							</span>
-							<div className="text-sm text-payne's_gray-500 dark:text-french_gray-400">
-								{Math.floor(Math.random() * 10) + 1} projects
-							</div>
-						</div>
-					</div>
-				))}
-			</div>
+			<WarningModal
+				isOpen={isWarningModalOpen}
+				onClose={() => {
+					setIsWarningModalOpen(false);
+					setUserToRemove(null);
+				}}
+				onConfirm={confirmRemoval}
+				title={
+					userToRemove
+						? "Remove User from Workspace"
+						: "Remove Users from Workspace"
+				}
+				message={
+					userToRemove
+						? "Are you sure you want to remove this user from the workspace? They will lose access to all projects they are assigned to. This action cannot be undone."
+						: `Are you sure you want to remove ${selectedIds.length} users from the workspace? They will lose access to all projects they are assigned to. This action cannot be undone.`
+				}
+				confirmText="Remove User(s)"
+				variant="danger"
+			/>
 		</div>
 	);
 }

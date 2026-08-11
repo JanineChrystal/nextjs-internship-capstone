@@ -55,11 +55,12 @@ export function AddMemberModal({
 				</DialogHeader>
 
 				<div className="p-6 flex flex-col gap-6 bg-surface-container-lowest">
-					<AddMemberForm form={form} onSubmit={handleAddStaged} />
+					<AddMemberForm form={form} onSubmit={handleAddStaged} scope={scope} />
 
 					<PendingInvitesTable
 						invites={pendingInvites}
 						onRemove={removePendingInvite}
+						scope={scope}
 					/>
 
 					{/* Actions */}

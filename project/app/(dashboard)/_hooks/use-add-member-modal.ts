@@ -48,17 +48,18 @@ export function useAddMemberModal(
 
 	const handleAddStaged = useCallback(
 		(values: AddInviteFormValues) => {
-			if (!values.recipient.trim() || !values.jobRole.trim()) return;
+			if (!values.recipient.trim()) return;
+			if (scope === "project" && !values.jobRole?.trim()) return;
 
 			addPendingInvite({
 				recipient: values.recipient.trim(),
-				jobRole: values.jobRole.trim(),
-				roleAccess: values.roleAccess as Exclude<RoleAccess, "guest" | "owner">,
+				jobRole: values.jobRole?.trim() || "Member",
+				roleAccess: values.roleAccess as Exclude<RoleAccess, "owner">,
 			});
 
 			form.reset();
 		},
-		[addPendingInvite, form],
+		[addPendingInvite, form, scope],
 	);
 
 	const handleSendAll = useCallback(() => {
