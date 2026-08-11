@@ -1,14 +1,25 @@
 import { format } from "date-fns";
 import { Folder } from "lucide-react";
+import { useCallback } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { CalendarDeadlineItem } from "@/types/calendar";
 import { BaseTaskCard } from "./base-task-card";
 
 interface DeadlineCardProps {
 	item: CalendarDeadlineItem;
+	isSelected?: boolean;
+	onToggleSelect?: (item: CalendarDeadlineItem) => void;
 	onClick?: (item: CalendarDeadlineItem) => void;
+	onDoubleClick?: (item: CalendarDeadlineItem) => void;
 }
 
-export function DeadlineCard({ item, onClick }: DeadlineCardProps) {
+export function DeadlineCard({
+	item,
+	isSelected,
+	onToggleSelect,
+	onClick,
+	onDoubleClick,
+}: DeadlineCardProps) {
 	const isProject = item.type === "project";
 	const dateValue = isProject ? item.dueDate : item.date;
 
@@ -20,11 +31,46 @@ export function DeadlineCard({ item, onClick }: DeadlineCardProps) {
 		<div className="text-xs font-semibold text-primary">{formattedDate}</div>
 	);
 
-	const headerAction = isProject ? (
-		<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-tertiary-container text-on-tertiary-container">
-			<Folder className="w-3 h-3" /> Project
-		</span>
-	) : undefined;
+	const headerAction = (
+		<div className="flex items-center gap-2">
+			{isProject && (
+				<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-tertiary-container text-on-tertiary-container">
+					<Folder className="w-3 h-3" /> Project
+				</span>
+			)}
+			{onToggleSelect && (
+				<button
+					type="button"
+					className="flex items-center justify-center p-1"
+					onClick={(e) => {
+						e.stopPropagation();
+						onToggleSelect(item);
+					}}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.stopPropagation();
+							e.preventDefault();
+							onToggleSelect(item);
+						}
+					}}
+					aria-label="Select item"
+				>
+					<Checkbox
+						checked={isSelected}
+						className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground pointer-events-none"
+					/>
+				</button>
+			)}
+		</div>
+	);
+
+	const handleCardClick = useCallback(() => {
+		onClick?.(item);
+	}, [item, onClick]);
+
+	const handleCardDoubleClick = useCallback(() => {
+		onDoubleClick?.(item);
+	}, [item, onDoubleClick]);
 
 	return (
 		<BaseTaskCard
@@ -40,8 +86,13 @@ export function DeadlineCard({ item, onClick }: DeadlineCardProps) {
 			topHeaderLeft={topHeaderLeft}
 			headerAction={headerAction}
 			showAvatar={false}
-			onClick={() => onClick?.(item)}
-			className="bg-surface-container border-outline-variant/50 hover:border-primary/50 cursor-pointer"
+			onClick={handleCardClick}
+			onDoubleClick={handleCardDoubleClick}
+			className={`bg-surface-container transition-all cursor-pointer ${
+				isSelected
+					? "border-primary shadow-sm bg-primary/5 ring-1 ring-primary"
+					: "border-outline-variant/50 hover:border-primary/50"
+			}`}
 		/>
 	);
 }

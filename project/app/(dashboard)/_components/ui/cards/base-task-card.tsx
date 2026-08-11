@@ -17,6 +17,7 @@ export interface BaseTaskCardProps {
 	showAvatar?: boolean; // Whether to render assignee avatar in footer
 	dateFormat?: string; // Format string for date (default: "MMM d")
 	onClick?: () => void;
+	onDoubleClick?: () => void;
 	className?: string;
 }
 
@@ -27,6 +28,7 @@ export function BaseTaskCard({
 	showAvatar = true,
 	dateFormat = "MMM d",
 	onClick,
+	onDoubleClick,
 	className = "",
 }: BaseTaskCardProps) {
 	const formattedDate = task.date
@@ -37,6 +39,7 @@ export function BaseTaskCard({
 		// biome-ignore lint/a11y/noStaticElementInteractions: We dynamically set role based on onClick
 		<div
 			onClick={onClick}
+			onDoubleClick={onDoubleClick}
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
 					e.preventDefault();

@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
 	BigCalendar,
 	type CalendarEvent,
 } from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
 import { CalendarSidePanel } from "@/app/(dashboard)/_components/ui/side-panels";
+import { CreateProjectModal } from "@/app/(dashboard)/projects/_components/ui/modals/create-project-modal";
+import type { Project } from "@/lib/validations/project-schema";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { CalendarDeadlineItem } from "@/types/calendar";
 
@@ -13,11 +15,15 @@ interface CalendarViewProps {
 	projectId: string;
 }
 
-export function CalendarView({ projectId }: CalendarViewProps) {
+export function CalendarView({ projectId: _projectId }: CalendarViewProps) {
 	const tasks = useTaskStore((state) => state.tasks);
 	const { openTaskModal } = useTaskStore();
 
-	// In a real app, you would filter by projectId. Here we mock it by taking all tasks that have a dueDate.
+	const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+	const [editProjectData] = useState<Project | undefined>(undefined); // For mocked project edit
+
+	// Filter by projectId later on. Here we mock it by taking all tasks that have a dueDate.
 	const projectTasks = useMemo(() => {
 		return tasks.filter((t) => t.dueDate);
 	}, [tasks]);
@@ -31,6 +37,7 @@ export function CalendarView({ projectId }: CalendarViewProps) {
 			// biome-ignore lint/style/noNonNullAssertion: Filtered above
 			end: new Date(task.dueDate!),
 			allDay: true,
+			extendedProps: { type: "task", priority: task.priority },
 		}));
 	}, [projectTasks]);
 
@@ -42,7 +49,7 @@ export function CalendarView({ projectId }: CalendarViewProps) {
 					title: task.name,
 					date: task.dueDate,
 					type: "task",
-					columnId: task.board, // Satisfy TaskItem requirement
+					columnId: task.board,
 					priority:
 						task.priority.toLowerCase() === "normal"
 							? "medium"
@@ -54,21 +61,49 @@ export function CalendarView({ projectId }: CalendarViewProps) {
 		);
 	}, [projectTasks]);
 
+	const handleSingleClick = (item: { id: string }) => {
+		setSelectedEventId((prev) => (prev === item.id ? null : item.id));
+	};
+
+	const handleDoubleClick = (item: {
+		id: string;
+		type?: string;
+		extendedProps?: Record<string, unknown>;
+	}) => {
+		// Only tasks exist in this view
+		openTaskModal(item.id);
+	};
+
+	const handleDateClick = (_date: Date) => {
+		// Only tasks can be created here
+		openTaskModal();
+	};
+
 	return (
 		<div className="grid grid-cols-1 xl:grid-cols-4 gap-6 w-full h-full min-h-[calc(100vh-200px)]">
 			{/* Main Calendar Grid */}
 			<div className="xl:col-span-3 bg-surface rounded-xl border border-outline-variant p-6 h-187.5">
 				<BigCalendar
 					events={calendarEvents}
-					onSelectEvent={(e) => openTaskModal(e.id)}
+					selectedEventId={selectedEventId}
+					onEventSingleClick={handleSingleClick}
+					onEventDoubleClick={handleDoubleClick}
+					onDateClick={handleDateClick}
 				/>
 			</div>
 
 			{/* Side Panel for Deadlines */}
 			<CalendarSidePanel
-				title="Project Deadlines"
+				title="Upcoming Tasks Deadlines"
 				items={sidePanelItems}
-				onItemClick={(item) => openTaskModal(item.id)}
+				onItemClick={handleSingleClick}
+				onItemDoubleClick={handleDoubleClick}
+			/>
+
+			<CreateProjectModal
+				isOpen={isProjectModalOpen}
+				onClose={() => setIsProjectModalOpen(false)}
+				initialData={editProjectData}
 			/>
 		</div>
 	);

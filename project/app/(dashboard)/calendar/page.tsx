@@ -9,12 +9,20 @@ import {
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { CalendarSidePanel } from "@/app/(dashboard)/_components/ui/side-panels";
 import { CreateProjectModal } from "@/app/(dashboard)/projects/_components/ui/modals/create-project-modal";
+import { CreationChoiceModal } from "@/app/(dashboard)/projects/_components/ui/modals/creation-choice-modal";
 import { Button } from "@/components/ui/buttons/button";
+import type { Project } from "@/lib/validations/project-schema";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { CalendarDeadlineItem } from "@/types/calendar";
 
 export default function CalendarPage() {
 	const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+	const [isChoiceModalOpen, setIsChoiceModalOpen] = useState(false);
+	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+	const [editProjectData, setEditProjectData] = useState<Project | undefined>(
+		undefined,
+	); // For mocked project edit
+
 	const { openTaskModal } = useTaskStore();
 
 	const globalEvents: CalendarEvent[] = [
@@ -24,12 +32,14 @@ export default function CalendarPage() {
 			start: new Date(2026, 7, 15),
 			end: new Date(2026, 7, 15),
 			allDay: true,
+			extendedProps: { type: "project", priority: "high" },
 		},
 		{
 			id: "2",
 			title: "Team Meeting",
 			start: new Date(2026, 7, 18, 10, 0),
 			end: new Date(2026, 7, 18, 11, 0),
+			extendedProps: { type: "task", priority: "medium" },
 		},
 	];
 
@@ -52,6 +62,47 @@ export default function CalendarPage() {
 		},
 	];
 
+	const handleSingleClick = (item: { id: string }) => {
+		setSelectedEventId((prev) => (prev === item.id ? null : item.id));
+	};
+
+	const handleDoubleClick = (item: {
+		id: string;
+		type?: string;
+		extendedProps?: Record<string, unknown>;
+	}) => {
+		const isProject =
+			item.type === "project" || item.extendedProps?.type === "project";
+
+		if (isProject) {
+			// Mock project data for edit mode
+			setEditProjectData({
+				id: item.id,
+				title: (item.extendedProps?.title as string) || "Website Redesign",
+				status: "active",
+				priority: "high",
+			} as Project);
+			setIsProjectModalOpen(true);
+		} else {
+			openTaskModal(item.id);
+		}
+	};
+
+	const handleDateClick = (_date: Date) => {
+		// In a real app, you might save this date to pre-fill the modals
+		setIsChoiceModalOpen(true);
+	};
+
+	const handleCreationProceed = (choice: "project" | "task") => {
+		setIsChoiceModalOpen(false);
+		if (choice === "project") {
+			setEditProjectData(undefined); // Clear edit data to open in create mode
+			setIsProjectModalOpen(true);
+		} else {
+			openTaskModal();
+		}
+	};
+
 	return (
 		<div className="flex flex-col gap-6 w-full h-full min-h-[calc(100vh-100px)]">
 			{/* Page Header */}
@@ -63,7 +114,10 @@ export default function CalendarPage() {
 						<Button
 							variant="outline"
 							className="w-full sm:w-auto"
-							onClick={() => setIsProjectModalOpen(true)}
+							onClick={() => {
+								setEditProjectData(undefined);
+								setIsProjectModalOpen(true);
+							}}
 						>
 							<Plus className="w-4 h-4 mr-2" />
 							Create Project
@@ -85,15 +139,19 @@ export default function CalendarPage() {
 				<div className="xl:col-span-3 bg-surface rounded-xl border border-outline-variant p-6 h-187.5">
 					<BigCalendar
 						events={globalEvents}
-						onSelectEvent={(e) => console.log(e)}
+						selectedEventId={selectedEventId}
+						onEventSingleClick={handleSingleClick}
+						onEventDoubleClick={handleDoubleClick}
+						onDateClick={handleDateClick}
 					/>
 				</div>
 
 				{/* Side Panel / Event List (Takes up 1/4 space) */}
 				<CalendarSidePanel
-					title="Global Deadlines"
+					title="Upcoming Deadlines"
 					items={upcomingDeadlines}
-					onItemClick={(item) => console.log(item)}
+					onItemClick={handleSingleClick}
+					onItemDoubleClick={handleDoubleClick}
 				/>
 			</div>
 
@@ -101,6 +159,12 @@ export default function CalendarPage() {
 			<CreateProjectModal
 				isOpen={isProjectModalOpen}
 				onClose={() => setIsProjectModalOpen(false)}
+				initialData={editProjectData}
+			/>
+			<CreationChoiceModal
+				isOpen={isChoiceModalOpen}
+				onClose={() => setIsChoiceModalOpen(false)}
+				onProceed={handleCreationProceed}
 			/>
 		</div>
 	);
