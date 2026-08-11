@@ -1,112 +1,107 @@
-import { Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+"use client";
+
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import {
+	BigCalendar,
+	type CalendarEvent,
+} from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
+import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
+import { CalendarSidePanel } from "@/app/(dashboard)/_components/ui/side-panels";
+import { CreateProjectModal } from "@/app/(dashboard)/projects/_components/ui/modals/create-project-modal";
 import { Button } from "@/components/ui/buttons/button";
+import { useTaskStore } from "@/stores/use-task-store";
+import type { CalendarDeadlineItem } from "@/types/calendar";
 
 export default function CalendarPage() {
+	const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+	const { openTaskModal } = useTaskStore();
+
+	const globalEvents: CalendarEvent[] = [
+		{
+			id: "1",
+			title: "Website Redesign",
+			start: new Date(2026, 7, 15),
+			end: new Date(2026, 7, 15),
+			allDay: true,
+		},
+		{
+			id: "2",
+			title: "Team Meeting",
+			start: new Date(2026, 7, 18, 10, 0),
+			end: new Date(2026, 7, 18, 11, 0),
+		},
+	];
+
+	const upcomingDeadlines: CalendarDeadlineItem[] = [
+		{
+			id: "1",
+			title: "Website Redesign",
+			dueDate: new Date(2026, 7, 15).toISOString(),
+			type: "project",
+			priority: "high",
+		},
+		{
+			id: "2",
+			title: "Team Meeting",
+			date: new Date(2026, 7, 18, 10, 0).toISOString(),
+			type: "task",
+			priority: "medium",
+			category: "General",
+			columnId: "upcoming",
+		},
+	];
+
 	return (
-		<div className="space-y-6">
-			<div className="flex justify-between items-center">
-				<div>
-					<h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">
-						Calendar
-					</h1>
-					<p className="text-payne's_gray-500 dark:text-french_gray-500 mt-2">
-						View project deadlines and team schedules
-					</p>
-				</div>
-				<Button className="inline-flex items-center px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors">
-					<Plus size={20} className="mr-2" />
-					Add Event
-				</Button>
-			</div>
-
-			{/* Implementation Tasks Banner */}
-			<div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-				<h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-					📅 Calendar Implementation Tasks
-				</h3>
-				<ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-					<li>• Task 6.2: Add task due dates, priorities, and labels</li>
-					<li>• Task 6.6: Add bulk task operations and keyboard shortcuts</li>
-				</ul>
-			</div>
-
-			{/* Calendar Header */}
-			<div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
-				<div className="flex items-center justify-between mb-6">
-					<div className="flex items-center space-x-4">
-						<Button className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg">
-							<ChevronLeft size={20} />
-						</Button>
-						<h2 className="text-xl font-semibold text-outer_space-500 dark:text-platinum-500">
-							December 2024
-						</h2>
-						<Button className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg">
-							<ChevronRight size={20} />
-						</Button>
-					</div>
-					<div className="flex space-x-2">
-						<Button className="px-3 py-1 text-sm bg-blue_munsell-100 text-blue_munsell-700 dark:bg-blue_munsell-900 dark:text-blue_munsell-300 rounded">
-							Month
-						</Button>
-						<Button className="px-3 py-1 text-sm text-payne's_gray-500 dark:text-french_gray-400 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded">
-							Week
-						</Button>
-						<Button className="px-3 py-1 text-sm text-payne's_gray-500 dark:text-french_gray-400 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded">
-							Day
-						</Button>
-					</div>
-				</div>
-
-				{/* Calendar Grid Placeholder */}
-				<div className="h-96 bg-platinum-800 dark:bg-outer_space-400 rounded-lg flex items-center justify-center">
-					<div className="text-center text-payne's_gray-500 dark:text-french_gray-400">
-						<Calendar size={48} className="mx-auto mb-2" />
-						<p>Calendar Component Placeholder</p>
-						<p className="text-sm">
-							TODO: Implement with react-big-calendar or similar
-						</p>
-					</div>
-				</div>
-			</div>
-
-			{/* Upcoming Events */}
-			<div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
-				<h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-4">
-					Upcoming Deadlines
-				</h3>
-				<div className="space-y-3">
-					{[
-						{
-							title: "Website Redesign",
-							date: "Dec 15, 2024",
-							type: "Project Deadline",
-						},
-						{ title: "Team Meeting", date: "Dec 18, 2024", type: "Meeting" },
-						{
-							title: "Mobile App Launch",
-							date: "Dec 22, 2024",
-							type: "Milestone",
-						},
-					].map((event, index) => (
-						<div
-							key={index}
-							className="flex items-center justify-between p-3 bg-platinum-800 dark:bg-outer_space-400 rounded-lg"
+		<div className="flex flex-col gap-6 w-full h-full min-h-[calc(100vh-100px)]">
+			{/* Page Header */}
+			<PageHeader
+				title="Calendar"
+				description="View project deadlines and team schedules"
+				action={
+					<div className="flex items-center gap-3 w-full sm:w-auto">
+						<Button
+							variant="outline"
+							className="w-full sm:w-auto"
+							onClick={() => setIsProjectModalOpen(true)}
 						>
-							<div>
-								<div className="font-medium text-outer_space-500 dark:text-platinum-500">
-									{event.title}
-								</div>
-								<div className="text-sm text-payne's_gray-500 dark:text-french_gray-400">
-									{event.type}
-								</div>
-							</div>
-							<div className="text-sm text-payne's_gray-500 dark:text-french_gray-400">
-								{event.date}
-							</div>
-						</div>
-					))}
+							<Plus className="w-4 h-4 mr-2" />
+							Create Project
+						</Button>
+						<Button
+							className="w-full sm:w-auto"
+							onClick={() => openTaskModal()}
+						>
+							<Plus className="w-4 h-4 mr-2" />
+							Create Task
+						</Button>
+					</div>
+				}
+			/>
+
+			{/* Main Layout: Calendar (Left) + Event List (Right) */}
+			<div className="grid grid-cols-1 xl:grid-cols-4 gap-6 flex-1">
+				{/* Main Calendar Grid */}
+				<div className="xl:col-span-3 bg-surface rounded-xl border border-outline-variant p-6 h-187.5">
+					<BigCalendar
+						events={globalEvents}
+						onSelectEvent={(e) => console.log(e)}
+					/>
 				</div>
+
+				{/* Side Panel / Event List (Takes up 1/4 space) */}
+				<CalendarSidePanel
+					title="Global Deadlines"
+					items={upcomingDeadlines}
+					onItemClick={(item) => console.log(item)}
+				/>
 			</div>
+
+			{/* Modals */}
+			<CreateProjectModal
+				isOpen={isProjectModalOpen}
+				onClose={() => setIsProjectModalOpen(false)}
+			/>
 		</div>
 	);
 }

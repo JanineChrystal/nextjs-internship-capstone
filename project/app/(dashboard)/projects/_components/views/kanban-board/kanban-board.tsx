@@ -8,8 +8,9 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
+import { DEFAULT_TASK_ITEMS } from "@/app/(dashboard)/_constants/task";
 import { useProjectStore } from "@/stores/use-project-store";
-import { columnsConfig, initialTasks } from "../../../_constants/kanban";
+import { columnsConfig } from "../../../_constants/kanban";
 import { useKanbanDnd } from "../../../_hooks/use-kanban-dnd";
 import { Column } from "./column";
 
@@ -18,7 +19,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
 	const currentProject = projects.find((p) => p.id === projectId);
 
 	const { tasks, handleDragStart, handleDragOver, handleDragEnd } =
-		useKanbanDnd(initialTasks);
+		useKanbanDnd(DEFAULT_TASK_ITEMS);
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {

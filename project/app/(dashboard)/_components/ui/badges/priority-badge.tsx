@@ -6,7 +6,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskPriority } from "@/types/task";
-import { type IconName, PRIORITY_CONFIG } from "../../../_constants/badges";
+import {
+	type IconName,
+	PRIORITY_CONFIG,
+} from "../../../projects/_constants/badges";
 
 interface PriorityBadgeProps {
 	priority: TaskPriority;

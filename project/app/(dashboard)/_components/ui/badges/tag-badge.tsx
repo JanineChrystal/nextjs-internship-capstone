@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { TaskTag } from "@/types/task";
-import { TAG_CONFIG } from "../../../_constants/badges";
+import { TAG_CONFIG } from "../../../projects/_constants/badges";
 
 interface TagBadgeProps {
 	tag: TaskTag;

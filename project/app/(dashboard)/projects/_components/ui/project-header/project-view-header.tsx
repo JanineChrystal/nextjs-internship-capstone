@@ -2,6 +2,7 @@
 
 import { Calendar, Edit2, Flag } from "lucide-react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
+import { TASK_PRIORITY_BADGE_STYLES } from "@/app/(dashboard)/_constants/task";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -12,7 +13,6 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/buttons/button";
 import type { EditProjectFormValues } from "@/lib/validations/project-schema";
-import { PRIORITY_BADGE_STYLES } from "../../../_constants/kanban";
 
 interface ProjectViewHeaderProps {
 	project: EditProjectFormValues & { priority?: string };
@@ -69,8 +69,8 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 			{project.priority && (
 				<div
 					className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-label-sm font-medium capitalize border transition-all ${
-						PRIORITY_BADGE_STYLES[project.priority.toLowerCase()] ||
-						PRIORITY_BADGE_STYLES.low
+						TASK_PRIORITY_BADGE_STYLES[project.priority.toLowerCase()] ||
+						TASK_PRIORITY_BADGE_STYLES.low
 					}`}
 				>
 					<Flag size={12} className="shrink-0" />

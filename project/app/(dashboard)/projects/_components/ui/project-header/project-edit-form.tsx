@@ -3,6 +3,7 @@
 import { Calendar, Check, Flag, X } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
+import { TASK_PRIORITY_BADGE_STYLES } from "@/app/(dashboard)/_constants/task";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -14,10 +15,7 @@ import {
 import { Button } from "@/components/ui/buttons/button";
 import type { EditProjectFormValues } from "@/lib/validations/project-schema";
 import { projectStatusOptions } from "../../../_constants/create-project";
-import {
-	PRIORITY_BADGE_STYLES,
-	projectPriorityOptions,
-} from "../../../_constants/kanban";
+import { projectPriorityOptions } from "../../../_constants/kanban";
 
 interface ProjectEditFormProps {
 	project: EditProjectFormValues & { priority?: string };
@@ -119,7 +117,7 @@ export function ProjectEditForm({
 				{/* Priority Badge */}
 				<div
 					className={`relative flex items-center gap-1.5 px-3 py-1 rounded-full text-label-sm font-medium capitalize border transition-all ${
-						PRIORITY_BADGE_STYLES[currentPriority?.toLowerCase() || "low"]
+						TASK_PRIORITY_BADGE_STYLES[currentPriority?.toLowerCase() || "low"]
 					} focus-within:ring-2 focus-within:ring-primary`}
 				>
 					<Flag size={12} className="shrink-0" />

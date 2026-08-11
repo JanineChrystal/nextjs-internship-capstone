@@ -1,0 +1,58 @@
+import type { TaskItem } from "@/types/task";
+
+export const TASK_PRIORITY_OPTIONS = [
+	{ label: "Low", value: "low" },
+	{ label: "Medium", value: "medium" },
+	{ label: "High", value: "high" },
+	{ label: "Urgent", value: "urgent" },
+];
+
+export const TASK_PRIORITY_BADGE_STYLES: Record<string, string> = {
+	urgent: "bg-error/10 text-error border-error/20",
+	high: "bg-error/10 text-error border-error/20",
+	medium: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+	low: "bg-surface-container-high text-secondary border-outline-variant",
+};
+
+export const TASK_CATEGORY_STYLES: Record<string, string> = {
+	Design: "bg-purple-500/10 text-purple-600",
+	Copy: "bg-blue-500/10 text-blue-600",
+	Development: "bg-emerald-500/10 text-emerald-600",
+	Urgent: "bg-error/10 text-error",
+};
+
+export const DEFAULT_TASK_ITEMS: TaskItem[] = [
+	{
+		id: "task-1",
+		title: "Draft visual assets for Q3 social media push",
+		priority: "medium",
+		category: "Design",
+		columnId: "backlog",
+		comments: 2,
+		attachments: 1,
+	},
+	{
+		id: "task-2",
+		title: "Review ad copy variations for landing page",
+		priority: "medium",
+		category: "Copy",
+		columnId: "backlog",
+		date: "Oct 12",
+	},
+	{
+		id: "task-3",
+		title: "Finalize budget allocation for Paid Search",
+		priority: "urgent",
+		category: "Urgent",
+		columnId: "up-next",
+	},
+	{
+		id: "task-4",
+		title: "Build promotional landing page structure",
+		priority: "high",
+		category: "Development",
+		columnId: "in-progress",
+		tasksCompleted: 4,
+		tasksTotal: 6,
+	},
+];

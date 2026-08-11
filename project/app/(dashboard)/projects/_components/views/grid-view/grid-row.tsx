@@ -10,11 +10,11 @@ import {
 } from "@/lib/validations/task-schema";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask } from "@/types/task";
+import { BoardBadge } from "../../../../_components/ui/badges/board-badge";
+import { PriorityBadge } from "../../../../_components/ui/badges/priority-badge";
+import { StatusBadge } from "../../../../_components/ui/badges/status-badge";
+import { TagBadge } from "../../../../_components/ui/badges/tag-badge";
 import { GRID_COLUMN_CLASSES } from "../../../_constants/grid-view";
-import { BoardBadge } from "../../ui/badges/board-badge";
-import { PriorityBadge } from "../../ui/badges/priority-badge";
-import { StatusBadge } from "../../ui/badges/status-badge";
-import { TagBadge } from "../../ui/badges/tag-badge";
 import {
 	GridAssigneeCell,
 	GridDateCell,

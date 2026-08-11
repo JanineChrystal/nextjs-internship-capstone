@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { TaskBoard } from "@/types/task";
-import { BOARD_CONFIG } from "../../../_constants/badges";
+import { BOARD_CONFIG } from "../../../projects/_constants/badges";
 
 interface BoardBadgeProps {
 	board: TaskBoard;

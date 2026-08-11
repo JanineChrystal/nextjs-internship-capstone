@@ -1,7 +1,10 @@
 import { CheckCircle2, Circle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskStatus } from "@/types/task";
-import { type IconName, STATUS_CONFIG } from "../../../_constants/badges";
+import {
+	type IconName,
+	STATUS_CONFIG,
+} from "../../../projects/_constants/badges";
 
 interface StatusBadgeProps {
 	status: TaskStatus;
