@@ -5,8 +5,8 @@ import {
 	BigCalendar,
 	type CalendarEvent,
 } from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
+import { ProjectModal } from "@/app/(dashboard)/_components/ui/modals/project-modal";
 import { CalendarSidePanel } from "@/app/(dashboard)/_components/ui/side-panels";
-import { CreateProjectModal } from "@/app/(dashboard)/projects/_components/ui/modals/create-project-modal";
 import type { Project } from "@/lib/validations/project-schema";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { CalendarDeadlineItem } from "@/types/calendar";
@@ -100,7 +100,7 @@ export function CalendarView({ projectId: _projectId }: CalendarViewProps) {
 				onItemDoubleClick={handleDoubleClick}
 			/>
 
-			<CreateProjectModal
+			<ProjectModal
 				isOpen={isProjectModalOpen}
 				onClose={() => setIsProjectModalOpen(false)}
 				initialData={editProjectData}

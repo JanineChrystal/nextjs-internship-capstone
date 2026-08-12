@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/buttons/button";
 import { FilterChip } from "@/components/ui/filters/filter-chip";
 import { TagFilter } from "@/components/ui/filters/tag-filter";
 import type { Project } from "@/lib/validations/project-schema";
+import { ProjectModal } from "../../../_components/ui/modals/project-modal";
 import { useProjectsClient } from "../../_hooks/use-projects-client";
 import { ProjectCard } from "../ui/cards/project-card";
-import { CreateProjectModal } from "../ui/modals/create-project-modal";
 
 // 1. Define the props interface to satisfy TypeScript
 // Replace `any` with your actual Project type (e.g., `Project[]`) if you have it exported
@@ -140,7 +140,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 			</div>
 
 			{/* Render Modals */}
-			<CreateProjectModal
+			<ProjectModal
 				isOpen={modals.create.isOpen}
 				onClose={() => modals.create.setIsOpen(false)}
 			/>

@@ -3,11 +3,7 @@
 import { ArrowDownAZ, ArrowUpZA, Filter, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { AddMemberModal } from "@/app/(dashboard)/_components/ui/modals/add-member-modal";
-import {
-	type TabOption,
-	Toolbar,
-	ViewTabs,
-} from "@/app/(dashboard)/_components/ui/toolbar";
+import { Toolbar, ViewTabs } from "@/app/(dashboard)/_components/ui/toolbar";
 import { Button } from "@/components/ui/buttons/button";
 import {
 	DropdownMenu,
@@ -15,6 +11,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TEAM_VIEWS } from "../_constants/team-views";
 
 export type TeamViewType = "Grid" | "Board";
 
@@ -24,11 +21,6 @@ interface TeamToolbarProps {
 	onToggleSort?: () => void;
 	availableRoles?: string[];
 }
-
-const TEAM_VIEWS: TabOption<TeamViewType>[] = [
-	{ label: "Grid", value: "Grid" },
-	{ label: "Board", value: "Board" },
-];
 
 export const TeamToolbar = ({
 	activeView = "Grid",

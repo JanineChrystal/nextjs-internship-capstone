@@ -1,5 +1,8 @@
 import { Trash2 } from "lucide-react";
 import Link from "next/link";
+import { PriorityBadge } from "@/app/(dashboard)/_components/ui/badges/priority-badge";
+import { StatusBadge } from "@/app/(dashboard)/_components/ui/badges/status-badge";
+import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
 import { BaseCard } from "@/components/ui/cards/base-card";
 import { Progress } from "@/components/ui/progress";
 import type { Project } from "@/lib/validations/project-schema";
@@ -67,33 +70,19 @@ export function ProjectCard({
 				{/* Meta Badges (Category, Status, Priority) */}
 				<div className="flex flex-wrap items-center gap-2 mt-1">
 					{/* Category Badge */}
-					<span className="px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground text-[10px] font-semibold uppercase tracking-wider">
-						{project.category}
-					</span>
+					{project.category && (
+						<TagBadge tag={project.category} className="uppercase" />
+					)}
 
 					{/* Status Badge */}
-					<span
-						className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider ${
-							project.status === "active"
-								? "bg-blue-500/10 text-blue-500"
-								: project.status === "completed"
-									? "bg-green-500/10 text-green-500"
-									: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
-						}`}
-					>
-						{project.status}
-					</span>
+					{project.status && (
+						<StatusBadge status={project.status} className="uppercase" />
+					)}
 
 					{/* Priority Badge */}
-					<span
-						className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider ${
-							project.priority === "high"
-								? "bg-destructive/10 text-destructive"
-								: "bg-muted text-muted-foreground"
-						}`}
-					>
-						{project.priority} Priority
-					</span>
+					{project.priority && (
+						<PriorityBadge priority={project.priority} className="uppercase" />
+					)}
 				</div>
 
 				{/* Metrics & Progress */}

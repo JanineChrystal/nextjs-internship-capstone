@@ -10,26 +10,14 @@ import {
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
-import type { RoleAccess } from "@/types/member";
+import type { ProfileProjectData } from "@/types/profile";
 import type { TaskStatus } from "@/types/task";
 
-interface Task {
-	id: string;
-	name: string;
-	status: "Completed" | "In Progress" | "To Do";
-}
-
-interface ProjectData {
-	id: string;
-	title: string;
-	jobRole: string;
-	roleAccess: RoleAccess;
-	totalTasks: number;
-	completedTasks: number;
-	tasks: Task[];
-}
-
-export function UserProjectCollapsible({ project }: { project: ProjectData }) {
+export function UserProjectCollapsible({
+	project,
+}: {
+	project: ProfileProjectData;
+}) {
 	const [isOpen, setIsOpen] = useState(false);
 
 	const progressPercentage = Math.round(

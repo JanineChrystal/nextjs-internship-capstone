@@ -1,9 +1,4 @@
-import type {
-	TaskBoard,
-	TaskPriority,
-	TaskStatus,
-	TaskTag,
-} from "@/types/task";
+import type { TaskBoard, TaskTag } from "@/types/task";
 
 export type IconName =
 	| "clock"
@@ -14,34 +9,55 @@ export type IconName =
 	| "chevron-up"
 	| "chevron-down";
 
-export const STATUS_CONFIG: Record<
-	TaskStatus | "To Do",
-	{ color: string; icon: IconName }
-> = {
-	"In Progress": {
-		color: "text-primary bg-primary/10 border-primary/20",
-		icon: "clock",
-	},
-	Completed: {
-		color:
-			"text-green-700 bg-green-100 border-green-200 dark:text-green-400 dark:bg-green-900/30 dark:border-green-800/30",
-		icon: "check-circle",
-	},
-	"Not Started": {
-		color: "text-secondary bg-surface-container-high border-outline-variant/30",
-		icon: "circle",
-	},
-	"To Do": {
-		color: "text-secondary bg-surface-container-high border-outline-variant/30",
-		icon: "circle",
-	},
-};
+export const STATUS_CONFIG: Record<string, { color: string; icon: IconName }> =
+	{
+		"In Progress": {
+			color: "text-primary bg-primary/10 border-primary/20",
+			icon: "clock",
+		},
+		Completed: {
+			color:
+				"text-green-700 bg-green-100 border-green-200 dark:text-green-400 dark:bg-green-900/30 dark:border-green-800/30",
+			icon: "check-circle",
+		},
+		"Not Started": {
+			color:
+				"text-secondary bg-surface-container-high border-outline-variant/30",
+			icon: "circle",
+		},
+		"To Do": {
+			color:
+				"text-secondary bg-surface-container-high border-outline-variant/30",
+			icon: "circle",
+		},
+		active: {
+			color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
+			icon: "clock",
+		},
+		completed: {
+			color:
+				"text-green-700 bg-green-100 border-green-200 dark:text-green-400 dark:bg-green-900/30 dark:border-green-800/30",
+			icon: "check-circle",
+		},
+		overdue: {
+			color: "text-error bg-error/10 border-error/20",
+			icon: "alert-triangle",
+		},
+		"on hold": {
+			color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+			icon: "circle",
+		},
+	};
 
 export const PRIORITY_CONFIG: Record<
-	TaskPriority,
+	string,
 	{ color: string; icon: IconName }
 > = {
 	Urgent: {
+		color: "text-error",
+		icon: "alert-triangle",
+	},
+	urgent: {
 		color: "text-error",
 		icon: "alert-triangle",
 	},
@@ -49,11 +65,23 @@ export const PRIORITY_CONFIG: Record<
 		color: "text-orange-600 dark:text-orange-400",
 		icon: "chevrons-up",
 	},
+	high: {
+		color: "text-orange-600 dark:text-orange-400",
+		icon: "chevrons-up",
+	},
 	Medium: {
 		color: "text-amber-500",
 		icon: "chevron-up",
 	},
+	medium: {
+		color: "text-amber-500",
+		icon: "chevron-up",
+	},
 	Low: {
+		color: "text-secondary",
+		icon: "chevron-down",
+	},
+	low: {
 		color: "text-secondary",
 		icon: "chevron-down",
 	},

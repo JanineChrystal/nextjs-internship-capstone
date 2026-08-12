@@ -19,11 +19,11 @@ import type {
 	TaskStatus,
 	TaskTag,
 } from "@/types/task";
-import { BoardBadge } from "../../../../../_components/ui/badges/board-badge";
-import { PriorityBadge } from "../../../../../_components/ui/badges/priority-badge";
-import { StatusBadge } from "../../../../../_components/ui/badges/status-badge";
-import { TagBadge } from "../../../../../_components/ui/badges/tag-badge";
-import { TASK_PROPERTIES_CONFIG } from "../../../../_constants/task-modal";
+import { TASK_PROPERTIES_CONFIG } from "../../../../projects/_constants/task-modal";
+import { BoardBadge } from "../../badges/board-badge";
+import { PriorityBadge } from "../../badges/priority-badge";
+import { StatusBadge } from "../../badges/status-badge";
+import { TagBadge } from "../../badges/tag-badge";
 
 interface TaskPropertiesGridProps {
 	isCommentsOpen: boolean;

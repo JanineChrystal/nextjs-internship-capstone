@@ -9,7 +9,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useTaskModal } from "../../../../_hooks/use-task-modal";
+import { useTaskModal } from "../../../../projects/_hooks/use-task-modal";
 import { TaskAssignees } from "./task-assignees";
 import { TaskAttachmentsLinks } from "./task-attachments-links";
 import { TaskChecklist } from "./task-checklist";

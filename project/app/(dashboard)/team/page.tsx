@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
-import { BulkActionBar } from "@/app/(dashboard)/projects/_components/views/grid-view/bulk-action-bar";
+import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import {
 	TeamToolbar,
 	type TeamViewType,

@@ -36,7 +36,9 @@ export function PendingInvitesTable({
 										{invite.recipient}
 									</td>
 									{scope === "project" && (
-										<td className="px-4 py-3 text-secondary">{invite.jobRole}</td>
+										<td className="px-4 py-3 text-secondary">
+											{invite.jobRole}
+										</td>
 									)}
 									{scope === "project" && (
 										<td className="px-4 py-3 text-secondary capitalize">

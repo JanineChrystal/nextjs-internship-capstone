@@ -97,6 +97,10 @@ export function AppSidebar({ className }: { className?: string }) {
 						const isActive = pathname.startsWith(item.href);
 						const hasSubItems = item.subItems && item.subItems.length > 0;
 
+						const buttonStyles = isActive
+							? "bg-[#0D47A1] text-white hover:bg-[#0D47A1]/90 hover:text-white font-medium rounded-lg group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
+							: "text-muted-foreground hover:bg-accent hover:text-foreground font-medium rounded-lg transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0";
+
 						if (hasSubItems) {
 							return (
 								<Collapsible
@@ -111,7 +115,7 @@ export function AppSidebar({ className }: { className?: string }) {
 												size="lg"
 												tooltip={item.name}
 												isActive={isActive}
-												className="bg-blue_munsell-900 hover:bg-blue_munsell-900/90 text-white font-medium rounded-lg group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
+												className={buttonStyles}
 												onClick={() => {
 													if (state === "collapsed") {
 														setOpen(true);
@@ -127,7 +131,7 @@ export function AppSidebar({ className }: { className?: string }) {
 										</CollapsibleTrigger>
 
 										<CollapsibleContent>
-											<SidebarMenuSub className="mt-1 border-l-blue_munsell-900/20">
+											<SidebarMenuSub className="mt-1 border-l-border">
 												{item.subItems?.map((subItem) => (
 													<SidebarMenuSubItem key={subItem.name}>
 														<SidebarMenuSubButton
@@ -155,7 +159,7 @@ export function AppSidebar({ className }: { className?: string }) {
 									size="lg"
 									tooltip={item.name}
 									isActive={isActive}
-									className="bg-blue_munsell-900 hover:bg-blue_munsell-900/90 text-white font-medium rounded-lg group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
+									className={buttonStyles}
 									onClick={() => {
 										if (state === "collapsed") {
 											setOpen(true);

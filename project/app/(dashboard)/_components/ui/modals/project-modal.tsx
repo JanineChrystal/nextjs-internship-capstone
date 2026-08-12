@@ -8,9 +8,10 @@ import type {
 	CreateProjectFormValues,
 	Project,
 } from "@/lib/validations/project-schema";
-import { projectFormFields } from "../../../_constants/create-project";
-import { useCreateProject } from "../../../_hooks/use-create-project";
-import { useEditProject } from "../../../_hooks/use-edit-project";
+import { projectFormFields } from "../../../projects/_constants/create-project";
+import { mockProjectMembers } from "../../../projects/_constants/mock-data";
+import { useCreateProject } from "../../../projects/_hooks/use-create-project";
+import { useEditProject } from "../../../projects/_hooks/use-edit-project";
 
 interface CreateProjectModalProps {
 	isOpen: boolean;
@@ -18,7 +19,7 @@ interface CreateProjectModalProps {
 	initialData?: Project;
 }
 
-export function CreateProjectModal({
+export function ProjectModal({
 	isOpen,
 	onClose,
 	initialData,
@@ -135,9 +136,15 @@ export function CreateProjectModal({
 						Team Members
 					</span>
 					<div className="flex items-center gap-3 flex-wrap">
-						<div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold border border-border">
-							JD
-						</div>
+						{mockProjectMembers.map((member) => (
+							<div
+								key={member.id}
+								className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold border border-border"
+								title={member.name}
+							>
+								{member.initials}
+							</div>
+						))}
 						<button
 							type="button"
 							aria-label="Add team member"

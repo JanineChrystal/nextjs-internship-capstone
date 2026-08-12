@@ -12,12 +12,15 @@ import {
 } from "../../../projects/_constants/badges";
 
 interface PriorityBadgeProps {
-	priority: TaskPriority;
+	priority: TaskPriority | string;
 	className?: string;
 }
 
 export function PriorityBadge({ priority, className }: PriorityBadgeProps) {
-	const { color, icon } = PRIORITY_CONFIG[priority];
+	const config = PRIORITY_CONFIG[priority];
+	if (!config) return null;
+
+	const { color, icon } = config;
 
 	const IconMap: Record<IconName, React.ElementType> = {
 		"alert-triangle": AlertTriangle,

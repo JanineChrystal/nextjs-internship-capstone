@@ -7,9 +7,9 @@ import {
 	type CalendarEvent,
 } from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
+import { ProjectModal } from "@/app/(dashboard)/_components/ui/modals/project-modal";
 import { CalendarSidePanel } from "@/app/(dashboard)/_components/ui/side-panels";
-import { CreateProjectModal } from "@/app/(dashboard)/projects/_components/ui/modals/create-project-modal";
-import { CreationChoiceModal } from "@/app/(dashboard)/projects/_components/ui/modals/creation-choice-modal";
+import { CreationChoiceModal } from "@/app/(dashboard)/calendar/_components/creation-choice-modal";
 import { Button } from "@/components/ui/buttons/button";
 import type { Project } from "@/lib/validations/project-schema";
 import { useTaskStore } from "@/stores/use-task-store";
@@ -156,7 +156,7 @@ export default function CalendarPage() {
 			</div>
 
 			{/* Modals */}
-			<CreateProjectModal
+			<ProjectModal
 				isOpen={isProjectModalOpen}
 				onClose={() => setIsProjectModalOpen(false)}
 				initialData={editProjectData}

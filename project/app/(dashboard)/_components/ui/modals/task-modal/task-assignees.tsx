@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { Assignee, GridTask } from "@/types/task";
-import { AssigneeSelector } from "../../assignee-selector";
+import { AssigneeSelector } from "../../../../projects/_components/ui/assignee-selector";
 
 interface TaskAssigneesProps {
 	taskData: Partial<GridTask>;

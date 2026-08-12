@@ -7,12 +7,15 @@ import {
 } from "../../../projects/_constants/badges";
 
 interface StatusBadgeProps {
-	status: TaskStatus;
+	status: TaskStatus | string;
 	className?: string;
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-	const { color, icon } = STATUS_CONFIG[status];
+	const config = STATUS_CONFIG[status];
+	if (!config) return null;
+
+	const { color, icon } = config;
 
 	const IconMap: Record<IconName, React.ElementType> = {
 		clock: Clock,

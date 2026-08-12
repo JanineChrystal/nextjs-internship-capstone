@@ -5,6 +5,10 @@ import Link from "next/link";
 import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+	mockTargetUser,
+	mockVisibleProjects,
+} from "../../_constants/mock-profile";
 import { UserProjectCollapsible } from "./user-profile-collapsible";
 
 interface UserProfileViewProps {
@@ -23,31 +27,8 @@ export function UserProfileView({
 	//    - If `isSelf === true`: return ALL projects targetUser belongs to.
 	//    - If `isSelf === false`: return ONLY projects where both targetUser AND viewerUser are members.
 
-	const targetUser = {
-		name: "Alex Johnson",
-		email: "alex@example.com",
-		role: "Frontend Developer",
-		avatarUrl: "/avatars/alex.jpg",
-	};
-
-	const visibleProjects = [
-		{
-			id: "prj_1",
-			title: "PUP SCRAMPS System",
-			jobRole: "UI Designer",
-			roleAccess: "member" as const,
-			totalTasks: 8,
-			completedTasks: 6,
-			tasks: [
-				{ id: "t1", name: "Design Member Modal", status: "Completed" as const },
-				{
-					id: "t2",
-					name: "Update Primary Color Palette",
-					status: "In Progress" as const,
-				},
-			],
-		},
-	];
+	const targetUser = mockTargetUser;
+	const visibleProjects = mockVisibleProjects;
 
 	return (
 		<div className="max-w-5xl mx-auto space-y-8 p-6">
