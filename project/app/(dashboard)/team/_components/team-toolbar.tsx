@@ -1,10 +1,19 @@
 "use client";
 
 import { ArrowDownAZ, ArrowUpZA, Filter, UserPlus } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import { AddMemberModal } from "@/app/(dashboard)/_components/ui/modals/add-member-modal";
 import { Toolbar, ViewTabs } from "@/app/(dashboard)/_components/ui/toolbar";
 import { Button } from "@/components/ui/buttons/button";
+
+const AddMemberModal = dynamic(
+	() =>
+		import("@/app/(dashboard)/_components/ui/modals/add-member-modal").then(
+			(m) => m.AddMemberModal,
+		),
+	{ ssr: false },
+);
+
 import {
 	DropdownMenu,
 	DropdownMenuContent,

@@ -1,6 +1,7 @@
 "use client";
 
 import { Archive, Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/buttons/button";
 import { SectionTitle } from "@/components/ui/sections";
 import type { RoleAccess } from "@/types/member";
@@ -9,7 +10,11 @@ import {
 	settingsSectionTexts,
 } from "../../../_constants/settings-view";
 import { useDangerZone } from "../../../_hooks/use-danger-zone";
-import { DeleteProjectModal } from "./delete-project-modal";
+
+const DeleteProjectModal = dynamic(
+	() => import("./delete-project-modal").then((m) => m.DeleteProjectModal),
+	{ ssr: false },
+);
 
 interface DangerZoneSectionProps {
 	projectId: string;

@@ -31,7 +31,7 @@ export default function RootLayout({
 				suppressHydrationWarning
 				className={cn("font-sans", geist.variable)}
 			>
-				<body className={inter.className}>
+				<body className={inter.className} suppressHydrationWarning>
 					<ThemeProvider>{children}</ThemeProvider>
 				</body>
 			</html>

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { use, useMemo, useState } from "react";
 import {
 	type FilterField,
@@ -12,7 +13,15 @@ import {
 	TASK_TAGS,
 } from "@/lib/validations/task-schema";
 import { useProjectStore } from "@/stores/use-project-store";
-import { TaskModal } from "../../_components/ui/modals/task-modal/task-modal";
+
+const TaskModal = dynamic(
+	() =>
+		import("../../_components/ui/modals/task-modal/task-modal").then(
+			(m) => m.TaskModal,
+		),
+	{ ssr: false },
+);
+
 import { ProjectHeader } from "../_components/ui/project-header/project-header";
 import { ProjectToolbar } from "../_components/ui/project-toolbar";
 import { CalendarView } from "../_components/views/calendar-view";

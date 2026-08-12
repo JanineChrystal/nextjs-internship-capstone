@@ -39,27 +39,13 @@ export function DeadlineCard({
 				</span>
 			)}
 			{onToggleSelect && (
-				<button
-					type="button"
-					className="flex items-center justify-center p-1"
-					onClick={(e) => {
-						e.stopPropagation();
-						onToggleSelect(item);
-					}}
-					onKeyDown={(e) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.stopPropagation();
-							e.preventDefault();
-							onToggleSelect(item);
-						}
-					}}
+				<Checkbox
+					checked={isSelected}
+					onCheckedChange={() => onToggleSelect(item)}
+					onClick={(e) => e.stopPropagation()}
+					className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground cursor-pointer"
 					aria-label="Select item"
-				>
-					<Checkbox
-						checked={isSelected}
-						className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground pointer-events-none"
-					/>
-				</button>
+				/>
 			)}
 		</div>
 	);

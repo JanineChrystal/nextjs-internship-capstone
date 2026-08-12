@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckSquare, Plus, Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import projectFilters from "@/app/(dashboard)/_constants/filters";
 import { ActionConfirmModal } from "@/components/modals/action-confirm-modal";
@@ -8,7 +9,15 @@ import { Button } from "@/components/ui/buttons/button";
 import { FilterChip } from "@/components/ui/filters/filter-chip";
 import { TagFilter } from "@/components/ui/filters/tag-filter";
 import type { Project } from "@/lib/validations/project-schema";
-import { ProjectModal } from "../../../_components/ui/modals/project-modal";
+
+const ProjectModal = dynamic(
+	() =>
+		import("../../../_components/ui/modals/project-modal").then(
+			(m) => m.ProjectModal,
+		),
+	{ ssr: false },
+);
+
 import { useProjectsClient } from "../../_hooks/use-projects-client";
 import { ProjectCard } from "../ui/cards/project-card";
 

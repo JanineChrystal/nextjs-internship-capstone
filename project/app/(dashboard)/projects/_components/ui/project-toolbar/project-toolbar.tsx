@@ -1,13 +1,21 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type React from "react";
-import { AddMemberModal } from "@/app/(dashboard)/_components/ui/modals/add-member-modal";
 import { Toolbar } from "@/app/(dashboard)/_components/ui/toolbar";
 import { useToolbar } from "@/app/(dashboard)/_hooks/use-toolbar";
 import { FILTERABLE_VIEWS } from "@/app/(dashboard)/projects/_constants/project";
 import type { ProjectViewType } from "@/app/(dashboard)/projects/[id]/page";
 import { ProjectMembersGroup } from "./project-members-group";
 import { ProjectViewTabs } from "./project-view-tabs";
+
+const AddMemberModal = dynamic(
+	() =>
+		import("@/app/(dashboard)/_components/ui/modals/add-member-modal").then(
+			(m) => m.AddMemberModal,
+		),
+	{ ssr: false },
+);
 
 export interface ProjectToolbarProps {
 	projectId: string;

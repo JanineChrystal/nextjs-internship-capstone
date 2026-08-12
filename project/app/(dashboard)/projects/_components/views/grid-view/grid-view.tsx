@@ -1,5 +1,5 @@
 "use client";
-
+import { useMemo } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,24 +35,26 @@ export function GridView({
 
 	const isSelectionActive = isSelectionModeActive || selectedTaskIds.size > 0;
 
-	const viewColumns = GRID_COLUMNS.map((col) => {
-		if (col.key === "select") {
-			return {
-				...col,
-				renderHeader: () => (
-					<Checkbox
-						aria-label="Toggle selection mode"
-						checked={isSelectionActive}
-						onCheckedChange={(checked) =>
-							handleToggleSelectionMode(Boolean(checked))
-						}
-					/>
-				),
-			};
-		}
-		// All these columns sortable except select and assignee
-		return { ...col, sortable: col.key !== "assignee" };
-	});
+	const viewColumns = useMemo(() => {
+		return GRID_COLUMNS.map((col) => {
+			if (col.key === "select") {
+				return {
+					...col,
+					renderHeader: () => (
+						<Checkbox
+							aria-label="Toggle selection mode"
+							checked={isSelectionActive}
+							onCheckedChange={(checked) =>
+								handleToggleSelectionMode(Boolean(checked))
+							}
+						/>
+					),
+				};
+			}
+			// All these columns sortable except select and assignee
+			return { ...col, sortable: col.key !== "assignee" };
+		});
+	}, [isSelectionActive, handleToggleSelectionMode]);
 
 	return (
 		<div className="flex flex-col gap-6 w-full relative">

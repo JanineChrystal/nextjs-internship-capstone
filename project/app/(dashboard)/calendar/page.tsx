@@ -1,13 +1,22 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import {
 	BigCalendar,
 	type CalendarEvent,
 } from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
-import { ProjectModal } from "@/app/(dashboard)/_components/ui/modals/project-modal";
+
+const ProjectModal = dynamic(
+	() =>
+		import("@/app/(dashboard)/_components/ui/modals/project-modal").then(
+			(m) => m.ProjectModal,
+		),
+	{ ssr: false },
+);
+
 import { CalendarSidePanel } from "@/app/(dashboard)/_components/ui/side-panels";
 import { CreationChoiceModal } from "@/app/(dashboard)/calendar/_components/creation-choice-modal";
 import { Button } from "@/components/ui/buttons/button";
