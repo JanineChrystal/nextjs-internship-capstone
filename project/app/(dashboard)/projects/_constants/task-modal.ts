@@ -1,6 +1,5 @@
 import { CheckCircle, Copy, Trash2 } from "lucide-react";
 import {
-	TASK_BOARDS,
 	TASK_PRIORITIES,
 	TASK_STATUSES,
 	TASK_TAGS,
@@ -15,7 +14,7 @@ export const DEFAULT_TASK_DATA: Partial<GridTask> = {
 	name: "",
 	description: "",
 	isCompleted: false,
-	status: "Not Started",
+	status: "Backlog",
 	priority: "Medium",
 	tag: "Design",
 	board: "Backlog",
@@ -53,5 +52,4 @@ export const TASK_PROPERTIES_CONFIG: TaskPropertyConfig[] = [
 	{ id: "tag", label: "Category", options: TASK_TAGS },
 	{ id: "status", label: "Status", options: TASK_STATUSES },
 	{ id: "priority", label: "Priority", options: TASK_PRIORITIES },
-	{ id: "board", label: "Board", options: TASK_BOARDS },
 ];

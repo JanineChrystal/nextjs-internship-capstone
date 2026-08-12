@@ -40,7 +40,11 @@ export function useTaskModal() {
 	};
 
 	const handleCreate = () => {
-		createTask(taskData as Omit<GridTask, "id">);
+		const finalData = { ...taskData };
+		if (!finalData.name?.trim()) {
+			finalData.name = "Untitled Task";
+		}
+		createTask(finalData as Omit<GridTask, "id">);
 		closeTaskModal();
 	};
 

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Button } from "@/components/ui/buttons/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -12,6 +13,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { formatDate } from "@/lib/utils/date";
+import { useBoardStore } from "@/stores/board-store";
 import type {
 	GridTask,
 	TaskBoard,
@@ -36,6 +38,21 @@ export function TaskPropertiesGrid({
 	taskData,
 	handleChange,
 }: TaskPropertiesGridProps) {
+	const boardColumns = useBoardStore((state) => state.columns);
+	const dynamicStatuses = useMemo(
+		() => boardColumns.map((col) => col.title),
+		[boardColumns],
+	);
+
+	const propertiesConfig = useMemo(() => {
+		return TASK_PROPERTIES_CONFIG.map((config) => {
+			if (config.id === "status" || config.id === "board") {
+				return { ...config, options: dynamicStatuses };
+			}
+			return config;
+		});
+	}, [dynamicStatuses]);
+
 	const renderBadge = (id: string, value: string) => {
 		switch (id) {
 			case "tag":
@@ -58,7 +75,7 @@ export function TaskPropertiesGrid({
 			}`}
 		>
 			{/* Dynamically Rendered Dropdowns */}
-			{TASK_PROPERTIES_CONFIG.map((config) => (
+			{propertiesConfig.map((config) => (
 				<div key={config.id} className="space-y-1">
 					<span className="block text-xs font-medium text-secondary uppercase tracking-wider">
 						{config.label}
@@ -71,7 +88,11 @@ export function TaskPropertiesGrid({
 							{config.options.map((option) => (
 								<DropdownMenuItem
 									key={option}
-									onClick={() => handleChange({ [config.id]: option })}
+									onClick={() => {
+										const updates: Partial<GridTask> = { [config.id]: option };
+										if (config.id === "status") updates.board = option;
+										handleChange(updates);
+									}}
 								>
 									{option}
 								</DropdownMenuItem>

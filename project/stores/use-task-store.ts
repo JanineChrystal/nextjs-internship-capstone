@@ -1,11 +1,13 @@
 import { create } from "zustand";
 import { mockTasks } from "@/app/(dashboard)/projects/_constants/grid-view";
 import type { GridTask } from "@/types/task";
+import { useBoardStore } from "./board-store";
 
 interface TaskState {
 	tasks: GridTask[];
 	isTaskModalOpen: boolean;
 	selectedTaskId: string | null;
+	selectedTaskIds: Set<string>;
 	openTaskModal: (taskId?: string) => void;
 	closeTaskModal: () => void;
 	createTask: (task: Omit<GridTask, "id">) => void;
@@ -15,12 +17,17 @@ interface TaskState {
 	bulkDeleteTasks: (ids: Set<string>) => void;
 	bulkCompleteTasks: (ids: Set<string>) => void;
 	setTasks: (tasks: GridTask[]) => void;
+	toggleTaskSelection: (taskId: string) => void;
+	clearTaskSelection: () => void;
+	updateTaskStatus: (taskId: string, newStatus: string) => void;
+	moveTaskToColumn: (taskId: string, targetColumnId: string) => void;
 }
 
 export const useTaskStore = create<TaskState>((set) => ({
 	tasks: mockTasks,
 	isTaskModalOpen: false,
 	selectedTaskId: null,
+	selectedTaskIds: new Set<string>(),
 
 	openTaskModal: (taskId) =>
 		set({ isTaskModalOpen: true, selectedTaskId: taskId || null }),
@@ -97,6 +104,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 	bulkDeleteTasks: (ids) =>
 		set((state) => ({
 			tasks: state.tasks.filter((task) => !ids.has(task.id)),
+			selectedTaskIds: new Set(),
 		})),
 
 	bulkCompleteTasks: (ids) =>
@@ -111,7 +119,50 @@ export const useTaskStore = create<TaskState>((set) => ({
 						}
 					: task,
 			),
+			selectedTaskIds: new Set(),
 		})),
 
 	setTasks: (tasks) => set({ tasks }),
+
+	toggleTaskSelection: (taskId) =>
+		set((state) => {
+			const newSelected = new Set(state.selectedTaskIds);
+			if (newSelected.has(taskId)) {
+				newSelected.delete(taskId);
+			} else {
+				newSelected.add(taskId);
+			}
+			return { selectedTaskIds: newSelected };
+		}),
+
+	clearTaskSelection: () => set({ selectedTaskIds: new Set() }),
+
+	updateTaskStatus: (taskId, newStatus) =>
+		set((state) => {
+			const boardColumns = useBoardStore.getState().columns;
+			const targetColumn = boardColumns.find(
+				(col) => col.title.toLowerCase() === newStatus.toLowerCase(),
+			);
+
+			return {
+				tasks: state.tasks.map((task) =>
+					task.id === taskId
+						? {
+								...task,
+								status: newStatus,
+								board: targetColumn?.title || newStatus,
+							}
+						: task,
+				),
+			};
+		}),
+
+	moveTaskToColumn: (taskId, targetBoardTitle) =>
+		set((state) => ({
+			tasks: state.tasks.map((task) =>
+				task.id === taskId
+					? { ...task, board: targetBoardTitle, status: targetBoardTitle }
+					: task,
+			),
+		})),
 }));

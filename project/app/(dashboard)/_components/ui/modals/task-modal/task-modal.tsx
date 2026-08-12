@@ -138,13 +138,17 @@ export function TaskModal() {
 					{!isEditMode && (
 						<div className="p-4 border-t border-outline-variant bg-surface-container-lowest mt-auto sticky bottom-0 z-10 flex justify-end">
 							<Button
+								type="button"
 								variant="outline"
 								className="mr-2"
 								onClick={closeTaskModal}
 							>
 								Cancel
 							</Button>
-							<Button onClick={handleCreate} disabled={!taskData.name}>
+							<Button
+								type="button"
+								onClick={handleCreate}
+							>
 								Create Task
 							</Button>
 						</div>

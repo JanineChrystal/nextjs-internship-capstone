@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-export const TaskStatusEnum = z.enum([
-	"In Progress",
-	"Completed",
-	"Not Started",
-]);
+export const TaskStatusEnum = z.string();
 export const TaskPriorityEnum = z.enum(["Urgent", "High", "Medium", "Low"]);
 export const TaskTagEnum = z.enum([
 	"Design",
@@ -12,17 +8,12 @@ export const TaskTagEnum = z.enum([
 	"Analytics",
 	"Content",
 ]);
-export const TaskBoardEnum = z.enum([
-	"In Progress",
-	"Completed",
-	"Up Next",
-	"Backlog",
-]);
+export const TaskBoardEnum = z.string();
 
-export const TASK_STATUSES = TaskStatusEnum.options;
+export const TASK_STATUSES = ["In Progress", "Completed", "Not Started"];
 export const TASK_PRIORITIES = TaskPriorityEnum.options;
 export const TASK_TAGS = TaskTagEnum.options;
-export const TASK_BOARDS = TaskBoardEnum.options;
+export const TASK_BOARDS = ["In Progress", "Completed", "Up Next", "Backlog"];
 
 export const AssigneeSchema = z.object({
 	name: z.string(),
@@ -45,7 +36,7 @@ export const AttachmentSchema = z.object({
 export const LinkSchema = z.object({
 	id: z.string(),
 	title: z.string(),
-	url: z.string().url(),
+	url: z.url(),
 });
 
 export const GridTaskSchema = z.object({

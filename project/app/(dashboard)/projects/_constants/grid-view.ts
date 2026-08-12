@@ -7,7 +7,6 @@ export const GRID_COLUMN_CLASSES = {
 	assignee: "w-40 shrink-0 flex justify-center",
 	start: "w-24 shrink-0 flex justify-center",
 	due: "w-24 shrink-0 flex justify-center",
-	board: "w-32 shrink-0 flex justify-center",
 	status: "w-36 shrink-0",
 	priority: "w-28 shrink-0",
 	tag: "w-28 shrink-0",
@@ -23,7 +22,6 @@ export const GRID_COLUMNS: ColumnDef[] = [
 	},
 	{ key: "startDate", title: "Start", className: GRID_COLUMN_CLASSES.start },
 	{ key: "dueDate", title: "Due", className: GRID_COLUMN_CLASSES.due },
-	{ key: "board", title: "Board", className: GRID_COLUMN_CLASSES.board },
 	{ key: "status", title: "Status", className: GRID_COLUMN_CLASSES.status },
 	{
 		key: "priority",

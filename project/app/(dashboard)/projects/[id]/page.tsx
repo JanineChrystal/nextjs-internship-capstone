@@ -107,7 +107,10 @@ export default function ProjectPage({
 			{/* 4. The Canvas (Dynamically renders based on activeView state) */}
 			<div className="w-full mt-4">
 				{activeView === "board" && (
-					<KanbanBoard projectId={resolvedParams.id} />
+					<KanbanBoard
+						projectId={resolvedParams.id}
+						externalFilters={filters}
+					/>
 				)}
 				{activeView === "grid" && (
 					<GridView projectId={resolvedParams.id} externalFilters={filters} />

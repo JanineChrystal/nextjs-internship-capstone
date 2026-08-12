@@ -1,11 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { FilterField } from "@/components/ui/filters/filter-popover";
-import {
-	TASK_BOARDS,
-	TASK_PRIORITIES,
-	TASK_STATUSES,
-	TASK_TAGS,
-} from "@/lib/validations/task-schema";
+import { TASK_PRIORITIES, TASK_TAGS } from "@/lib/validations/task-schema";
+import { useBoardStore } from "@/stores/board-store";
 import type { ProjectViewType } from "../[id]/page";
 
 export function useProjectPage() {
@@ -28,15 +24,23 @@ export function useProjectPage() {
 
 	const handleResetFilters = useCallback(() => setFilters({}), []);
 
-	const filterFields: FilterField[] = useMemo(
-		() => [
-			{ id: "status", label: "Status", options: TASK_STATUSES },
+	const boardColumns = useBoardStore((state) => state.columns);
+
+	const filterFields: FilterField[] = useMemo(() => {
+		const dynamicStatuses = boardColumns.map((col) => col.title);
+
+		return [
+			{
+				id: "my-tasks",
+				label: "My Tasks",
+				options: [{ label: "Show only my tasks", value: "true" }],
+			},
+			{ id: "status", label: "Status", options: dynamicStatuses },
 			{ id: "priority", label: "Priority", options: TASK_PRIORITIES },
-			{ id: "board", label: "Board", options: TASK_BOARDS },
+			{ id: "board", label: "Board", options: dynamicStatuses },
 			{ id: "tag", label: "Tag", options: TASK_TAGS },
-		],
-		[],
-	);
+		];
+	}, [boardColumns]);
 
 	return {
 		activeView,

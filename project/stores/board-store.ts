@@ -1,72 +1,99 @@
-// TODO: Task 5.3 - Set up client-side state management with Zustand
-// TODO: Task 5.4 - Implement optimistic UI updates for smooth interactions
+import { arrayMove } from "@dnd-kit/sortable";
+import { create } from "zustand";
+import { useTaskStore } from "./use-task-store";
 
-/*
-TODO: Implementation Notes for Interns:
-
-Board state management for Kanban functionality:
-- Current project data
-- Lists/columns
-- Tasks
-- Drag and drop state
-- Optimistic updates
-- Sync with server
-
-Key features:
-- Optimistic task creation/updates
-- Drag and drop state management
-- Real-time synchronization
-- Conflict resolution
-- Offline support (optional)
-
-Example structure:
-import { create } from 'zustand'
-import { subscribeWithSelector } from 'zustand/middleware'
-
-interface BoardState {
-  // Data
-  currentProject: Project | null
-  lists: List[]
-  tasks: Task[]
-  
-  // UI state
-  draggedTask: Task | null
-  draggedOverList: string | null
-  
-  // Loading states
-  isLoading: boolean
-  isSaving: boolean
-  
-  // Actions
-  loadProject: (projectId: string) => Promise<void>
-  createTask: (listId: string, task: Partial<Task>) => Promise<void>
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>
-  moveTask: (taskId: string, newListId: string, newPosition: number) => Promise<void>
-  deleteTask: (taskId: string) => Promise<void>
-  
-  // Drag and drop
-  setDraggedTask: (task: Task | null) => void
-  setDraggedOverList: (listId: string | null) => void
+export interface BoardColumn {
+	id: string;
+	title: string;
+	dotColor: string;
+	order: number;
 }
 
-export const useBoardStore = create<BoardState>()(
-  subscribeWithSelector((set, get) => ({
-    // ... implementation
-  }))
-)
-*/
+interface BoardState {
+	columns: BoardColumn[];
+	addColumn: (title: string) => void;
+	reorderColumns: (activeId: string, overId: string) => void;
+	deleteColumn: (id: string, fallbackColumnId?: string) => void;
+	renameColumn: (id: string, newTitle: string) => void;
+}
 
-// Placeholder to prevent import errors
-export const useBoardStore = () => {
-	console.log("TODO: Implement board store with Zustand");
-	return {
-		currentProject: null,
-		lists: [],
-		tasks: [],
-		isLoading: false,
-		loadProject: (projectId: string) =>
-			console.log(`TODO: Load project ${projectId}`),
-		createTask: (listId: string, task: any) =>
-			console.log(`TODO: Create task in list ${listId}`, task),
-	};
-};
+const defaultColumns: BoardColumn[] = [
+	{ id: "backlog", title: "Backlog", dotColor: "bg-secondary", order: 0 },
+	{ id: "to-do", title: "To Do", dotColor: "bg-surface-tint", order: 1 },
+	{ id: "in-progress", title: "In Progress", dotColor: "bg-primary", order: 2 },
+	{ id: "completed", title: "Completed", dotColor: "bg-success", order: 3 },
+];
+
+export const useBoardStore = create<BoardState>((set, get) => ({
+	columns: defaultColumns,
+
+	addColumn: (title: string) =>
+		set((state) => {
+			const newColumn: BoardColumn = {
+				id: title.toLowerCase().replace(/\s+/g, "-"),
+				title,
+				dotColor: "bg-primary",
+				order: state.columns.length,
+			};
+			return { columns: [...state.columns, newColumn] };
+		}),
+
+	reorderColumns: (activeId: string, overId: string) =>
+		set((state) => {
+			const oldIndex = state.columns.findIndex((col) => col.id === activeId);
+			const newIndex = state.columns.findIndex((col) => col.id === overId);
+
+			if (oldIndex === -1 || newIndex === -1) return state;
+
+			const newColumns = arrayMove(state.columns, oldIndex, newIndex).map(
+				(col, index) => ({ ...col, order: index }),
+			);
+
+			return { columns: newColumns };
+		}),
+
+	deleteColumn: (id: string, fallbackColumnId?: string) =>
+		set((state) => {
+			// Find fallback: either provided, or the first column that isn't the one being deleted
+			const fallback = fallbackColumnId
+				? state.columns.find((c) => c.id === fallbackColumnId)
+				: state.columns.find((c) => c.id !== id);
+
+			if (fallback) {
+				const tasksStore = useTaskStore.getState();
+				const tasksInColumn = tasksStore.tasks.filter((t) => t.board === id);
+
+				tasksInColumn.forEach((task) => {
+					tasksStore.updateTask(task.id, {
+						board: fallback.title,
+						status: fallback.title,
+					});
+				});
+			}
+
+			const remainingColumns = state.columns
+				.filter((col) => col.id !== id)
+				.map((col, index) => ({ ...col, order: index }));
+
+			return { columns: remainingColumns };
+		}),
+
+	renameColumn: (id: string, newTitle: string) =>
+		set((state) => {
+			const oldCol = state.columns.find((c) => c.id === id);
+			if (oldCol && oldCol.title !== newTitle) {
+				const tasksStore = useTaskStore.getState();
+				const tasksInColumn = tasksStore.tasks.filter(
+					(t) => t.board === oldCol.title || t.status === oldCol.title,
+				);
+				tasksInColumn.forEach((task) => {
+					tasksStore.updateTask(task.id, { board: newTitle, status: newTitle });
+				});
+			}
+			return {
+				columns: state.columns.map((col) =>
+					col.id === id ? { ...col, title: newTitle } : col,
+				),
+			};
+		}),
+}));

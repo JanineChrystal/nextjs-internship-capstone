@@ -1,8 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { TaskItem } from "@/types/task";
+import type { GridTask } from "@/types/task";
 
-export function useDraggableTask(task: TaskItem) {
+export function useDraggableTask(task: GridTask) {
 	// External Hooks
 	const {
 		attributes,

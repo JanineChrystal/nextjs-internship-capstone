@@ -2,15 +2,10 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import {
-	TASK_BOARDS,
-	TASK_PRIORITIES,
-	TASK_STATUSES,
-	TASK_TAGS,
-} from "@/lib/validations/task-schema";
+import { TASK_PRIORITIES, TASK_TAGS } from "@/lib/validations/task-schema";
+import { useBoardStore } from "@/stores/board-store";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask } from "@/types/task";
-import { BoardBadge } from "../../../../_components/ui/badges/board-badge";
 import { PriorityBadge } from "../../../../_components/ui/badges/priority-badge";
 import { StatusBadge } from "../../../../_components/ui/badges/status-badge";
 import { TagBadge } from "../../../../_components/ui/badges/tag-badge";
@@ -36,6 +31,8 @@ export function GridRow({
 	onToggleSelect,
 }: GridRowProps) {
 	const { updateTask } = useTaskStore();
+	const boardColumns = useBoardStore((state) => state.columns);
+	const dynamicStatuses = boardColumns.map((col) => col.title);
 
 	return (
 		<>
@@ -79,17 +76,9 @@ export function GridRow({
 			/>
 
 			<GridDropdownCell
-				className={GRID_COLUMN_CLASSES.board}
-				options={TASK_BOARDS}
-				onSelect={(board) => updateTask(task.id, { board })}
-			>
-				<BoardBadge board={task.board} />
-			</GridDropdownCell>
-
-			<GridDropdownCell
 				className={GRID_COLUMN_CLASSES.status}
-				options={TASK_STATUSES}
-				onSelect={(status) => updateTask(task.id, { status })}
+				options={dynamicStatuses}
+				onSelect={(status) => updateTask(task.id, { status, board: status })}
 			>
 				<StatusBadge status={task.status} />
 			</GridDropdownCell>
