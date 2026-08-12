@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { mockTasks } from "@/app/(dashboard)/projects/_constants/grid-view";
 import type { GridTask } from "@/types/task";
-import { useBoardStore } from "./board-store";
+import { useBoardStore } from "./use-board-store";
 
 interface TaskState {
 	tasks: GridTask[];

@@ -1,13 +1,8 @@
 import { arrayMove } from "@dnd-kit/sortable";
 import { create } from "zustand";
+import { defaultColumns } from "@/constants/board";
+import type { BoardColumn } from "@/types/board";
 import { useTaskStore } from "./use-task-store";
-
-export interface BoardColumn {
-	id: string;
-	title: string;
-	dotColor: string;
-	order: number;
-}
 
 interface BoardState {
 	columns: BoardColumn[];
@@ -16,13 +11,6 @@ interface BoardState {
 	deleteColumn: (id: string, fallbackColumnId?: string) => void;
 	renameColumn: (id: string, newTitle: string) => void;
 }
-
-const defaultColumns: BoardColumn[] = [
-	{ id: "backlog", title: "Backlog", dotColor: "bg-secondary", order: 0 },
-	{ id: "to-do", title: "To Do", dotColor: "bg-surface-tint", order: 1 },
-	{ id: "in-progress", title: "In Progress", dotColor: "bg-primary", order: 2 },
-	{ id: "completed", title: "Completed", dotColor: "bg-success", order: 3 },
-];
 
 export const useBoardStore = create<BoardState>((set, get) => ({
 	columns: defaultColumns,

@@ -15,10 +15,7 @@ import { Plus } from "lucide-react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { Button } from "@/components/ui/buttons/button";
-import { useBoardStore } from "@/stores/board-store";
-import { useProjectStore } from "@/stores/use-project-store";
-import { useTaskStore } from "@/stores/use-task-store";
-import { useKanbanDnd } from "../../../_hooks/use-kanban-dnd";
+import { useKanbanBoard } from "../../../_hooks/use-kanban-board";
 import { Column } from "./column";
 
 export function KanbanBoard({
@@ -28,20 +25,20 @@ export function KanbanBoard({
 	projectId: string;
 	externalFilters?: Record<string, string[]>;
 }) {
-	const projects = useProjectStore((state) => state.projects);
-	const currentProject =
-		projects.find((p) => p.id === projectId) || projects[0];
-
-	const selectedTaskIds = useTaskStore((state) => state.selectedTaskIds);
-	const handleClearSelection = useTaskStore(
-		(state) => state.clearTaskSelection,
-	);
-	const handleBulkDelete = useTaskStore((state) => state.bulkDeleteTasks);
-	const handleBulkComplete = useTaskStore((state) => state.bulkCompleteTasks);
-	const addColumn = useBoardStore((state) => state.addColumn);
-
-	const { tasks, columns, handleDragStart, handleDragOver, handleDragEnd } =
-		useKanbanDnd(externalFilters);
+	const {
+		currentProject,
+		selectedTaskIds,
+		tasks,
+		columns,
+		sortedColumns,
+		handleClearSelection,
+		handleBulkDelete,
+		handleBulkComplete,
+		addColumn,
+		handleDragStart,
+		handleDragOver,
+		handleDragEnd,
+	} = useKanbanBoard(projectId, externalFilters);
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -50,8 +47,6 @@ export function KanbanBoard({
 			},
 		}),
 	);
-
-	const sortedColumns = [...columns].sort((a, b) => a.order - b.order);
 
 	return (
 		<div className="flex flex-col gap-6 w-full relative">

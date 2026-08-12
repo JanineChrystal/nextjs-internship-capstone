@@ -53,3 +53,8 @@ export const TASK_PROPERTIES_CONFIG: TaskPropertyConfig[] = [
 	{ id: "status", label: "Status", options: TASK_STATUSES },
 	{ id: "priority", label: "Priority", options: TASK_PRIORITIES },
 ];
+
+export const DATE_PICKER_CONFIG = [
+	{ id: "startDate" as const, label: "Start Date" },
+	{ id: "dueDate" as const, label: "Due Date" },
+];

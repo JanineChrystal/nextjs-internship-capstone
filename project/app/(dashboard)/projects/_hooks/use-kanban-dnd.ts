@@ -4,7 +4,7 @@ import type {
 	DragStartEvent,
 } from "@dnd-kit/core";
 import { useMemo, useState } from "react";
-import { useBoardStore } from "@/stores/board-store";
+import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
 
 export function useKanbanDnd(externalFilters?: Record<string, string[]>) {

@@ -6,8 +6,7 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Edit2, MoreHorizontal, Plus, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "@/components/ui/buttons/button";
 import {
 	DropdownMenu,
@@ -15,9 +14,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useBoardStore } from "@/stores/board-store";
-import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask } from "@/types/task";
+import { COLUMN_DROPDOWN_ACTIONS } from "../../../_constants/kanban";
+import { useKanbanColumn } from "../../../_hooks/use-kanban-column";
 import { TaskCard } from "./task-card";
 
 interface ColumnProps {
@@ -45,27 +44,27 @@ export function Column({ id, title, dotColor, tasks }: ColumnProps) {
 		transition,
 	};
 
-	const deleteColumn = useBoardStore((state) => state.deleteColumn);
-	const renameColumn = useBoardStore((state) => state.renameColumn);
-	const openTaskModal = useTaskStore((state) => state.openTaskModal);
+	const {
+		isEditingTitle,
+		editTitle,
+		inputRef,
+		setEditTitle,
+		setIsEditingTitle,
+		handleRenameSubmit,
+		handleKeyDown,
+		deleteColumn,
+		openTaskModal,
+	} = useKanbanColumn(id, title);
 
-	const [isEditingTitle, setIsEditingTitle] = useState(false);
-	const [editTitle, setEditTitle] = useState(title);
-	const inputRef = useRef<HTMLInputElement>(null);
-
-	useEffect(() => {
-		if (isEditingTitle && inputRef.current) {
-			inputRef.current.focus();
+	const handleAction = (actionId: string) => {
+		switch (actionId) {
+			case "rename":
+				setIsEditingTitle(true);
+				break;
+			case "delete":
+				deleteColumn(id);
+				break;
 		}
-	}, [isEditingTitle]);
-
-	const handleRenameSubmit = () => {
-		if (editTitle.trim() && editTitle !== title) {
-			renameColumn(id, editTitle.trim());
-		} else {
-			setEditTitle(title);
-		}
-		setIsEditingTitle(false);
 	};
 
 	return (
@@ -89,14 +88,7 @@ export function Column({ id, title, dotColor, tasks }: ColumnProps) {
 							value={editTitle}
 							onChange={(e) => setEditTitle(e.target.value)}
 							onBlur={handleRenameSubmit}
-							onKeyDown={(e) => {
-								if (e.key === "Enter") handleRenameSubmit();
-								if (e.key === "Escape") {
-									setEditTitle(title);
-									setIsEditingTitle(false);
-								}
-								e.stopPropagation();
-							}}
+							onKeyDown={handleKeyDown}
 							onPointerDown={(e) => e.stopPropagation()}
 							className="bg-transparent border-b border-primary outline-none focus:border-primary text-on-surface w-32"
 						/>
@@ -118,21 +110,24 @@ export function Column({ id, title, dotColor, tasks }: ColumnProps) {
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-48">
-						<DropdownMenuItem
-							onPointerDown={(e) => e.stopPropagation()}
-							onClick={() => setIsEditingTitle(true)}
-						>
-							<Edit2 className="w-4 h-4 mr-2" />
-							Rename Board
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							onPointerDown={(e) => e.stopPropagation()}
-							className="text-error focus:text-error focus:bg-error/10"
-							onClick={() => deleteColumn(id)}
-						>
-							<Trash2 className="w-4 h-4 mr-2" />
-							Delete Board
-						</DropdownMenuItem>
+						{COLUMN_DROPDOWN_ACTIONS.map((action) => {
+							const Icon = action.icon;
+							return (
+								<DropdownMenuItem
+									key={action.id}
+									onPointerDown={(e) => e.stopPropagation()}
+									onClick={() => handleAction(action.id)}
+									className={
+										action.variant === "danger"
+											? "text-error focus:text-error focus:bg-error/10"
+											: ""
+									}
+								>
+									<Icon className="w-4 h-4 mr-2" />
+									{action.label}
+								</DropdownMenuItem>
+							);
+						})}
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>

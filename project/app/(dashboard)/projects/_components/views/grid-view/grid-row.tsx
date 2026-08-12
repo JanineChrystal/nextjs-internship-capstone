@@ -1,15 +1,19 @@
 "use client";
 
+import { useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { TASK_PRIORITIES, TASK_TAGS } from "@/lib/validations/task-schema";
-import { useBoardStore } from "@/stores/board-store";
+import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
-import type { GridTask } from "@/types/task";
+import type { GridTask, TaskPriority, TaskStatus, TaskTag } from "@/types/task";
 import { PriorityBadge } from "../../../../_components/ui/badges/priority-badge";
 import { StatusBadge } from "../../../../_components/ui/badges/status-badge";
 import { TagBadge } from "../../../../_components/ui/badges/tag-badge";
-import { GRID_COLUMN_CLASSES } from "../../../_constants/grid-view";
+import {
+	GRID_COLUMN_CLASSES,
+	GRID_DATE_CELLS,
+	GRID_DROPDOWN_CELLS,
+} from "../../../_constants/grid-view";
 import {
 	GridAssigneeCell,
 	GridDateCell,
@@ -32,7 +36,24 @@ export function GridRow({
 }: GridRowProps) {
 	const { updateTask } = useTaskStore();
 	const boardColumns = useBoardStore((state) => state.columns);
-	const dynamicStatuses = boardColumns.map((col) => col.title);
+
+	const dynamicStatuses = useMemo(
+		() => boardColumns.map((col) => col.title),
+		[boardColumns],
+	);
+
+	const renderBadge = (id: string, value: string) => {
+		switch (id) {
+			case "status":
+				return <StatusBadge status={value as TaskStatus} />;
+			case "priority":
+				return <PriorityBadge priority={value as TaskPriority} />;
+			case "tag":
+				return <TagBadge tag={value as TaskTag} />;
+			default:
+				return null;
+		}
+	};
 
 	return (
 		<>
@@ -63,41 +84,31 @@ export function GridRow({
 				}
 			/>
 
-			<GridDateCell
-				className={GRID_COLUMN_CLASSES.start}
-				date={task.startDate}
-				onSelect={(date) => updateTask(task.id, { startDate: date })}
-			/>
+			{GRID_DATE_CELLS.map((cell) => (
+				<GridDateCell
+					key={cell.id}
+					className={cell.className}
+					date={task[cell.id]}
+					onSelect={(date) => updateTask(task.id, { [cell.id]: date })}
+				/>
+			))}
 
-			<GridDateCell
-				className={GRID_COLUMN_CLASSES.due}
-				date={task.dueDate}
-				onSelect={(date) => updateTask(task.id, { dueDate: date })}
-			/>
-
-			<GridDropdownCell
-				className={GRID_COLUMN_CLASSES.status}
-				options={dynamicStatuses}
-				onSelect={(status) => updateTask(task.id, { status, board: status })}
-			>
-				<StatusBadge status={task.status} />
-			</GridDropdownCell>
-
-			<GridDropdownCell
-				className={GRID_COLUMN_CLASSES.priority}
-				options={TASK_PRIORITIES}
-				onSelect={(priority) => updateTask(task.id, { priority })}
-			>
-				<PriorityBadge priority={task.priority} />
-			</GridDropdownCell>
-
-			<GridDropdownCell
-				className={GRID_COLUMN_CLASSES.tag}
-				options={TASK_TAGS}
-				onSelect={(tag) => updateTask(task.id, { tag })}
-			>
-				<TagBadge tag={task.tag} />
-			</GridDropdownCell>
+			{GRID_DROPDOWN_CELLS.map((cell) => (
+				<GridDropdownCell
+					key={cell.id}
+					className={cell.className}
+					options={cell.id === "status" ? dynamicStatuses : cell.options || []}
+					onSelect={(value) => {
+						const updates: Partial<GridTask> = { [cell.id]: value };
+						if (cell.id === "status") {
+							updates.board = value;
+						}
+						updateTask(task.id, updates);
+					}}
+				>
+					{renderBadge(cell.id, task[cell.id] as string)}
+				</GridDropdownCell>
+			))}
 		</>
 	);
 }

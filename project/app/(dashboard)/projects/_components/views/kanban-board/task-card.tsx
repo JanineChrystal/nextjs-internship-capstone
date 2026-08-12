@@ -1,37 +1,52 @@
 "use client";
 
-import { format } from "date-fns";
 import { Calendar, CheckSquare, Paperclip } from "lucide-react";
 import { PriorityBadge } from "@/app/(dashboard)/_components/ui/badges/priority-badge";
 import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useTaskStore } from "@/stores/use-task-store";
-import type { GridTask, TaskPriority, TaskTag } from "@/types/task";
-import { useDraggableTask } from "../../../_hooks/use-drag-task";
+import type { GridTask } from "@/types/task";
+import { TASK_CARD_FOOTER_METRICS } from "../../../_constants/kanban";
+import { useTaskCard } from "../../../_hooks/use-task-card";
 
 interface TaskCardProps {
 	task: GridTask;
 }
 
 export function TaskCard({ task }: TaskCardProps) {
-	const { attributes, listeners, setNodeRef, style, isDragging } =
-		useDraggableTask(task);
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		style,
+		isDragging,
+		isSelected,
+		formattedDate,
+		tasksCompleted,
+		tasksTotal,
+		formattedPriority,
+		formattedTag,
+		toggleTaskSelection,
+		openTaskModal,
+	} = useTaskCard(task);
 
-	const selectedTaskIds = useTaskStore((state) => state.selectedTaskIds);
-	const toggleTaskSelection = useTaskStore(
-		(state) => state.toggleTaskSelection,
-	);
-	const openTaskModal = useTaskStore((state) => state.openTaskModal);
+	const getMetricValue = (id: string) => {
+		switch (id) {
+			case "attachments":
+				return task.attachments?.length || 0;
+			case "checklist":
+				return tasksTotal > 0 ? `${tasksCompleted}/${tasksTotal}` : null;
+			case "date":
+				return formattedDate;
+			default:
+				return null;
+		}
+	};
 
-	const isSelected = selectedTaskIds.has(task.id);
-	const formattedDate =
-		task.dueDate && task.dueDate !== "--"
-			? format(new Date(task.dueDate), "MMM d")
-			: null;
-	const tasksCompleted = task.checklist
-		? task.checklist.filter((c) => c.completed).length
-		: 0;
-	const tasksTotal = task.checklist ? task.checklist.length : 0;
+	const MetricIcon = {
+		Paperclip,
+		CheckSquare,
+		Calendar,
+	};
 
 	return (
 		<div
@@ -45,13 +60,12 @@ export function TaskCard({ task }: TaskCardProps) {
 					: "border-outline-variant hover:border-primary/50"
 			} ${isSelected ? "ring-1 ring-primary bg-primary/5" : ""}`}
 		>
-			{/* Top Header Row */}
 			<div className="flex justify-between items-start">
 				{/* biome-ignore lint/a11y/noStaticElementInteractions: We just want to prevent drag propagation */}
 				<div
 					className="pt-0.5"
 					role="presentation"
-					onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking checkbox
+					onPointerDown={(e) => e.stopPropagation()}
 					onClick={(e) => e.stopPropagation()}
 					onKeyDown={(e) => e.stopPropagation()}
 				>
@@ -61,39 +75,23 @@ export function TaskCard({ task }: TaskCardProps) {
 					/>
 				</div>
 				<div className="flex items-center gap-2">
-					{task.priority && (
-						<PriorityBadge
-							priority={
-								(task.priority.charAt(0).toUpperCase() +
-									task.priority.slice(1).toLowerCase()) as TaskPriority
-							}
-						/>
-					)}
-					{task.tag && (
-						<TagBadge
-							tag={
-								(task.tag.charAt(0).toUpperCase() +
-									task.tag.slice(1).toLowerCase()) as TaskTag
-							}
-						/>
-					)}
+					{formattedPriority && <PriorityBadge priority={formattedPriority} />}
+					{formattedTag && <TagBadge tag={formattedTag} />}
 				</div>
 			</div>
 
-			{/* Title */}
 			<button
 				type="button"
 				onClick={(e) => {
 					e.stopPropagation();
 					openTaskModal(task.id);
 				}}
-				onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking title
+				onPointerDown={(e) => e.stopPropagation()}
 				className="text-left font-body-sm text-body-sm text-foreground leading-tight font-medium hover:text-primary transition-colors focus:outline-none focus-visible:underline"
 			>
 				{task.name}
 			</button>
 
-			{/* Footer Metadata */}
 			<div className="flex items-center justify-between mt-2 pt-3 border-t border-outline-variant/50">
 				<div className="flex -space-x-2">
 					{task.assignees?.map((assignee) => (
@@ -107,22 +105,16 @@ export function TaskCard({ task }: TaskCardProps) {
 				</div>
 
 				<div className="flex items-center gap-3 text-secondary text-xs">
-					{task.attachments && task.attachments.length > 0 ? (
-						<div className="flex items-center gap-1">
-							<Paperclip className="w-3.5 h-3.5" /> {task.attachments.length}
-						</div>
-					) : null}
-					{tasksTotal > 0 ? (
-						<div className="flex items-center gap-1">
-							<CheckSquare className="w-3.5 h-3.5" /> {tasksCompleted}/
-							{tasksTotal}
-						</div>
-					) : null}
-					{formattedDate ? (
-						<div className="flex items-center gap-1">
-							<Calendar className="w-3.5 h-3.5" /> {formattedDate}
-						</div>
-					) : null}
+					{TASK_CARD_FOOTER_METRICS.map((metric) => {
+						const value = getMetricValue(metric.id);
+						if (!value) return null;
+						const Icon = MetricIcon[metric.icon as keyof typeof MetricIcon];
+						return (
+							<div key={metric.id} className="flex items-center gap-1">
+								<Icon className="w-3.5 h-3.5" /> {value}
+							</div>
+						);
+					})}
 				</div>
 			</div>
 		</div>

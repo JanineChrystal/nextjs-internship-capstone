@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { FilterField } from "@/components/ui/filters/filter-popover";
 import { TASK_PRIORITIES, TASK_TAGS } from "@/lib/validations/task-schema";
-import { useBoardStore } from "@/stores/board-store";
+import { useBoardStore } from "@/stores/use-board-store";
 import type { ProjectViewType } from "../[id]/page";
 
 export function useProjectPage() {

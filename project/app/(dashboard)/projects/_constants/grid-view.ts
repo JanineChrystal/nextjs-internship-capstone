@@ -1,3 +1,4 @@
+import { TASK_PRIORITIES, TASK_TAGS } from "@/lib/validations/task-schema";
 import type { ColumnDef } from "@/types/grid-table";
 import type { GridTask } from "@/types/task";
 
@@ -29,6 +30,29 @@ export const GRID_COLUMNS: ColumnDef[] = [
 		className: GRID_COLUMN_CLASSES.priority,
 	},
 	{ key: "tag", title: "Tag", className: GRID_COLUMN_CLASSES.tag },
+];
+
+export const GRID_DATE_CELLS = [
+	{ id: "startDate" as const, className: GRID_COLUMN_CLASSES.start },
+	{ id: "dueDate" as const, className: GRID_COLUMN_CLASSES.due },
+];
+
+export const GRID_DROPDOWN_CELLS = [
+	{
+		id: "status" as const,
+		className: GRID_COLUMN_CLASSES.status,
+		// options will be injected dynamically from board store
+	},
+	{
+		id: "priority" as const,
+		className: GRID_COLUMN_CLASSES.priority,
+		options: TASK_PRIORITIES,
+	},
+	{
+		id: "tag" as const,
+		className: GRID_COLUMN_CLASSES.tag,
+		options: TASK_TAGS,
+	},
 ];
 
 export const mockTasks: GridTask[] = [

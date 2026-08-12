@@ -145,10 +145,7 @@ export function TaskModal() {
 							>
 								Cancel
 							</Button>
-							<Button
-								type="button"
-								onClick={handleCreate}
-							>
+							<Button type="button" onClick={handleCreate}>
 								Create Task
 							</Button>
 						</div>

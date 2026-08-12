@@ -13,7 +13,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { formatDate } from "@/lib/utils/date";
-import { useBoardStore } from "@/stores/board-store";
+import { useBoardStore } from "@/stores/use-board-store";
 import type {
 	GridTask,
 	TaskBoard,
@@ -21,7 +21,10 @@ import type {
 	TaskStatus,
 	TaskTag,
 } from "@/types/task";
-import { TASK_PROPERTIES_CONFIG } from "../../../../projects/_constants/task-modal";
+import {
+	DATE_PICKER_CONFIG,
+	TASK_PROPERTIES_CONFIG,
+} from "../../../../projects/_constants/task-modal";
 import { BoardBadge } from "../../badges/board-badge";
 import { PriorityBadge } from "../../badges/priority-badge";
 import { StatusBadge } from "../../badges/status-badge";
@@ -102,65 +105,38 @@ export function TaskPropertiesGrid({
 				</div>
 			))}
 
-			{/* Date Pickers */}
-			<div className="space-y-1">
-				<span className="block text-xs font-medium text-secondary uppercase tracking-wider">
-					Start Date
-				</span>
-				<Popover>
-					<PopoverTrigger asChild>
-						<Button
-							variant="outline"
-							className="w-full justify-start font-normal h-9.5 px-2 py-2 border-outline-variant"
-						>
-							{formatDate(taskData.startDate)}
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-auto p-0" align="start">
-						<Calendar
-							mode="single"
-							selected={
-								taskData.startDate && taskData.startDate !== "--"
-									? new Date(taskData.startDate)
-									: undefined
-							}
-							onSelect={(date) =>
-								date && handleChange({ startDate: date.toISOString() })
-							}
-							initialFocus
-						/>
-					</PopoverContent>
-				</Popover>
-			</div>
-			<div className="space-y-1">
-				<span className="block text-xs font-medium text-secondary uppercase tracking-wider">
-					Due Date
-				</span>
-				<Popover>
-					<PopoverTrigger asChild>
-						<Button
-							variant="outline"
-							className="w-full justify-start font-normal h-9.5 px-2 py-2 border-outline-variant"
-						>
-							{formatDate(taskData.dueDate)}
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-auto p-0" align="start">
-						<Calendar
-							mode="single"
-							selected={
-								taskData.dueDate && taskData.dueDate !== "--"
-									? new Date(taskData.dueDate)
-									: undefined
-							}
-							onSelect={(date) =>
-								date && handleChange({ dueDate: date.toISOString() })
-							}
-							initialFocus
-						/>
-					</PopoverContent>
-				</Popover>
-			</div>
+			{/* Date Pickers mapped from constants */}
+			{DATE_PICKER_CONFIG.map((datePicker) => (
+				<div key={datePicker.id} className="space-y-1">
+					<span className="block text-xs font-medium text-secondary uppercase tracking-wider">
+						{datePicker.label}
+					</span>
+					<Popover>
+						<PopoverTrigger asChild>
+							<Button
+								variant="outline"
+								className="w-full justify-start font-normal h-9.5 px-2 py-2 border-outline-variant"
+							>
+								{formatDate(taskData[datePicker.id])}
+							</Button>
+						</PopoverTrigger>
+						<PopoverContent className="w-auto p-0" align="start">
+							<Calendar
+								mode="single"
+								selected={
+									taskData[datePicker.id] && taskData[datePicker.id] !== "--"
+										? new Date(taskData[datePicker.id] as string)
+										: undefined
+								}
+								onSelect={(date) =>
+									date && handleChange({ [datePicker.id]: date.toISOString() })
+								}
+								initialFocus
+							/>
+						</PopoverContent>
+					</Popover>
+				</div>
+			))}
 		</div>
 	);
 }
