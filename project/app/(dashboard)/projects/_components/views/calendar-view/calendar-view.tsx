@@ -1,83 +1,34 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-	BigCalendar,
-	type CalendarEvent,
-} from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
-import { ProjectModal } from "@/app/(dashboard)/_components/ui/modals/project-modal";
+import dynamic from "next/dynamic";
+import { BigCalendar } from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
 import { CalendarSidePanel } from "@/app/(dashboard)/_components/ui/side-panels";
-import type { Project } from "@/lib/validations/project-schema";
-import { useTaskStore } from "@/stores/use-task-store";
-import type { CalendarDeadlineItem } from "@/types/calendar";
+import { useCalendarView } from "../../../_hooks/use-calendar-view";
+
+const ProjectModal = dynamic(
+	() =>
+		import("@/app/(dashboard)/_components/ui/modals/project-modal").then(
+			(m) => m.ProjectModal,
+		),
+	{ ssr: false },
+);
 
 interface CalendarViewProps {
 	projectId: string;
 }
 
-export function CalendarView({ projectId: _projectId }: CalendarViewProps) {
-	const tasks = useTaskStore((state) => state.tasks);
-	const { openTaskModal } = useTaskStore();
-
-	const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-	const [editProjectData] = useState<Project | undefined>(undefined); // For mocked project edit
-
-	// Filter by projectId later on. Here we mock it by taking all tasks that have a dueDate.
-	const projectTasks = useMemo(() => {
-		return tasks.filter((t) => t.dueDate);
-	}, [tasks]);
-
-	const calendarEvents: CalendarEvent[] = useMemo(() => {
-		return projectTasks.map((task) => ({
-			id: task.id,
-			title: task.name,
-			// biome-ignore lint/style/noNonNullAssertion: Filtered above
-			start: new Date(task.dueDate!),
-			// biome-ignore lint/style/noNonNullAssertion: Filtered above
-			end: new Date(task.dueDate!),
-			allDay: true,
-			extendedProps: { type: "task", priority: task.priority },
-		}));
-	}, [projectTasks]);
-
-	const sidePanelItems: CalendarDeadlineItem[] = useMemo(() => {
-		return projectTasks.map(
-			(task) =>
-				({
-					id: task.id,
-					title: task.name,
-					date: task.dueDate,
-					type: "task",
-					columnId: task.board,
-					priority:
-						task.priority.toLowerCase() === "normal"
-							? "medium"
-							: (task.priority.toLowerCase() as "low" | "medium" | "high"),
-					category: task.board,
-					comments: 2, // Mocked metadata
-					attachments: 1, // Mocked metadata
-				}) as CalendarDeadlineItem,
-		);
-	}, [projectTasks]);
-
-	const handleSingleClick = (item: { id: string }) => {
-		setSelectedEventId((prev) => (prev === item.id ? null : item.id));
-	};
-
-	const handleDoubleClick = (item: {
-		id: string;
-		type?: string;
-		extendedProps?: Record<string, unknown>;
-	}) => {
-		// Only tasks exist in this view
-		openTaskModal(item.id);
-	};
-
-	const handleDateClick = (_date: Date) => {
-		// Only tasks can be created here
-		openTaskModal();
-	};
+export function CalendarView({ projectId }: CalendarViewProps) {
+	const {
+		isProjectModalOpen,
+		selectedEventId,
+		editProjectData,
+		calendarEvents,
+		sidePanelItems,
+		setIsProjectModalOpen,
+		handleSingleClick,
+		handleDoubleClick,
+		handleDateClick,
+	} = useCalendarView(projectId);
 
 	return (
 		<div className="grid grid-cols-1 xl:grid-cols-4 gap-6 w-full h-full min-h-[calc(100vh-200px)]">

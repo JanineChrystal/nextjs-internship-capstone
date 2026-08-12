@@ -1,11 +1,20 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { useProjectStore } from "@/stores/use-project-store";
 import { mockCurrentUserRole } from "../../../_constants/settings-view";
 import { CommentModerationSection } from "./comment-moderation-section";
-import { DangerZoneSection } from "./danger-zone-section";
-import { TeamAccessSection } from "./team-access-section";
+
+const TeamAccessSection = dynamic(
+	() => import("./team-access-section").then((m) => m.TeamAccessSection),
+	{ ssr: false },
+);
+
+const DangerZoneSection = dynamic(
+	() => import("./danger-zone-section").then((m) => m.DangerZoneSection),
+	{ ssr: false },
+);
 
 export function SettingsView({ projectId }: { projectId: string }) {
 	const projects = useProjectStore((state) => state.projects);

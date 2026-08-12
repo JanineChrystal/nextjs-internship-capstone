@@ -1,18 +1,19 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { use, useMemo, useState } from "react";
-import {
-	type FilterField,
-	FilterPopover,
-} from "@/components/ui/filters/filter-popover";
-import {
-	TASK_BOARDS,
-	TASK_PRIORITIES,
-	TASK_STATUSES,
-	TASK_TAGS,
-} from "@/lib/validations/task-schema";
+import { use } from "react";
+import { FilterPopover } from "@/components/ui/filters/filter-popover";
 import { useProjectStore } from "@/stores/use-project-store";
+import { ProjectHeader } from "../_components/ui/project-header/project-header";
+import { ProjectToolbar } from "../_components/ui/project-toolbar";
+import { useProjectPage } from "../_hooks/use-project-page";
+
+export type ProjectViewType =
+	| "grid"
+	| "board"
+	| "calendar"
+	| "charts"
+	| "settings";
 
 const TaskModal = dynamic(
 	() =>
@@ -22,21 +23,30 @@ const TaskModal = dynamic(
 	{ ssr: false },
 );
 
-import { ProjectHeader } from "../_components/ui/project-header/project-header";
-import { ProjectToolbar } from "../_components/ui/project-toolbar";
-import { CalendarView } from "../_components/views/calendar-view";
-import { GridView } from "../_components/views/grid-view";
-// Import your draft view components (we will build these next)
-import { KanbanBoard } from "../_components/views/kanban-board/kanban-board";
-// import { ChartsView } from "./_components/views/charts-view";
-import { SettingsView } from "../_components/views/settings-view";
+const KanbanBoard = dynamic(
+	() =>
+		import("../_components/views/kanban-board/kanban-board").then(
+			(m) => m.KanbanBoard,
+		),
+	{ ssr: false },
+);
 
-export type ProjectViewType =
-	| "grid"
-	| "board"
-	| "calendar"
-	| "charts"
-	| "settings";
+const GridView = dynamic(
+	() => import("../_components/views/grid-view").then((m) => m.GridView),
+	{ ssr: false },
+);
+
+const CalendarView = dynamic(
+	() =>
+		import("../_components/views/calendar-view").then((m) => m.CalendarView),
+	{ ssr: false },
+);
+
+const SettingsView = dynamic(
+	() =>
+		import("../_components/views/settings-view").then((m) => m.SettingsView),
+	{ ssr: false },
+);
 
 export default function ProjectPage({
 	params,
@@ -48,37 +58,15 @@ export default function ProjectPage({
 	const projects = useProjectStore((state) => state.projects);
 	const currentProject =
 		projects.find((p) => p.id === resolvedParams.id) || projects[0];
-	// 1. State to track which tab is currently active
-	const [activeView, setActiveView] = useState<ProjectViewType>("board");
 
-	// 2. Global filter state
-	const [filters, setFilters] = useState<Record<string, string[]>>({});
-
-	const handleToggleFilter = (fieldId: string, value: string) => {
-		setFilters((prev) => {
-			const currentValues = prev[fieldId] || [];
-			const nextValues = currentValues.includes(value)
-				? currentValues.filter((v) => v !== value)
-				: [...currentValues, value];
-
-			return {
-				...prev,
-				[fieldId]: nextValues,
-			};
-		});
-	};
-
-	const handleResetFilters = () => setFilters({});
-
-	const filterFields: FilterField[] = useMemo(
-		() => [
-			{ id: "status", label: "Status", options: TASK_STATUSES },
-			{ id: "priority", label: "Priority", options: TASK_PRIORITIES },
-			{ id: "board", label: "Board", options: TASK_BOARDS },
-			{ id: "tag", label: "Tag", options: TASK_TAGS },
-		],
-		[],
-	);
+	const {
+		activeView,
+		filters,
+		filterFields,
+		setActiveView,
+		handleToggleFilter,
+		handleResetFilters,
+	} = useProjectPage();
 
 	return (
 		<div className="flex flex-col gap-6 w-full max-w-7xl mx-auto pb-8">

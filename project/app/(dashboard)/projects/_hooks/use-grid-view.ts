@@ -88,12 +88,6 @@ export function useGridView(externalFilters?: Record<string, string[]>) {
 			const next = new Set(prev);
 			if (checked) next.add(taskId);
 			else next.delete(taskId);
-
-			if (next.size > 0) {
-				setIsSelectionModeActive(true);
-			} else {
-				setIsSelectionModeActive(false);
-			}
 			return next;
 		});
 	};

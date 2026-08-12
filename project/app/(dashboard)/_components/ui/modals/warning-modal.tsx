@@ -1,8 +1,8 @@
 "use client";
 
-import { AlertTriangle, Info, Trash2 } from "lucide-react";
 import { BaseModal } from "@/components/modals/base-modal";
 import { Button } from "@/components/ui/buttons/button";
+import { WARNING_MODAL_CONFIG } from "../../../_constants/warning-modal";
 
 interface WarningModalProps {
 	isOpen: boolean;
@@ -14,24 +14,6 @@ interface WarningModalProps {
 	cancelText?: string;
 	variant?: "danger" | "warning" | "info";
 }
-
-const WARNING_MODAL_CONFIG = {
-	danger: {
-		icon: Trash2,
-		iconClass: "text-red-600 dark:text-red-400",
-		confirmVariant: "destructive" as const,
-	},
-	warning: {
-		icon: AlertTriangle,
-		iconClass: "text-amber-600 dark:text-amber-400",
-		confirmVariant: "default" as const,
-	},
-	info: {
-		icon: Info,
-		iconClass: "text-blue-600 dark:text-blue-400",
-		confirmVariant: "default" as const,
-	},
-};
 
 export function WarningModal({
 	isOpen,
