@@ -5,10 +5,10 @@ import type {
 	userSchema,
 } from "@/lib/validations/user-schema";
 
-// 1. DATABASE SCHEMA TYPES (Inferred automatically from Drizzle)
+// DATABASE SCHEMA TYPES
 export type DbUser = typeof users.$inferSelect;
 export type NewDbUser = typeof users.$inferInsert;
 
-// 2. ZOD VALIDATION TYPES (Inferred automatically from Zod)
+// ZOD VALIDATION TYPES
 export type UserInputDTO = z.infer<typeof userSchema>;
 export type ChangePasswordDTO = z.infer<typeof changePasswordSchema>;

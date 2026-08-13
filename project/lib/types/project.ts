@@ -3,17 +3,19 @@ import type { projects } from "@/lib/db/schema";
 import type {
 	createProjectSchema,
 	editProjectSchema,
+	ProjectCategorySchema,
 } from "@/lib/validations/project-schema";
 
-// 1. DATABASE SCHEMA TYPES (Inferred automatically from Drizzle)
+// DATABASE SCHEMA TYPES
 export type DbProject = typeof projects.$inferSelect;
 export type NewDbProject = typeof projects.$inferInsert;
 
-// 2. ZOD VALIDATION TYPES (Inferred automatically from Zod)
+// ZOD VALIDATION TYPES
 export type CreateProjectInputDTO = z.infer<typeof createProjectSchema>;
 export type EditProjectInputDTO = z.infer<typeof editProjectSchema>;
+export type ProjectCategory = z.infer<typeof ProjectCategorySchema>;
 
-// 3. UI / DOMAIN TYPES (Composed for UI Components)
+// UI / DOMAIN TYPES
 export interface DangerZoneActionConfig {
 	id: "archive" | "delete";
 	title: string;

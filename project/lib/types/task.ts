@@ -12,11 +12,11 @@ import type {
 	ChecklistItemSchema,
 	GridTaskSchema,
 	LinkSchema,
-	TaskBoardEnum,
+	TaskBoardSchema,
 	TaskItemSchema,
-	TaskPriorityEnum,
-	TaskStatusEnum,
-	TaskTagEnum,
+	TaskPrioritySchema,
+	TaskStatusSchema,
+	TaskTagSchema,
 } from "@/lib/validations/task-schema";
 
 export type TaskItem = z.infer<typeof TaskItemSchema>;
@@ -39,17 +39,17 @@ export type TaskModalActionId = "TOGGLE_COMPLETION" | "DUPLICATE" | "DELETE";
 export type TaskPropertyId = "tag" | "status" | "priority" | "board";
 export type PriorityType = "low" | "medium" | "high" | "urgent";
 
-export type TaskStatus = z.infer<typeof TaskStatusEnum>;
-export type TaskPriority = z.infer<typeof TaskPriorityEnum>;
-export type TaskTag = z.infer<typeof TaskTagEnum>;
-export type TaskBoard = z.infer<typeof TaskBoardEnum>;
+export type TaskStatus = z.infer<typeof TaskStatusSchema>;
+export type TaskPriority = z.infer<typeof TaskPrioritySchema>;
+export type TaskTag = z.infer<typeof TaskTagSchema>;
+export type TaskBoard = z.infer<typeof TaskBoardSchema>;
 export type Assignee = z.infer<typeof AssigneeSchema>;
 export type ChecklistItem = z.infer<typeof ChecklistItemSchema>;
 export type TaskAttachment = z.infer<typeof AttachmentSchema>;
 export type TaskLink = z.infer<typeof LinkSchema>;
 export type GridTask = z.infer<typeof GridTaskSchema>;
 
-// DATABASE SCHEMA TYPES (Inferred automatically from Drizzle)
+// DATABASE SCHEMA TYPES
 export type DbTask = typeof tasks.$inferSelect;
 export type NewDbTask = typeof tasks.$inferInsert;
 

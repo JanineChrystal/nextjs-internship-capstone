@@ -177,7 +177,7 @@ export const boards = pgTable("Boards", {
 		.references(() => workspaces.id, { onDelete: "cascade" })
 		.notNull(),
 	name: text("name").notNull(),
-	order: integer("order").notNull(),
+	position: integer("position").default(0).notNull(),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
 	updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 	deletedAt: timestamp("deletedAt"),
@@ -194,7 +194,7 @@ export const tasks = pgTable("Tasks", {
 		.notNull(),
 	name: text("name").notNull(),
 	category: text("category"),
-	status: text("status").notNull(),
+	status: text("status").default("Not Started").notNull(),
 	priority: taskPriorityEnum("priority").notNull(),
 	startDate: timestamp("startDate"),
 	dueDate: timestamp("dueDate"),

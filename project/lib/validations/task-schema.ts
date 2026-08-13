@@ -16,19 +16,20 @@ export const insertAttachmentDbSchema = createInsertSchema(attachments);
 export const selectAttachmentDbSchema = createSelectSchema(attachments);
 
 //UI VALIDATION SCHEMAS
-export const TaskStatusEnum = z.string();
-export const TaskPriorityEnum = z.enum(["low", "medium", "high", "urgent"]);
-export const TaskTagEnum = z.enum([
+export const TaskStatusSchema = z.string().min(1, "Status is required").trim();
+export const TaskPrioritySchema = z.enum(["low", "medium", "high", "urgent"]);
+export const TaskTagSchema = z.enum([
 	"Design",
 	"Research",
 	"Analytics",
 	"Content",
 ]);
-export const TaskBoardEnum = z.string();
+export const TaskBoardSchema = z.string().min(1, "Board column is required").trim();
+export const TaskCategorySchema = z.string().min(1, "Category cannot be empty").trim().optional();
 
-export const TASK_STATUSES = ["In Progress", "Completed", "Not Started"];
-export const TASK_PRIORITIES = TaskPriorityEnum.options;
-export const TASK_TAGS = TaskTagEnum.options;
+export const DEFAULT_TASK_STATUSES = ["Not Started", "In Progress", "Completed"];
+export const TASK_PRIORITIES = TaskPrioritySchema.options;
+export const TASK_TAGS = TaskTagSchema.options;
 export const TASK_BOARDS = ["In Progress", "Completed", "Up Next", "Backlog"];
 
 export const AssigneeSchema = z.object({
@@ -58,9 +59,9 @@ export const LinkSchema = z.object({
 export const TaskItemSchema = z.object({
 	id: z.string(),
 	title: z.string().min(1, "Task title is required"),
-	priority: TaskPriorityEnum,
+	priority: TaskPrioritySchema,
 	columnId: z.string(),
-	category: z.string(),
+	category: TaskCategorySchema,
 	comments: z.number().int().optional(),
 	attachments: z.number().int().optional(),
 	date: z.string().optional(),
@@ -75,10 +76,10 @@ export const GridTaskSchema = z.object({
 	assignees: z.array(AssigneeSchema),
 	startDate: z.string(),
 	dueDate: z.string(),
-	board: TaskBoardEnum,
-	status: TaskStatusEnum,
-	priority: TaskPriorityEnum,
-	tag: TaskTagEnum,
+	board: TaskBoardSchema,
+	status: TaskStatusSchema,
+	priority: TaskPrioritySchema,
+	tag: TaskTagSchema,
 	isCompleted: z.boolean(),
 	checklist: z.array(ChecklistItemSchema).optional(),
 	attachments: z.array(AttachmentSchema).optional(),

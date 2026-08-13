@@ -1,7 +1,7 @@
 import { CheckCircle, Copy, Trash2 } from "lucide-react";
 import {
 	TASK_PRIORITIES,
-	TASK_STATUSES,
+	DEFAULT_TASK_STATUSES,
 	TASK_TAGS,
 } from "@/lib/validations/task-schema";
 import type {
@@ -50,7 +50,7 @@ export const TASK_MODAL_ACTIONS: TaskModalAction[] = [
 
 export const TASK_PROPERTIES_CONFIG: TaskPropertyConfig[] = [
 	{ id: "tag", label: "Category", options: TASK_TAGS },
-	{ id: "status", label: "Status", options: TASK_STATUSES },
+	{ id: "status", label: "Status", options: DEFAULT_TASK_STATUSES },
 	{ id: "priority", label: "Priority", options: TASK_PRIORITIES },
 ];
 
