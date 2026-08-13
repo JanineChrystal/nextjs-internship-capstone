@@ -64,21 +64,28 @@ export async function getTasksByBoardId(
 	}
 }
 
-export async function moveTaskBoardDAL(taskId: string, newBoardId: string): Promise<TaskOutputDTO> {
+export async function moveTaskBoardDAL(
+	taskId: string,
+	newBoardId: string,
+): Promise<TaskOutputDTO> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
 	try {
 		// Get the new board to find its name to sync the status
 		const { boards } = await import("@/lib/db/schema");
-		const [board] = await db.select().from(boards).where(eq(boards.id, newBoardId));
+		const [board] = await db
+			.select()
+			.from(boards)
+			.where(eq(boards.id, newBoardId));
 		if (!board) throw new Error("Board not found");
 
-		const result = await db.update(tasks)
+		const result = await db
+			.update(tasks)
 			.set({ boardId: newBoardId, status: board.name, updatedAt: new Date() })
 			.where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)))
 			.returning();
-			
+
 		return toTaskDTO(result[0]);
 	} catch (error) {
 		throw new Error("Failed to move task to new board", { cause: error });

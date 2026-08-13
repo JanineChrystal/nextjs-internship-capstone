@@ -24,10 +24,21 @@ export const TaskTagSchema = z.enum([
 	"Analytics",
 	"Content",
 ]);
-export const TaskBoardSchema = z.string().min(1, "Board column is required").trim();
-export const TaskCategorySchema = z.string().min(1, "Category cannot be empty").trim().optional();
+export const TaskBoardSchema = z
+	.string()
+	.min(1, "Board column is required")
+	.trim();
+export const TaskCategorySchema = z
+	.string()
+	.min(1, "Category cannot be empty")
+	.trim()
+	.optional();
 
-export const DEFAULT_TASK_STATUSES = ["Not Started", "In Progress", "Completed"];
+export const DEFAULT_TASK_STATUSES = [
+	"Not Started",
+	"In Progress",
+	"Completed",
+];
 export const TASK_PRIORITIES = TaskPrioritySchema.options;
 export const TASK_TAGS = TaskTagSchema.options;
 export const TASK_BOARDS = ["In Progress", "Completed", "Up Next", "Backlog"];

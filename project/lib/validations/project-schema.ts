@@ -6,7 +6,11 @@ import { projects } from "@/lib/db/schema";
 export const insertProjectDbSchema = createInsertSchema(projects);
 export const selectProjectDbSchema = createSelectSchema(projects);
 
-export const ProjectCategorySchema = z.string().min(1, "Category cannot be empty").trim().optional();
+export const ProjectCategorySchema = z
+	.string()
+	.min(1, "Category cannot be empty")
+	.trim()
+	.optional();
 
 // UI VALIDATION SCHEMAS
 export const projectSchema = z.object({

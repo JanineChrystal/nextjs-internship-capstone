@@ -4,7 +4,9 @@ import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { projects, tasks } from "@/lib/db/schema";
 
-export async function getUniqueTaskCategoriesDAL(projectId: string): Promise<string[]> {
+export async function getUniqueTaskCategoriesDAL(
+	projectId: string,
+): Promise<string[]> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
@@ -19,8 +21,8 @@ export async function getUniqueTaskCategoriesDAL(projectId: string): Promise<str
 					eq(projects.ownerId, user.id),
 					isNull(tasks.deletedAt),
 					isNull(projects.deletedAt),
-					isNotNull(tasks.category)
-				)
+					isNotNull(tasks.category),
+				),
 			);
 		return results.map((row) => row.category as string).filter(Boolean);
 	} catch (error) {
@@ -40,8 +42,8 @@ export async function getUniqueProjectCategoriesDAL(): Promise<string[]> {
 				and(
 					eq(projects.ownerId, user.id),
 					isNull(projects.deletedAt),
-					isNotNull(projects.category)
-				)
+					isNotNull(projects.category),
+				),
 			);
 		return results.map((row) => row.category as string).filter(Boolean);
 	} catch (error) {

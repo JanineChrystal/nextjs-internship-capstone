@@ -309,6 +309,27 @@ export const activityLogs = pgTable("ActivityLogs", {
 	deletedAt: timestamp("deletedAt"),
 });
 
+export const notifications = pgTable("Notifications", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	recipientId: uuid("recipientId")
+		.references(() => users.id, { onDelete: "cascade" })
+		.notNull(),
+	actorId: uuid("actorId").references(() => users.id, { onDelete: "cascade" }),
+	workspaceId: uuid("workspaceId").references(() => workspaces.id, {
+		onDelete: "cascade",
+	}),
+	projectId: uuid("projectId").references(() => projects.id, {
+		onDelete: "cascade",
+	}),
+	taskId: uuid("taskId").references(() => tasks.id, { onDelete: "cascade" }),
+	actionType: actionTypeEnum("actionType").notNull(),
+	message: text("message").notNull(),
+	isRead: boolean("isRead").default(false).notNull(),
+	createdAt: timestamp("createdAt").defaultNow().notNull(),
+	updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+	deletedAt: timestamp("deletedAt"),
+});
+
 // RELATIONS
 export const usersRelations = relations(users, ({ one, many }) => ({
 	ownedWorkspaces: many(workspaces),
@@ -321,9 +342,36 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 	mentions: many(commentMentions),
 	actionsPerformed: many(activityLogs, { relationName: "actor" }),
 	actionsTargeted: many(activityLogs, { relationName: "target" }),
+	notificationsReceived: many(notifications, { relationName: "recipient" }),
+	notificationsTriggered: many(notifications, { relationName: "actor" }),
 	notificationSettings: one(notificationSettings, {
 		fields: [users.id],
 		references: [notificationSettings.userId],
+	}),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+	recipient: one(users, {
+		fields: [notifications.recipientId],
+		references: [users.id],
+		relationName: "recipient",
+	}),
+	actor: one(users, {
+		fields: [notifications.actorId],
+		references: [users.id],
+		relationName: "actor",
+	}),
+	workspace: one(workspaces, {
+		fields: [notifications.workspaceId],
+		references: [workspaces.id],
+	}),
+	project: one(projects, {
+		fields: [notifications.projectId],
+		references: [projects.id],
+	}),
+	task: one(tasks, {
+		fields: [notifications.taskId],
+		references: [tasks.id],
 	}),
 }));
 

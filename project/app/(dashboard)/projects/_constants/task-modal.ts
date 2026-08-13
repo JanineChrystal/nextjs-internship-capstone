@@ -1,7 +1,7 @@
 import { CheckCircle, Copy, Trash2 } from "lucide-react";
 import {
-	TASK_PRIORITIES,
 	DEFAULT_TASK_STATUSES,
+	TASK_PRIORITIES,
 	TASK_TAGS,
 } from "@/lib/validations/task-schema";
 import type {
