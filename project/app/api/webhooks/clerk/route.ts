@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { Webhook } from "svix";
 import { deleteUserFromDB, upsertUserInDB } from "@/lib/dal/users";
 // import NewUser from your types folder instead of UserPayload
-import type { NewUser } from "@/types/user";
+import type { NewDbUser } from "@/types/user";
 
 export async function POST(req: Request) {
 	// retrieve the clerk webhook secret from your environment variables
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 		const data = evt.data;
 
 		// map the raw clerk webhook data directly into the database insert type
-		const userToSync: NewUser = {
+		const userToSync: NewDbUser = {
 			clerkId: id as string,
 			email: data.email_addresses[0]?.email_address || "",
 			firstName: data.first_name || null,

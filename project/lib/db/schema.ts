@@ -50,9 +50,11 @@ export const actionTypeEnum = pgEnum("ActionType", [
 // GLOBAL & WORKSPACE ENTITIES
 export const users = pgTable("Users", {
 	id: uuid("id").primaryKey().defaultRandom(),
-	username: text("username").notNull().unique(),
+	clerkId: text("clerkId").notNull().unique(),
 	email: text("email").notNull().unique(),
-	avatarUrl: text("avatarUrl"),
+	firstName: text("firstName"),
+	lastName: text("lastName"),
+	imageUrl: text("imageUrl"),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
 	updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 	deletedAt: timestamp("deletedAt"),

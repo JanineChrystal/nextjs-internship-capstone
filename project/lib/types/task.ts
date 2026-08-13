@@ -1,29 +1,25 @@
 import type { LucideIcon } from "lucide-react";
 import type { z } from "zod";
 import type {
+	attachments,
+	checklists,
+	taskAssignees,
+	tasks,
+} from "@/lib/db/schema";
+import type {
 	AssigneeSchema,
 	AttachmentSchema,
 	ChecklistItemSchema,
 	GridTaskSchema,
 	LinkSchema,
 	TaskBoardEnum,
+	TaskItemSchema,
 	TaskPriorityEnum,
 	TaskStatusEnum,
 	TaskTagEnum,
 } from "@/lib/validations/task-schema";
 
-export interface TaskItem {
-	id: string;
-	title: string;
-	priority: PriorityType;
-	columnId: string;
-	category: string;
-	comments?: number;
-	attachments?: number;
-	date?: string;
-	tasksCompleted?: number;
-	tasksTotal?: number;
-}
+export type TaskItem = z.infer<typeof TaskItemSchema>;
 
 export interface TaskModalAction {
 	id: TaskModalActionId;
@@ -52,3 +48,16 @@ export type ChecklistItem = z.infer<typeof ChecklistItemSchema>;
 export type TaskAttachment = z.infer<typeof AttachmentSchema>;
 export type TaskLink = z.infer<typeof LinkSchema>;
 export type GridTask = z.infer<typeof GridTaskSchema>;
+
+// DATABASE SCHEMA TYPES (Inferred automatically from Drizzle)
+export type DbTask = typeof tasks.$inferSelect;
+export type NewDbTask = typeof tasks.$inferInsert;
+
+export type DbTaskAssignee = typeof taskAssignees.$inferSelect;
+export type NewDbTaskAssignee = typeof taskAssignees.$inferInsert;
+
+export type DbChecklist = typeof checklists.$inferSelect;
+export type NewDbChecklist = typeof checklists.$inferInsert;
+
+export type DbAttachment = typeof attachments.$inferSelect;
+export type NewDbAttachment = typeof attachments.$inferInsert;

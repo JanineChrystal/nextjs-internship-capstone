@@ -78,7 +78,7 @@ export function AppSidebar({ className }: { className?: string }) {
 										}
 									>
 										<Link href={item.href}>
-											<Icon className="w-5 h-5" />
+											{Icon && <Icon className="w-5 h-5" />}
 											<span>{item.name}</span>
 										</Link>
 									</SidebarMenuButton>
@@ -122,7 +122,7 @@ export function AppSidebar({ className }: { className?: string }) {
 													}
 												}}
 											>
-												<Icon className="w-5 h-5 shrink-0" />
+												{Icon && <Icon className="w-5 h-5 shrink-0" />}
 												<span className="group-data-[collapsible=icon]:hidden">
 													{item.name}
 												</span>
@@ -167,7 +167,7 @@ export function AppSidebar({ className }: { className?: string }) {
 									}}
 								>
 									<Link href={item.href}>
-										<Icon className="w-5 h-5 shrink-0" />
+										{Icon && <Icon className="w-5 h-5 shrink-0" />}
 										<span className="group-data-[collapsible=icon]:hidden">
 											{item.name}
 										</span>

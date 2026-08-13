@@ -4,7 +4,7 @@ import type { Project } from "@/lib/validations/project-schema";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { CalendarDeadlineItem } from "@/types/calendar";
 
-export function useCalendarView(projectId: string) {
+export function useCalendarView(_projectId: string) {
 	const tasks = useTaskStore((state) => state.tasks);
 	const { openTaskModal } = useTaskStore();
 

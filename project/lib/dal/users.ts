@@ -2,9 +2,10 @@ import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import type { NewUser } from "@/types/user";
+import { toUserDTO, type UserOutputDTO } from "@/lib/dtos/user-dto";
+import type { NewDbUser } from "@/lib/types/user";
 
-export async function upsertUserInDB(data: NewUser) {
+export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
 	try {
 		const result = await db
 			.insert(users)
@@ -18,16 +19,18 @@ export async function upsertUserInDB(data: NewUser) {
 					imageUrl: data.imageUrl,
 					updatedAt: new Date(),
 				},
-			});
+			})
+			.returning();
 
-		return result;
+		return toUserDTO(result[0]);
 	} catch (error) {
 		throw new Error("Failed to sync user to database", { cause: error });
 	}
 }
 
-export async function deleteUserFromDB(clerkId: string) {
-	// attempt to update the user and return the affected rows
+export async function deleteUserFromDB(
+	clerkId: string,
+): Promise<UserOutputDTO> {
 	try {
 		const updatedUsers = await db
 			.update(users)
@@ -37,13 +40,11 @@ export async function deleteUserFromDB(clerkId: string) {
 			// return the updated row to verify it worked
 			.returning();
 
-		// if the array is empty no active user was found
 		if (updatedUsers.length === 0) {
 			throw new Error("User already deleted or user does not exist");
 		}
 
-		// return the successfully soft deleted user if needed
-		return updatedUsers[0];
+		return toUserDTO(updatedUsers[0]);
 	} catch (error) {
 		if (
 			error instanceof Error &&

@@ -1,8 +1,14 @@
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
+import { projects } from "@/lib/db/schema";
 
+// DATABASE SCHEMA VALIDATION
+export const insertProjectDbSchema = createInsertSchema(projects);
+export const selectProjectDbSchema = createSelectSchema(projects);
+
+// UI VALIDATION SCHEMAS
 export const projectSchema = z.object({
-	id: z.uuid(),
-
+	id: z.string().uuid(),
 	title: z.string().min(1, "Title is required"),
 	description: z.string().optional(),
 	category: z.string().optional(),
@@ -20,18 +26,12 @@ export const projectSchema = z.object({
 		.enum(["low", "medium", "high", "urgent"])
 		.default("low")
 		.optional(),
-
 	isOwned: z.boolean(),
 	isAssigned: z.boolean(),
-
-	// To do: Add if db is finalize
-	// createdAt: z.date(),
-	// updatedAt: z.date(),
 });
 
 export type Project = z.infer<typeof projectSchema>;
 
-// The Form Schema (Only what the user inputs)
 export const createProjectSchema = projectSchema.pick({
 	title: true,
 	category: true,

@@ -12,7 +12,7 @@ interface BoardState {
 	renameColumn: (id: string, newTitle: string) => void;
 }
 
-export const useBoardStore = create<BoardState>((set, get) => ({
+export const useBoardStore = create<BoardState>((set) => ({
 	columns: defaultColumns,
 
 	addColumn: (title: string) =>

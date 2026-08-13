@@ -1,6 +1,6 @@
 {
-	"id": "5c22e658-7904-4549-aaea-a0d3e07119fc",
-	"prevId": "e3f1d1d5-066c-4472-98b2-9ece2100e917",
+	"id": "ed90075b-4465-4626-9d9a-9388795266fb",
+	"prevId": "5c22e658-7904-4549-aaea-a0d3e07119fc",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -1142,8 +1142,8 @@
 					"notNull": true,
 					"default": "gen_random_uuid()"
 				},
-				"username": {
-					"name": "username",
+				"clerkId": {
+					"name": "clerkId",
 					"type": "text",
 					"primaryKey": false,
 					"notNull": true
@@ -1154,8 +1154,20 @@
 					"primaryKey": false,
 					"notNull": true
 				},
-				"avatarUrl": {
-					"name": "avatarUrl",
+				"firstName": {
+					"name": "firstName",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"lastName": {
+					"name": "lastName",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"imageUrl": {
+					"name": "imageUrl",
 					"type": "text",
 					"primaryKey": false,
 					"notNull": false
@@ -1185,10 +1197,10 @@
 			"foreignKeys": {},
 			"compositePrimaryKeys": {},
 			"uniqueConstraints": {
-				"Users_username_unique": {
-					"name": "Users_username_unique",
+				"Users_clerkId_unique": {
+					"name": "Users_clerkId_unique",
 					"nullsNotDistinct": false,
-					"columns": ["username"]
+					"columns": ["clerkId"]
 				},
 				"Users_email_unique": {
 					"name": "Users_email_unique",

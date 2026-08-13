@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 export interface NavItem {
 	name: string;
 	href: string;
-	icon: LucideIcon;
-	current: boolean;
+	icon?: LucideIcon;
+	current?: boolean;
 	subItems?: { name: string; href: string }[];
 }

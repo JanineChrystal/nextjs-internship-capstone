@@ -6,6 +6,7 @@ import type {
 import { useMemo, useState } from "react";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
+import type { Assignee } from "@/types/task";
 
 export function useKanbanDnd(externalFilters?: Record<string, string[]>) {
 	const tasks = useTaskStore((state) => state.tasks);
@@ -41,7 +42,7 @@ export function useKanbanDnd(externalFilters?: Record<string, string[]>) {
 			if (externalFilters["my-tasks"]?.includes("true")) {
 				// For the demo, "Janine Chrystal" is the active user
 				result = result.filter((t) =>
-					t.assignees?.some((a) => a.name === "Janine Chrystal"),
+					t.assignees?.some((a: Assignee) => a.name === "Janine Chrystal"),
 				);
 			}
 		}
