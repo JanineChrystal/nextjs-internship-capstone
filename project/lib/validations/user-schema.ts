@@ -2,11 +2,11 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import { users } from "@/lib/db/schema";
 
-// DATABASE SCHEMA VALIDATION (Generated from Drizzle)
+// DATABASE SCHEMA VALIDATION
 export const insertUserDbSchema = createInsertSchema(users);
 export const selectUserDbSchema = createSelectSchema(users);
 
-// UI VALIDATION SCHEMAS (Clerk & Forms)
+// UI VALIDATION SCHEMAS
 export const userSchema = z.object({
 	email: z
 		.string()

@@ -12,13 +12,13 @@ export async function createTaskAction(
 	formData: FormData,
 ): Promise<{ success: boolean; data?: TaskOutputDTO; error?: string }> {
 	try {
-		// 1. Auth check
+		// Auth check
 		const user = await getCurrentUser();
 		if (!user) {
 			return { success: false, error: "Unauthorized" };
 		}
 
-		// 2. Parse form data payload
+		// Parse form data payload
 		const rawData = {
 			projectId,
 			boardId,
@@ -35,7 +35,7 @@ export async function createTaskAction(
 			notes: formData.get("notes"),
 		};
 
-		// 3. Zod Validation (Using the DB schema directly for raw backend inserts)
+		// Zod Validation (Using the DB schema directly for raw backend inserts)
 		const validationResult = insertTaskDbSchema.safeParse(rawData);
 		if (!validationResult.success) {
 			return { success: false, error: "Invalid form data" };
@@ -43,13 +43,13 @@ export async function createTaskAction(
 
 		const data = validationResult.data;
 
-		// 4. DAL Call
+		// DAL Call
 		const newTask = await createTaskInDB(data);
 
-		// 5. Cache Revalidation
+		// Cache Revalidation
 		revalidatePath(`/projects/${projectId}`);
 
-		// 6. Return DTO Payload
+		// Return DTO Payload
 		return { success: true, data: newTask };
 	} catch (error) {
 		console.error("createTaskAction error:", error);

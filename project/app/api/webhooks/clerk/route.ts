@@ -2,11 +2,9 @@ import type { WebhookEvent } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { Webhook } from "svix";
 import { deleteUserFromDB, upsertUserInDB } from "@/lib/dal/users";
-// import NewUser from your types folder instead of UserPayload
-import type { NewDbUser } from "@/types/user";
+import type { NewDbUser } from "@/lib/types/user";
 
 export async function POST(req: Request) {
-	// retrieve the clerk webhook secret from your environment variables
 	const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
 	if (!WEBHOOK_SECRET) {
