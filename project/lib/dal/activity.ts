@@ -2,7 +2,11 @@ import "server-only";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { activityLogs, notifications } from "@/lib/db/schema";
+import {
+	activityLogs,
+	notificationSettings,
+	notifications,
+} from "@/lib/db/schema";
 import {
 	type ActivityLogDTO,
 	type NotificationDTO,
@@ -24,10 +28,42 @@ export async function createActivityLogDAL(
 
 export async function createNotificationDAL(
 	data: NewDbNotification,
-): Promise<NotificationDTO> {
+): Promise<{ notification: NotificationDTO; shouldSendEmail: boolean }> {
 	try {
 		const result = await db.insert(notifications).values(data).returning();
-		return toNotificationDTO(result[0]);
+
+		let shouldSendEmail = false;
+
+		const [settings] = await db
+			.select()
+			.from(notificationSettings)
+			.where(
+				and(
+					eq(notificationSettings.userId, data.recipientId),
+					isNull(notificationSettings.deletedAt),
+				),
+			);
+
+		if (settings) {
+			if (data.actionType === "INVITE_SENT" && settings.emailWorkspaceInvites) {
+				shouldSendEmail = true;
+			} else if (
+				data.actionType === "TASK_COMPLETED" &&
+				settings.emailTaskCompletions
+			) {
+				shouldSendEmail = true;
+			} else if (
+				data.actionType === "COMMENT_ADDED" &&
+				settings.emailCommentMentions
+			) {
+				shouldSendEmail = true;
+			}
+		} else {
+			// Default schema values are true
+			shouldSendEmail = true;
+		}
+
+		return { notification: toNotificationDTO(result[0]), shouldSendEmail };
 	} catch (error) {
 		throw new Error("Failed to create notification", { cause: error });
 	}
