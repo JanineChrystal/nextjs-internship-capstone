@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { mockProjects } from "@/app/(dashboard)/projects/_constants/project";
 import type { Project } from "@/lib/validations/project-schema";
 
 interface ProjectState {
@@ -11,7 +10,7 @@ interface ProjectState {
 }
 
 export const useProjectStore = create<ProjectState>((set) => ({
-	projects: mockProjects,
+	projects: [],
 
 	// CREATE
 	addProject: (projectData) =>

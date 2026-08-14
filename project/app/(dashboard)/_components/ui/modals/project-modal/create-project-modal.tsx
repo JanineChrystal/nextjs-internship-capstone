@@ -1,12 +1,23 @@
 import { Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/buttons/button";
+import { CreatableCombobox } from "@/components/ui/combobox/creatable-combobox";
+import { ManageCategoriesModal } from "@/components/ui/modals/manage-categories-modal";
 import type { CreateProjectFormValues } from "@/lib/validations/project-schema";
+import { useCategoryStore } from "@/stores/use-category-store";
 import { projectFormFields } from "../../../../projects/_constants/create-project";
 import { mockProjectMembers } from "../../../../projects/_constants/mock-data";
 import { useCreateProject } from "../../../../projects/_hooks/use-create-project";
 
 export function CreateProjectModal({ onClose }: { onClose: () => void }) {
 	const { form, onSubmit } = useCreateProject({ onClose });
+	const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+
+	const { categories, fetchCategories } = useCategoryStore();
+
+	useEffect(() => {
+		fetchCategories("default", "project");
+	}, [fetchCategories]);
 
 	const handleSubmit = form.handleSubmit((_data) => {
 		onSubmit(undefined);
@@ -53,6 +64,31 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
 									</option>
 								))}
 							</select>
+						) : field.type === "creatable-combobox" ? (
+							<CreatableCombobox
+								options={categories.map((c) => ({
+									value: c.name,
+									label: c.name,
+									color: c.color,
+								}))}
+								value={
+									form.watch(
+										field.id as keyof CreateProjectFormValues,
+									) as string
+								}
+								onChange={(val) =>
+									form.setValue(
+										field.id as keyof CreateProjectFormValues,
+										val,
+										{
+											shouldValidate: true,
+											shouldDirty: true,
+										},
+									)
+								}
+								placeholder={field.placeholder}
+								onManageClick={() => setIsManageCategoriesOpen(true)}
+							/>
 						) : (
 							<input
 								id={field.id}
@@ -139,6 +175,13 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
 					</Button>
 				</div>
 			</div>
+
+			<ManageCategoriesModal
+				isOpen={isManageCategoriesOpen}
+				onClose={() => setIsManageCategoriesOpen(false)}
+				type="project"
+				workspaceId="default"
+			/>
 		</form>
 	);
 }

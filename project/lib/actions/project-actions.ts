@@ -2,12 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/dal/auth";
+import { upsertWorkspaceCategoryDAL } from "@/lib/dal/categories";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import {
+	assignTeamToProjectInDB,
 	bulkArchiveProjectsInDB,
+	bulkCompleteProjectsInDB,
 	bulkDeleteProjectsInDB,
 	createProjectInDB,
 	deleteProjectInDB,
+	inviteUserToProjectInDB,
 	updateProjectInDB,
 } from "@/lib/dal/projects";
 import type { ProjectOutputDTO } from "@/lib/dtos/project-dto";
@@ -45,8 +49,11 @@ export async function createProjectAction(
 
 		const data = validationResult.data;
 
-		// DAL Call
 		const statusValue = data.status || "active";
+
+		if (data.category) {
+			await upsertWorkspaceCategoryDAL(workspaceId, data.category, "project");
+		}
 
 		const newProject = await createProjectInDB({
 			workspaceId,
@@ -54,8 +61,8 @@ export async function createProjectAction(
 			name: data.title,
 			description: data.description || null,
 			category: data.category || null,
-			startDate: data.startDate ? new Date(data.startDate) : null,
-			dueDate: data.dueDate ? new Date(data.dueDate) : null,
+			startDate: data.startDate ? new Date(`${data.startDate}:00.000Z`) : null,
+			dueDate: data.dueDate ? new Date(`${data.dueDate}:00.000Z`) : null,
 			status: statusValue,
 			priority: data.priority || "medium",
 		});
@@ -65,9 +72,15 @@ export async function createProjectAction(
 
 		// Return DTO Payload
 		return { success: true, data: newProject };
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("createProjectAction error:", error);
-		return { success: false, error: "An unexpected error occurred" };
+		const message =
+			error instanceof Error
+				? error.cause
+					? String(error.cause)
+					: error.message
+				: "An unexpected error occurred";
+		return { success: false, error: message };
 	}
 }
 
@@ -84,15 +97,18 @@ export async function updateProjectAction(
 			return { success: false, error: "Unauthorized" };
 		}
 
-		const rawData = {
-			title: formData.get("title"),
-			description: formData.get("description"),
-			category: formData.get("category"),
-			startDate: formData.get("startDate"),
-			dueDate: formData.get("dueDate"),
-			status: formData.get("status"),
-			priority: formData.get("priority"),
-		};
+		const rawData: Record<string, unknown> = {};
+		if (formData.has("title")) rawData.title = formData.get("title");
+		if (formData.has("description"))
+			rawData.description = formData.get("description") || undefined;
+		if (formData.has("category"))
+			rawData.category = formData.get("category") || undefined;
+		if (formData.has("startDate"))
+			rawData.startDate = formData.get("startDate") || undefined;
+		if (formData.has("dueDate"))
+			rawData.dueDate = formData.get("dueDate") || undefined;
+		if (formData.has("status")) rawData.status = formData.get("status");
+		if (formData.has("priority")) rawData.priority = formData.get("priority");
 
 		const validationResult = editProjectSchema.safeParse(rawData);
 		if (!validationResult.success) {
@@ -101,15 +117,41 @@ export async function updateProjectAction(
 
 		const data = validationResult.data;
 
-		const updatedProject = await updateProjectInDB(projectId, {
-			name: data.title,
-			description: data.description,
-			category: data.category,
-			startDate: data.startDate ? new Date(data.startDate) : null,
-			dueDate: data.dueDate ? new Date(data.dueDate) : null,
-			status: data.status,
-			priority: data.priority,
-		});
+		// We need to fetch the workspace ID for the project in order to upsert the category.
+		if (data.category) {
+			const { db } = await import("@/lib/db");
+			const { projects } = await import("@/lib/db/schema");
+			const { eq } = await import("drizzle-orm");
+			const existingProject = await db.query.projects.findFirst({
+				where: eq(projects.id, projectId),
+				columns: { workspaceId: true },
+			});
+			if (existingProject?.workspaceId) {
+				await upsertWorkspaceCategoryDAL(
+					existingProject.workspaceId,
+					data.category,
+					"project",
+				);
+			}
+		}
+
+		const updatePayload: Record<string, unknown> = {};
+		if (data.title !== undefined) updatePayload.name = data.title;
+		if (data.description !== undefined)
+			updatePayload.description = data.description;
+		if (data.category !== undefined) updatePayload.category = data.category;
+		if (data.startDate !== undefined)
+			updatePayload.startDate = data.startDate
+				? new Date(`${data.startDate}:00.000Z`)
+				: null;
+		if (data.dueDate !== undefined)
+			updatePayload.dueDate = data.dueDate
+				? new Date(`${data.dueDate}:00.000Z`)
+				: null;
+		if (data.status !== undefined) updatePayload.status = data.status;
+		if (data.priority !== undefined) updatePayload.priority = data.priority;
+
+		const updatedProject = await updateProjectInDB(projectId, updatePayload);
 
 		revalidatePath("/projects");
 		revalidatePath(`/projects/${projectId}`);
@@ -191,6 +233,80 @@ export async function bulkArchiveProjectsAction(
 		return { success: true };
 	} catch (error) {
 		console.error("bulkArchiveProjectsAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function bulkCompleteProjectsAction(
+	projectIds: string[],
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		for (const id of projectIds) {
+			const hasPermission = await verifyProjectPermissionDAL(
+				id,
+				"edit_project",
+			);
+			if (!hasPermission) {
+				return {
+					success: false,
+					error: "Unauthorized to complete one or more projects",
+				};
+			}
+		}
+
+		await bulkCompleteProjectsInDB(projectIds);
+		revalidatePath("/projects");
+		return { success: true };
+	} catch (error) {
+		console.error("bulkCompleteProjectsAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function inviteUserToProjectAction(
+	projectId: string,
+	email: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"edit_project",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		await inviteUserToProjectInDB(projectId, email);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true };
+	} catch (error) {
+		console.error("inviteUserToProjectAction error:", error);
+		if (error instanceof Error && error.message === "User not found") {
+			return { success: false, error: "User not found" };
+		}
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function assignTeamToProjectAction(
+	projectId: string,
+	teamId: string,
+	accessLevel: "owner" | "co-owner" | "member" | "guest" = "member",
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"edit_project",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		await assignTeamToProjectInDB(projectId, teamId, accessLevel);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true };
+	} catch (error) {
+		console.error("assignTeamToProjectAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };
 	}
 }

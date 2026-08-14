@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { mockTasks } from "@/app/(dashboard)/projects/_constants/grid-view";
 import type { GridTask } from "@/types/task";
 import { useBoardStore } from "./use-board-store";
 
@@ -24,7 +23,7 @@ interface TaskState {
 }
 
 export const useTaskStore = create<TaskState>((set) => ({
-	tasks: mockTasks,
+	tasks: [],
 	isTaskModalOpen: false,
 	selectedTaskId: null,
 	selectedTaskIds: new Set<string>(),

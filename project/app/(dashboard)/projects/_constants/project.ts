@@ -1,5 +1,10 @@
 import type { Project } from "@/lib/validations/project-schema";
-import type { ProjectViewType } from "../[id]/page";
+export type ProjectViewType =
+	| "grid"
+	| "board"
+	| "calendar"
+	| "charts"
+	| "settings";
 
 export const MAX_VISIBLE_MEMBERS = 5;
 

@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
+import { updateProjectAction } from "@/lib/actions/project-actions";
 import {
 	type EditProjectFormValues,
 	editProjectSchema,
@@ -16,16 +17,88 @@ export function useEditProject(
 
 	// Local/External Hooks
 	const [isEditing, setIsEditing] = useState(false);
+	const [warningModal, setWarningModal] = useState<{
+		isOpen: boolean;
+		actionType: "completed" | "archived" | null;
+		pendingData: EditProjectFormValues | null;
+	}>({ isOpen: false, actionType: null, pendingData: null });
+
 	const form = useForm<EditProjectFormValues>({
 		resolver: zodResolver(editProjectSchema),
 		defaultValues: initialData,
 	});
 
+	// Derived
+	const projects = useProjectStore((state) => state.projects);
+
+	const checkHasIncompleteTasks = useCallback(() => {
+		return projects.some(
+			(p) =>
+				p.id === projectId &&
+				(p.tasksCount ?? 0) > 0 &&
+				(p.progress ?? 0) < 100,
+		);
+	}, [projects, projectId]);
+
 	// Handlers
-	const onSubmit = form.handleSubmit((data) => {
+	const confirmSubmit = async (data: EditProjectFormValues) => {
+		// Store previous state for rollback
+		const previousProject = useProjectStore
+			.getState()
+			.projects.find((p) => p.id === projectId);
+
+		// Optimistic update
 		updateProject(projectId, data);
 		setIsEditing(false);
+		setWarningModal({ isOpen: false, actionType: null, pendingData: null });
+
+		const formData = new FormData();
+		Object.entries(data).forEach(([key, value]) => {
+			if (value !== undefined && value !== null) {
+				formData.append(key, value.toString());
+			}
+		});
+
+		try {
+			const result = await updateProjectAction(projectId, formData);
+			if (!result.success && previousProject) {
+				// Rollback
+				updateProject(projectId, previousProject);
+				console.error("Failed to update project:", result.error);
+			}
+		} catch (error) {
+			if (previousProject) {
+				updateProject(projectId, previousProject);
+			}
+			console.error("Error updating project:", error);
+		}
+	};
+
+	const onSubmit = form.handleSubmit((data) => {
+		// Check if we are changing status to completed or archived
+		const newStatus = data.status;
+		const oldStatus = initialData.status;
+
+		if (
+			newStatus !== oldStatus &&
+			(newStatus === "completed" || newStatus === "archived") &&
+			checkHasIncompleteTasks()
+		) {
+			setWarningModal({
+				isOpen: true,
+				actionType: newStatus,
+				pendingData: data,
+			});
+		} else {
+			confirmSubmit(data);
+		}
 	});
+
+	const confirmWarningAction = () => {
+		if (warningModal.pendingData) {
+			confirmSubmit(warningModal.pendingData);
+		}
+	};
 
 	const onCancel = () => {
 		form.reset(initialData);
@@ -38,5 +111,8 @@ export function useEditProject(
 		form,
 		onSubmit,
 		onCancel,
+		warningModal,
+		setWarningModal,
+		confirmWarningAction,
 	};
 }

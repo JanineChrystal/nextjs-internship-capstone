@@ -106,21 +106,39 @@ export function useGridView(
 
 	const handleBulkDelete = async () => {
 		if (selectedTaskIds.size === 0) return;
+		const previousTasks = useTaskStore.getState().tasks;
 		const ids = Array.from(selectedTaskIds);
+
 		bulkDeleteTasks(selectedTaskIds);
 		handleClearSelection();
+
 		if (projectId) {
-			await bulkDeleteTasksAction(ids, projectId);
+			try {
+				const result = await bulkDeleteTasksAction(ids, projectId);
+				if (result && !result.success) throw new Error(result.error);
+			} catch (error) {
+				useTaskStore.getState().setTasks(previousTasks);
+				console.error("Failed to bulk delete tasks:", error);
+			}
 		}
 	};
 
 	const handleBulkComplete = async () => {
 		if (selectedTaskIds.size === 0) return;
+		const previousTasks = useTaskStore.getState().tasks;
 		const ids = Array.from(selectedTaskIds);
+
 		bulkCompleteTasks(selectedTaskIds);
 		handleClearSelection();
+
 		if (projectId) {
-			await bulkCompleteTasksAction(ids, projectId);
+			try {
+				const result = await bulkCompleteTasksAction(ids, projectId);
+				if (result && !result.success) throw new Error(result.error);
+			} catch (error) {
+				useTaskStore.getState().setTasks(previousTasks);
+				console.error("Failed to bulk complete tasks:", error);
+			}
 		}
 	};
 

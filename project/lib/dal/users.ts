@@ -1,28 +1,61 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, workspaceMembers, workspaces } from "@/lib/db/schema";
 import { toUserDTO, type UserOutputDTO } from "@/lib/dtos/user-dto";
 import type { NewDbUser } from "@/lib/types/user";
 
 export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
 	try {
-		const result = await db
-			.insert(users)
-			.values(data)
-			.onConflictDoUpdate({
-				target: users.clerkId,
-				set: {
-					email: data.email,
-					firstName: data.firstName,
-					lastName: data.lastName,
-					imageUrl: data.imageUrl,
-					updatedAt: new Date(),
-				},
-			})
-			.returning();
+		return await db.transaction(async (tx) => {
+			const result = await tx
+				.insert(users)
+				.values(data)
+				.onConflictDoUpdate({
+					target: users.clerkId,
+					set: {
+						email: data.email,
+						firstName: data.firstName,
+						lastName: data.lastName,
+						imageUrl: data.imageUrl,
+						updatedAt: new Date(),
+					},
+				})
+				.returning();
 
-		return toUserDTO(result[0]);
+			const user = result[0];
+
+			// Hook A: Workspace Auto-Creation
+			// Ensure the user has at least one workspace
+			const existingWorkspaces = await tx
+				.select()
+				.from(workspaces)
+				.where(
+					and(eq(workspaces.ownerId, user.id), isNull(workspaces.deletedAt)),
+				);
+
+			if (existingWorkspaces.length === 0) {
+				const workspaceName = data.firstName
+					? `${data.firstName}'s Workspace`
+					: "My Workspace";
+
+				const [newWorkspace] = await tx
+					.insert(workspaces)
+					.values({
+						ownerId: user.id,
+						name: workspaceName,
+					})
+					.returning();
+
+				await tx.insert(workspaceMembers).values({
+					workspaceId: newWorkspace.id,
+					userId: user.id,
+					status: "active",
+				});
+			}
+
+			return toUserDTO(user);
+		});
 	} catch (error) {
 		throw new Error("Failed to sync user to database", { cause: error });
 	}

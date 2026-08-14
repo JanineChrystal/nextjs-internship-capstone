@@ -4,58 +4,80 @@ import { PriorityBadge } from "@/app/(dashboard)/_components/ui/badges/priority-
 import { StatusBadge } from "@/app/(dashboard)/_components/ui/badges/status-badge";
 import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
 import { BaseCard } from "@/components/ui/cards/base-card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import type { Project } from "@/lib/validations/project-schema";
 
 export function ProjectCard({
 	project,
-	isSelectMode = false,
+	isSelected = false,
+	onToggleSelection,
 	onDelete,
 }: {
 	project: Project;
-	isSelectMode?: boolean;
+	isSelected?: boolean;
+	onToggleSelection?: () => void;
 	onDelete?: (id: string) => void;
 }) {
 	return (
 		<Link
 			href={`/projects/${project.id}`}
-			className="block h-full transition-transform hover:-translate-y-1 duration-200 group"
+			className={`block h-full transition-transform hover:-translate-y-1 duration-200 group ${isSelected ? "ring-2 ring-primary rounded-xl" : ""}`}
 		>
-			<BaseCard className="flex flex-col gap-4 h-full">
+			<BaseCard
+				className={`flex flex-col gap-4 h-full relative ${isSelected ? "bg-primary/5 border-primary/20" : ""}`}
+			>
 				<div className="flex justify-between items-center">
-					{/* Status Dot */}
-					<div
-						className={`w-3 h-3 rounded-full ${
-							project.status === "active"
-								? "bg-primary"
-								: project.status === "completed"
-									? "bg-green-500"
-									: "bg-yellow-500"
-						}`}
-					/>
+					<div className="flex items-center gap-2.5">
+						{/* Selection Checkbox (Hover visible, persistent when selected) */}
+						<div
+							className={`transition-opacity duration-200 ${
+								isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+							}`}
+						>
+							<Checkbox
+								checked={isSelected}
+								onCheckedChange={() => onToggleSelection?.()}
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									onToggleSelection?.();
+								}}
+								className="w-4 h-4 border-outline-variant data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+								aria-label={`Select ${project.title}`}
+							/>
+						</div>
+
+						{/* Status Dot */}
+						<div
+							className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+								project.status === "active"
+									? "bg-primary"
+									: project.status === "completed"
+										? "bg-green-500"
+										: "bg-yellow-500"
+							}`}
+						/>
+					</div>
 
 					<div className="flex items-center gap-2">
-						<span
-							className={`text-xs font-medium text-card-foreground/60 transition-all duration-200 ${isSelectMode ? "mr-8" : ""}`}
-						>
+						<span className="text-xs font-medium text-card-foreground/60 transition-all duration-200">
 							{project.daysLeft} days left
 						</span>
 
 						{/* Delete Button */}
-						{!isSelectMode && (
-							<button
-								type="button"
-								aria-label="Delete project"
-								onClick={(e) => {
-									e.preventDefault();
-									e.stopPropagation();
-									onDelete?.(project.id);
-								}}
-								className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-							>
-								<Trash2 className="w-4 h-4" />
-							</button>
-						)}
+						<button
+							type="button"
+							aria-label="Delete project"
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								onDelete?.(project.id);
+							}}
+							className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+						>
+							<Trash2 className="w-4 h-4" />
+						</button>
 					</div>
 				</div>
 

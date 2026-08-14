@@ -1,18 +1,16 @@
 "use client";
 
-import { CheckSquare, Plus } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
+import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
-import { Toolbar } from "@/app/(dashboard)/_components/ui/toolbar/toolbar";
 import { TASK_PRIORITY_OPTIONS } from "@/app/(dashboard)/_constants/task";
 import { ActionConfirmModal } from "@/components/modals/action-confirm-modal";
-import { Button } from "@/components/ui/buttons/button";
-import { FilterPopover } from "@/components/ui/filters/filter-popover";
 import type { Project } from "@/lib/validations/project-schema";
 import { useProjectsClient } from "../../_hooks/use-projects-client";
 import { ProjectCard } from "../ui/cards/project-card";
+import { ProjectsListToolbar } from "../ui/projects-list-toolbar";
 
 const ProjectModal = dynamic(
 	() =>
@@ -81,78 +79,25 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 				title="Projects"
 				description="Manage and organize your team projects"
 				className="bg-surface border border-outline-variant rounded-xl p-6"
-				action={
-					<Button
-						className="w-full sm:w-auto"
-						onClick={() => modals.create.setIsOpen(true)}
-					>
-						<Plus className="w-4 h-4 mr-2" />
-						Create New Project
-					</Button>
-				}
-				filters={
-					<Toolbar
-						rightSection={
-							<>
-								<FilterPopover
-									fields={filterFields}
-									values={filters.filterValues}
-									onChange={filters.handleFilterChange}
-									onReset={filters.handleResetFilters}
-								/>
-								<Button
-									variant={selection.isSelectMode ? "default" : "outline"}
-									size="sm"
-									onClick={selection.toggleSelectMode}
-									className="gap-2"
-								>
-									<CheckSquare className="w-4 h-4" />
-									{selection.isSelectMode ? "Cancel Selection" : "Select"}
-								</Button>
-							</>
-						}
-					/>
-				}
+			/>
+			<ProjectsListToolbar
+				onCreateProject={() => modals.create.setIsOpen(true)}
+				filters={{
+					fields: filterFields,
+					values: filters.filterValues,
+					onChange: filters.handleFilterChange,
+					onReset: filters.handleResetFilters,
+				}}
 			/>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{filters.filteredProjects.length > 0 ? (
 					filters.filteredProjects.map((project) => (
 						<div key={project.id} className="relative">
-							{/* Selection Overlay for Cards */}
-							{selection.isSelectMode && (
-								<button
-									type="button"
-									aria-label={`Select ${project.title}`}
-									className="absolute inset-0 z-10 cursor-pointer rounded-xl border-2 transition-all w-full text-left"
-									style={{
-										borderColor: selection.selectedProjectIds.has(project.id)
-											? "var(--primary)"
-											: "transparent",
-										backgroundColor: selection.selectedProjectIds.has(
-											project.id,
-										)
-											? "rgba(var(--primary-rgb), 0.05)"
-											: "transparent",
-									}}
-									onClick={(e) => {
-										e.preventDefault();
-										selection.toggleSelection(project.id);
-									}}
-								>
-									<div
-										className={`absolute top-4 right-4 w-5 h-5 rounded border ${selection.selectedProjectIds.has(project.id) ? "bg-primary border-primary text-primary-foreground" : "border-input bg-background"}`}
-									>
-										{selection.selectedProjectIds.has(project.id) && (
-											<CheckSquare className="w-full h-full p-0.5" />
-										)}
-									</div>
-								</button>
-							)}
-
 							<ProjectCard
 								project={project}
-								isSelectMode={selection.isSelectMode}
+								isSelected={selection.selectedProjectIds.has(project.id)}
+								onToggleSelection={() => selection.toggleSelection(project.id)}
 								onDelete={selection.initiateSingleDelete}
 							/>
 						</div>
@@ -180,11 +125,40 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 				isDestructive={true}
 			/>
 
+			<WarningModal
+				isOpen={modals.warning.isOpen}
+				onClose={modals.warning.close}
+				onConfirm={modals.warning.confirm}
+				title={
+					modals.warning.actionType === "delete"
+						? "Delete Project"
+						: modals.warning.actionType === "archive"
+							? "Archive Project"
+							: "Mark as Completed"
+				}
+				message={
+					modals.warning.actionType === "delete"
+						? "This project has ongoing tasks. Are you sure you want to delete it? This action cannot be undone."
+						: modals.warning.actionType === "archive"
+							? "There are still ongoing tasks in this project. Are you sure you want to archive it?"
+							: "There are still ongoing tasks in this project. Are you sure you want to set it as completed?"
+				}
+				variant={modals.warning.actionType === "delete" ? "danger" : "warning"}
+				confirmText={
+					modals.warning.actionType === "delete"
+						? "Delete Anyway"
+						: modals.warning.actionType === "archive"
+							? "Archive Anyway"
+							: "Complete Anyway"
+				}
+			/>
+
 			<BulkActionBar
 				selectedCount={selection.selectedProjectIds.size}
-				onClearSelection={selection.toggleSelectMode}
+				onClearSelection={selection.clearSelection}
 				onDelete={selection.initiateBulkDelete}
 				onArchive={selection.initiateBulkArchive}
+				onComplete={selection.initiateBulkComplete}
 			/>
 		</div>
 	);

@@ -33,6 +33,11 @@ export function toProjectDTO(project: DbProject): ProjectOutputDTO {
 	};
 }
 
+// Converts a UTC Date back to a "YYYY-MM-DDTHH:mm" string for datetime-local inputs.
+function toDatetimeInputValue(utcDate: Date): string {
+	return utcDate.toISOString().slice(0, 16);
+}
+
 export function toProjectUI(
 	dto: ProjectOutputDTO,
 	currentUserId?: string,
@@ -70,10 +75,8 @@ export function toProjectUI(
 		title: dto.name,
 		description: dto.description || undefined,
 		category: dto.category || undefined,
-		startDate: dto.startDate
-			? dto.startDate.toISOString().slice(0, 16)
-			: undefined,
-		dueDate: dto.dueDate ? dto.dueDate.toISOString().slice(0, 16) : undefined,
+		startDate: dto.startDate ? toDatetimeInputValue(dto.startDate) : undefined,
+		dueDate: dto.dueDate ? toDatetimeInputValue(dto.dueDate) : undefined,
 		status: normalizedStatus,
 		priority: normalizedPriority,
 		daysLeft,

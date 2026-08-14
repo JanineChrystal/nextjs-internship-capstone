@@ -5,6 +5,7 @@ import {
 	deleteTaskAction,
 	updateTaskAction,
 } from "@/lib/actions/task-actions";
+import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask, TaskModalActionId } from "@/types/task";
 import { DEFAULT_TASK_DATA } from "../_constants/task-modal";
@@ -24,6 +25,8 @@ export function useTaskModal() {
 		duplicateTask,
 		deleteTask,
 	} = useTaskStore();
+
+	const { columns } = useBoardStore();
 
 	// Local State & Refs
 	const [taskData, setTaskData] =
@@ -63,7 +66,7 @@ export function useTaskModal() {
 		closeTaskModal();
 
 		if (projectId) {
-			const boardId = finalData.board || "default-board";
+			const boardId = finalData.board || columns[0]?.id || "default-board";
 			// We should map GridTask -> newDbTask schema fields
 			const payload = {
 				name: newTask.name,
@@ -169,7 +172,9 @@ export function useTaskModal() {
 					status: sourceTask.status,
 					priority: sourceTask.priority,
 				};
-				await createTaskAction(projectId, "default-board", payload);
+				const targetBoardId =
+					sourceTask.board || columns[0]?.id || "default-board";
+				await createTaskAction(projectId, targetBoardId, payload);
 			}
 		}
 	};

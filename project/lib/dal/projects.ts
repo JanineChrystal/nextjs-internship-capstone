@@ -2,7 +2,15 @@ import "server-only";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { projects } from "@/lib/db/schema";
+import {
+	boards,
+	projectMembers,
+	projects,
+	projectTeams,
+	users,
+	workspaceMembers,
+	workspaces,
+} from "@/lib/db/schema";
 import { type ProjectOutputDTO, toProjectDTO } from "@/lib/dtos/project-dto";
 import type { NewDbProject } from "@/lib/types/project";
 
@@ -17,9 +25,52 @@ export async function createProjectInDB(
 	}
 
 	try {
-		const result = await db.insert(projects).values(data).returning();
+		return await db.transaction(async (tx) => {
+			let activeWorkspaceId = data.workspaceId;
 
-		return toProjectDTO(result[0]);
+			// Resolve workspaceId if missing or a placeholder
+			if (!activeWorkspaceId || activeWorkspaceId === "default") {
+				const userWorkspaces = await tx
+					.select()
+					.from(workspaces)
+					.where(eq(workspaces.ownerId, user.id));
+
+				if (userWorkspaces.length > 0) {
+					activeWorkspaceId = userWorkspaces[0].id;
+				} else {
+					throw new Error("No active workspace found for user");
+				}
+			}
+
+			const [newProject] = await tx
+				.insert(projects)
+				.values({ ...data, workspaceId: activeWorkspaceId })
+				.returning();
+
+			// Hook B: Board Column Seeding
+			await tx.insert(boards).values([
+				{
+					projectId: newProject.id,
+					workspaceId: activeWorkspaceId,
+					name: "To Do",
+					position: 0,
+				},
+				{
+					projectId: newProject.id,
+					workspaceId: activeWorkspaceId,
+					name: "In Progress",
+					position: 1,
+				},
+				{
+					projectId: newProject.id,
+					workspaceId: activeWorkspaceId,
+					name: "Completed",
+					position: 2,
+				},
+			]);
+
+			return toProjectDTO(newProject);
+		});
 	} catch (error) {
 		throw new Error("Failed to create project in database", { cause: error });
 	}
@@ -188,5 +239,101 @@ export async function bulkArchiveProjectsInDB(
 		throw new Error("Failed to bulk archive projects in database", {
 			cause: error,
 		});
+	}
+}
+
+export async function bulkCompleteProjectsInDB(
+	projectIds: string[],
+): Promise<void> {
+	if (projectIds.length === 0) return;
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		await db
+			.update(projects)
+			.set({ status: "completed", updatedAt: new Date() })
+			.where(
+				and(
+					inArray(projects.id, projectIds),
+					eq(projects.ownerId, user.id),
+					isNull(projects.deletedAt),
+				),
+			);
+	} catch (error) {
+		throw new Error("Failed to bulk complete projects in database", {
+			cause: error,
+		});
+	}
+}
+
+export async function inviteUserToProjectInDB(
+	projectId: string,
+	email: string,
+): Promise<void> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		await db.transaction(async (tx) => {
+			const [targetUser] = await tx
+				.select()
+				.from(users)
+				.where(eq(users.email, email));
+
+			if (!targetUser) throw new Error("User not found");
+
+			const [project] = await tx
+				.select()
+				.from(projects)
+				.where(eq(projects.id, projectId));
+
+			if (!project) throw new Error("Project not found");
+
+			await tx
+				.insert(workspaceMembers)
+				.values({
+					workspaceId: project.workspaceId,
+					userId: targetUser.id,
+					status: "active",
+				})
+				.onConflictDoNothing();
+
+			await tx
+				.insert(projectMembers)
+				.values({
+					projectId: projectId,
+					userId: targetUser.id,
+					position: "Contributor",
+					accessLevel: "member",
+				})
+				.onConflictDoNothing();
+		});
+	} catch (error) {
+		if (error instanceof Error && error.message === "User not found")
+			throw error;
+		throw new Error("Failed to invite user to project", { cause: error });
+	}
+}
+
+export async function assignTeamToProjectInDB(
+	projectId: string,
+	teamId: string,
+	accessLevel: "owner" | "co-owner" | "member" | "guest" = "member",
+): Promise<void> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		await db
+			.insert(projectTeams)
+			.values({
+				projectId,
+				teamId,
+				accessLevel,
+			})
+			.onConflictDoNothing();
+	} catch (error) {
+		throw new Error("Failed to assign team to project", { cause: error });
 	}
 }

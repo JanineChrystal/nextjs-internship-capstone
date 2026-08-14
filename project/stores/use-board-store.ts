@@ -10,6 +10,7 @@ interface BoardState {
 	reorderColumns: (activeId: string, overId: string) => void;
 	deleteColumn: (id: string, fallbackColumnId?: string) => void;
 	renameColumn: (id: string, newTitle: string) => void;
+	setColumns: (columns: BoardColumn[]) => void;
 }
 
 export const useBoardStore = create<BoardState>((set) => ({
@@ -84,4 +85,6 @@ export const useBoardStore = create<BoardState>((set) => ({
 				),
 			};
 		}),
+
+	setColumns: (columns: BoardColumn[]) => set({ columns }),
 }));

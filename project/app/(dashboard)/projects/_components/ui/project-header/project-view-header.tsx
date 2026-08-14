@@ -19,6 +19,30 @@ interface ProjectViewHeaderProps {
 	onEdit: () => void;
 }
 
+// Formats a UTC ISO string (e.g., "2026-08-14T20:30") to a human-readable string.
+function formatDateDisplay(isoString: string): string {
+	const [datePart, timePart] = isoString.split("T");
+	const [year, month, day] = (datePart ?? "").split("-").map(Number);
+	const [hours = 0, minutes = 0] = (timePart ?? "").split(":").map(Number);
+	const monthNames = [
+		"Jan",
+		"Feb",
+		"Mar",
+		"Apr",
+		"May",
+		"Jun",
+		"Jul",
+		"Aug",
+		"Sep",
+		"Oct",
+		"Nov",
+		"Dec",
+	];
+	const amPm = hours >= 12 ? "PM" : "AM";
+	const displayHours = hours % 12 || 12;
+	return `${monthNames[(month ?? 1) - 1]} ${day}, ${year}, ${String(displayHours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${amPm}`;
+}
+
 export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 	const projectBreadcrumbs = (
 		<Breadcrumb>
@@ -89,7 +113,7 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 			{project.startDate && (
 				<div className="flex items-center gap-2 text-secondary text-label-sm px-2 py-1 rounded-md transition-all">
 					<Calendar size={14} className="shrink-0" />
-					{project.startDate}
+					{formatDateDisplay(project.startDate)}
 				</div>
 			)}
 
@@ -101,7 +125,7 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 			{project.dueDate && (
 				<div className="flex items-center gap-2 text-secondary text-label-sm px-2 py-1 rounded-md transition-all">
 					<Calendar size={14} className="shrink-0" />
-					{project.dueDate}
+					{formatDateDisplay(project.dueDate)}
 				</div>
 			)}
 

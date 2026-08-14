@@ -4,6 +4,7 @@ import {
 	integer,
 	pgEnum,
 	pgTable,
+	primaryKey,
 	text,
 	timestamp,
 	unique,
@@ -48,6 +49,8 @@ export const actionTypeEnum = pgEnum("ActionType", [
 	"COMMENT_ADDED",
 ]);
 
+export const categoryTypeEnum = pgEnum("CategoryType", ["project", "task"]);
+
 // GLOBAL & WORKSPACE ENTITIES
 export const users = pgTable("Users", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -72,6 +75,28 @@ export const workspaces = pgTable("Workspaces", {
 	deletedAt: timestamp("deletedAt"),
 });
 
+export const categories = pgTable(
+	"Categories",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		workspaceId: uuid("workspaceId")
+			.references(() => workspaces.id, { onDelete: "cascade" })
+			.notNull(),
+		name: text("name").notNull(),
+		color: text("color").default("#94a3b8").notNull(), // slate-400 fallback
+		type: categoryTypeEnum("type").notNull(),
+		createdAt: timestamp("createdAt").defaultNow().notNull(),
+		updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+	},
+	(table) => ({
+		workspaceCategoryUnique: unique().on(
+			table.workspaceId,
+			table.name,
+			table.type,
+		),
+	}),
+);
+
 export const workspaceMembers = pgTable(
 	"WorkspaceMembers",
 	{
@@ -89,6 +114,32 @@ export const workspaceMembers = pgTable(
 	},
 	(table) => ({
 		workspaceUserUnique: unique().on(table.workspaceId, table.userId),
+	}),
+);
+
+export const teams = pgTable("Teams", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	workspaceId: uuid("workspaceId")
+		.references(() => workspaces.id, { onDelete: "cascade" })
+		.notNull(),
+	name: text("name").notNull(),
+	description: text("description"),
+	createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const teamMembers = pgTable(
+	"TeamMembers",
+	{
+		teamId: uuid("teamId")
+			.references(() => teams.id, { onDelete: "cascade" })
+			.notNull(),
+		userId: uuid("userId")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull(),
+		createdAt: timestamp("createdAt").defaultNow().notNull(),
+	},
+	(table) => ({
+		pk: primaryKey({ columns: [table.teamId, table.userId] }),
 	}),
 );
 
@@ -150,6 +201,22 @@ export const projectMembers = pgTable(
 	},
 	(table) => ({
 		projectUserUnique: unique().on(table.projectId, table.userId),
+	}),
+);
+
+export const projectTeams = pgTable(
+	"ProjectTeams",
+	{
+		projectId: uuid("projectId")
+			.references(() => projects.id, { onDelete: "cascade" })
+			.notNull(),
+		teamId: uuid("teamId")
+			.references(() => teams.id, { onDelete: "cascade" })
+			.notNull(),
+		accessLevel: accessLevelEnum("accessLevel").default("member").notNull(),
+	},
+	(table) => ({
+		pk: primaryKey({ columns: [table.projectId, table.teamId] }),
 	}),
 );
 
@@ -337,6 +404,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 	ownedProjects: many(projects),
 	workspaceMemberships: many(workspaceMembers),
 	projectMemberships: many(projectMembers),
+	teamMemberships: many(teamMembers),
 	taskAssignments: many(taskAssignees),
 	comments: many(comments),
 	moderatedComments: many(comments, { relationName: "moderator" }),
@@ -382,8 +450,10 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
 		references: [users.id],
 	}),
 	members: many(workspaceMembers),
+	teams: many(teams),
 	projects: many(projects),
 	boards: many(boards),
+	categories: many(categories),
 	activityLogs: many(activityLogs),
 }));
 
@@ -397,6 +467,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
 		references: [users.id],
 	}),
 	members: many(projectMembers),
+	teams: many(projectTeams),
 	invites: many(projectInvites),
 	boards: many(boards),
 	tasks: many(tasks),
@@ -535,5 +606,36 @@ export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
 		fields: [activityLogs.targetUserId],
 		references: [users.id],
 		relationName: "target",
+	}),
+}));
+
+export const teamsRelations = relations(teams, ({ one, many }) => ({
+	workspace: one(workspaces, {
+		fields: [teams.workspaceId],
+		references: [workspaces.id],
+	}),
+	members: many(teamMembers),
+	projectTeams: many(projectTeams),
+}));
+
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+	team: one(teams, {
+		fields: [teamMembers.teamId],
+		references: [teams.id],
+	}),
+	user: one(users, {
+		fields: [teamMembers.userId],
+		references: [users.id],
+	}),
+}));
+
+export const projectTeamsRelations = relations(projectTeams, ({ one }) => ({
+	project: one(projects, {
+		fields: [projectTeams.projectId],
+		references: [projects.id],
+	}),
+	team: one(teams, {
+		fields: [projectTeams.teamId],
+		references: [teams.id],
 	}),
 }));

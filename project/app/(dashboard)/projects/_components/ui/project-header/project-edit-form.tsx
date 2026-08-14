@@ -1,6 +1,7 @@
 "use client";
 
 import { Calendar, Check, Flag, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { TASK_PRIORITY_BADGE_STYLES } from "@/app/(dashboard)/_constants/task";
@@ -13,7 +14,10 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/buttons/button";
+import { CreatableCombobox } from "@/components/ui/combobox/creatable-combobox";
+import { ManageCategoriesModal } from "@/components/ui/modals/manage-categories-modal";
 import type { EditProjectFormValues } from "@/lib/validations/project-schema";
+import { useCategoryStore } from "@/stores/use-category-store";
 import { projectStatusOptions } from "../../../_constants/create-project";
 import { projectPriorityOptions } from "../../../_constants/kanban";
 
@@ -30,6 +34,14 @@ export function ProjectEditForm({
 	onSubmit,
 	onCancel,
 }: ProjectEditFormProps) {
+	const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+
+	const { categories, fetchCategories } = useCategoryStore();
+
+	useEffect(() => {
+		fetchCategories("default", "project");
+	}, [fetchCategories]);
+
 	// Watch values so the badges dynamically update their colors while editing
 	const currentPriority = form.watch("priority");
 	const currentStatus = form.watch("status");
@@ -135,11 +147,22 @@ export function ProjectEditForm({
 				</div>
 
 				{/* Category Badge */}
-				<div className="relative flex items-center gap-2 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-sm font-medium transition-all focus-within:ring-2 focus-within:ring-primary">
-					<input
-						{...form.register("category")}
+				<div className="relative flex items-center gap-2 rounded-full text-label-sm font-medium transition-all min-w-37.5">
+					<CreatableCombobox
+						options={categories.map((c) => ({
+							value: c.name,
+							label: c.name,
+							color: c.color,
+						}))}
+						value={form.watch("category") as string}
+						onChange={(val) =>
+							form.setValue("category", val, {
+								shouldValidate: true,
+								shouldDirty: true,
+							})
+						}
 						placeholder="Category..."
-						className="appearance-none bg-transparent outline-none py-0 w-full min-w-20 placeholder:text-on-secondary-container/50"
+						onManageClick={() => setIsManageCategoriesOpen(true)}
 					/>
 				</div>
 
@@ -167,6 +190,13 @@ export function ProjectEditForm({
 
 				<div className="ml-auto">{actions}</div>
 			</PageHeader>
+
+			<ManageCategoriesModal
+				isOpen={isManageCategoriesOpen}
+				onClose={() => setIsManageCategoriesOpen(false)}
+				type="project"
+				workspaceId="default"
+			/>
 		</form>
 	);
 }

@@ -1,6 +1,6 @@
 import { ViewTabs } from "@/app/(dashboard)/_components/ui/toolbar";
+import type { ProjectViewType } from "@/app/(dashboard)/projects/_constants/project";
 import { VIEW_TABS } from "@/app/(dashboard)/projects/_constants/project";
-import type { ProjectViewType } from "@/app/(dashboard)/projects/[id]/page";
 
 interface ProjectViewTabsProps {
 	activeView: ProjectViewType;

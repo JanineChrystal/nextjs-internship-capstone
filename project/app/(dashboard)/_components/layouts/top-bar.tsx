@@ -8,8 +8,13 @@ import { Button } from "@/components/ui/buttons/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function TopBar() {
+	const [mounted, setMounted] = useState(false);
 	const [isSearchOpen, setIsSearchOpen] = useState(false);
 	const searchInputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
 	useEffect(() => {
 		if (isSearchOpen && searchInputRef.current) {
@@ -37,6 +42,7 @@ export function TopBar() {
 					{/* Mobile Version: Search Icon Toggle */}
 					{!isSearchOpen && (
 						<Button
+							type="button"
 							variant="ghost"
 							size="icon"
 							className="md:hidden text-muted-foreground hover:text-foreground"
@@ -78,26 +84,30 @@ export function TopBar() {
 					className={`items-center gap-4 shrink-0 ${isSearchOpen ? "hidden md:flex" : "flex"}`}
 				>
 					<ThemeToggle />
-					<UserButton
-						showName
-						appearance={{
-							elements: {
-								userButtonBox:
-									"flex flex-row-reverse gap-2 font-medium text-sm whitespace-nowrap",
-								userButtonOuterIdentifier: "text-primary",
-								userButtonPopoverActionButton__manageAccount: "!hidden",
-								userButtonPopoverFooter: "!hidden",
-							},
-						}}
-					>
-						<UserButton.MenuItems>
-							<UserButton.Link
-								label="Workspace Profile"
-								labelIcon={<User className="w-4 h-4" />}
-								href="/profile/u1"
-							/>
-						</UserButton.MenuItems>
-					</UserButton>
+					{mounted ? (
+						<UserButton
+							showName
+							appearance={{
+								elements: {
+									userButtonBox:
+										"flex flex-row-reverse gap-2 font-medium text-sm whitespace-nowrap",
+									userButtonOuterIdentifier: "text-primary",
+									userButtonPopoverActionButton__manageAccount: "!hidden",
+									userButtonPopoverFooter: "!hidden",
+								},
+							}}
+						>
+							<UserButton.MenuItems>
+								<UserButton.Link
+									label="Workspace Profile"
+									labelIcon={<User className="w-4 h-4" />}
+									href="/profile/u1"
+								/>
+							</UserButton.MenuItems>
+						</UserButton>
+					) : (
+						<div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+					)}
 				</div>
 			</div>
 		</header>

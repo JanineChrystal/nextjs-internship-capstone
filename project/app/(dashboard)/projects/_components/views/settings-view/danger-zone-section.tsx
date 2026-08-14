@@ -2,6 +2,7 @@
 
 import { Archive, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { Button } from "@/components/ui/buttons/button";
 import { SectionTitle } from "@/components/ui/sections";
 import type { RoleAccess } from "@/types/member";
@@ -31,6 +32,9 @@ export function DangerZoneSection({
 		isArchiveActive,
 		isDeleteModalOpen,
 		setIsDeleteModalOpen,
+		warningModal,
+		setWarningModal,
+		confirmWarningAction,
 		isOwner,
 		handleToggleArchive,
 		handleOpenDeleteModal,
@@ -115,6 +119,28 @@ export function DangerZoneSection({
 				onOpenChange={setIsDeleteModalOpen}
 				projectName={projectName}
 				onConfirmDelete={handleDeleteProject}
+			/>
+
+			<WarningModal
+				isOpen={warningModal.isOpen}
+				onClose={() => setWarningModal({ isOpen: false, actionType: null })}
+				onConfirm={confirmWarningAction}
+				title={
+					warningModal.actionType === "delete"
+						? "Delete Project"
+						: "Archive Project"
+				}
+				message={
+					warningModal.actionType === "delete"
+						? "This project has ongoing tasks. Are you sure you want to delete it? This action cannot be undone."
+						: "There are still ongoing tasks in this project. Are you sure you want to archive it?"
+				}
+				variant={warningModal.actionType === "delete" ? "danger" : "warning"}
+				confirmText={
+					warningModal.actionType === "delete"
+						? "Delete Anyway"
+						: "Archive Anyway"
+				}
 			/>
 		</section>
 	);

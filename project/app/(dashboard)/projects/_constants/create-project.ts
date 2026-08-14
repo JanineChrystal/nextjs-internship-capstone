@@ -6,7 +6,7 @@ export type SelectOption = {
 export type FormFieldConfig = {
 	id: string;
 	label: string;
-	type: "text" | "date" | "datetime-local" | "select";
+	type: "text" | "date" | "datetime-local" | "select" | "creatable-combobox";
 	placeholder?: string;
 	options?: readonly SelectOption[];
 };
@@ -41,7 +41,7 @@ export const projectFormFields: FormFieldConfig[] = [
 	{
 		id: "category",
 		label: "Category",
-		type: "text",
+		type: "creatable-combobox",
 		placeholder: "e.g., Development",
 	},
 	{
