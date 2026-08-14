@@ -1,4 +1,4 @@
-import type { TaskBoard, TaskTag } from "@/types/task";
+import type { TaskBoard } from "@/types/task";
 
 export type IconName =
 	| "clock"
@@ -87,7 +87,7 @@ export const PRIORITY_CONFIG: Record<
 	},
 };
 
-export const TAG_CONFIG: Record<TaskTag | string, string> = {
+export const TAG_CONFIG: Record<string, string> = {
 	Design:
 		"text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-900/30",
 	Research: "text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30",

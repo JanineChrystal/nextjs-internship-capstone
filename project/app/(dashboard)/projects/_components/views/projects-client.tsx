@@ -1,14 +1,18 @@
 "use client";
 
-import { CheckSquare, Plus, Trash2 } from "lucide-react";
+import { CheckSquare, Plus } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useMemo } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
-import projectFilters from "@/app/(dashboard)/_constants/filters";
+import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
+import { Toolbar } from "@/app/(dashboard)/_components/ui/toolbar/toolbar";
+import { TASK_PRIORITY_OPTIONS } from "@/app/(dashboard)/_constants/task";
 import { ActionConfirmModal } from "@/components/modals/action-confirm-modal";
 import { Button } from "@/components/ui/buttons/button";
-import { FilterChip } from "@/components/ui/filters/filter-chip";
-import { TagFilter } from "@/components/ui/filters/tag-filter";
+import { FilterPopover } from "@/components/ui/filters/filter-popover";
 import type { Project } from "@/lib/validations/project-schema";
+import { useProjectsClient } from "../../_hooks/use-projects-client";
+import { ProjectCard } from "../ui/cards/project-card";
 
 const ProjectModal = dynamic(
 	() =>
@@ -17,9 +21,6 @@ const ProjectModal = dynamic(
 		),
 	{ ssr: false },
 );
-
-import { useProjectsClient } from "../../_hooks/use-projects-client";
-import { ProjectCard } from "../ui/cards/project-card";
 
 // 1. Define the props interface to satisfy TypeScript
 // Replace `any` with your actual Project type (e.g., `Project[]`) if you have it exported
@@ -35,6 +36,44 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 
 	const isSingleDelete = selection.projectToDelete !== null;
 	const deleteCount = isSingleDelete ? 1 : selection.selectedProjectIds.size;
+
+	const categories = useMemo(() => {
+		const uniqueCategories = new Set(
+			initialProjects.map((p) => p.category?.trim() || "Uncategorized"),
+		);
+		return Array.from(uniqueCategories).map((c) => ({
+			label: c,
+			value: c.toLowerCase(),
+		}));
+	}, [initialProjects]);
+
+	const filterFields = [
+		{
+			id: "status",
+			label: "Status",
+			options: [
+				{ label: "Active", value: "active" },
+				{ label: "Completed", value: "completed" },
+				{ label: "Overdue", value: "overdue" },
+				{ label: "Archived", value: "archived" },
+			],
+		},
+		{
+			id: "priority",
+			label: "Priority",
+			options: TASK_PRIORITY_OPTIONS,
+		},
+		{
+			id: "category",
+			label: "Category",
+			options: categories,
+		},
+		{
+			id: "isOwned",
+			label: "Ownership",
+			options: [{ label: "Owned by Me", value: "true" }],
+		},
+	];
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -52,50 +91,27 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 					</Button>
 				}
 				filters={
-					<>
-						<FilterChip
-							label="Owned Projects"
-							isActive={filters.ownedActive}
-							onClick={() => filters.setOwnedActive(!filters.ownedActive)}
-						/>
-						<FilterChip
-							label="Assigned to Me"
-							isActive={filters.assignedActive}
-							onClick={() => filters.setAssignedActive(!filters.assignedActive)}
-						/>
-						<div className="flex-1 min-w-5" />
-						<TagFilter
-							filterDefinitions={projectFilters}
-							activeFilters={filters.activeTags}
-							onAddFilter={filters.handleAddTag}
-							onRemoveFilter={filters.handleRemoveTag}
-							onReset={filters.handleResetTags}
-						/>
-						{/* Selection Toggle Button */}
-						<Button
-							variant={selection.isSelectMode ? "default" : "outline"}
-							size="sm"
-							onClick={selection.toggleSelectMode}
-							className="gap-2"
-						>
-							<CheckSquare className="w-4 h-4" />
-							{selection.isSelectMode ? "Cancel Selection" : "Select"}
-						</Button>
-
-						{/* Conditional Bulk Delete Button */}
-						{selection.isSelectMode &&
-							selection.selectedProjectIds.size > 0 && (
+					<Toolbar
+						rightSection={
+							<>
+								<FilterPopover
+									fields={filterFields}
+									values={filters.filterValues}
+									onChange={filters.handleFilterChange}
+									onReset={filters.handleResetFilters}
+								/>
 								<Button
-									variant="destructive"
+									variant={selection.isSelectMode ? "default" : "outline"}
 									size="sm"
+									onClick={selection.toggleSelectMode}
 									className="gap-2"
-									onClick={selection.initiateBulkDelete}
 								>
-									<Trash2 className="w-4 h-4" />
-									Delete ({selection.selectedProjectIds.size})
+									<CheckSquare className="w-4 h-4" />
+									{selection.isSelectMode ? "Cancel Selection" : "Select"}
 								</Button>
-							)}
-					</>
+							</>
+						}
+					/>
 				}
 			/>
 
@@ -162,6 +178,13 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 				description={`Are you sure you want to delete ${deleteCount} selected project(s)? This action cannot be undone.`}
 				confirmText={isSingleDelete ? "Delete Project" : "Delete Projects"}
 				isDestructive={true}
+			/>
+
+			<BulkActionBar
+				selectedCount={selection.selectedProjectIds.size}
+				onClearSelection={selection.toggleSelectMode}
+				onDelete={selection.initiateBulkDelete}
+				onArchive={selection.initiateBulkArchive}
 			/>
 		</div>
 	);

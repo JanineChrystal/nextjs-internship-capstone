@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { PriorityBadge } from "@/app/(dashboard)/_components/ui/badges/priority-badge";
 import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
-import type { TaskItem, TaskPriority, TaskTag } from "@/types/task";
+import type { TaskItem, TaskPriority } from "@/types/task";
 
 export interface BaseTaskCardProps {
 	task: Partial<TaskItem> & { title: string };
@@ -69,8 +69,8 @@ export function BaseTaskCard({
 								{task.category && (
 									<TagBadge
 										tag={
-											(task.category.charAt(0).toUpperCase() +
-												task.category.slice(1).toLowerCase()) as TaskTag
+											task.category.charAt(0).toUpperCase() +
+											task.category.slice(1).toLowerCase()
 										}
 									/>
 								)}

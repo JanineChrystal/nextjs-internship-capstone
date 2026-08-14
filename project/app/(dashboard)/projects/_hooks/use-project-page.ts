@@ -1,6 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import type { FilterField } from "@/components/ui/filters/filter-popover";
-import { TASK_PRIORITIES, TASK_TAGS } from "@/lib/validations/task-schema";
+import {
+	DEFAULT_TASK_CATEGORIES,
+	TASK_PRIORITIES,
+} from "@/lib/validations/task-schema";
 import { useBoardStore } from "@/stores/use-board-store";
 import type { ProjectViewType } from "../[id]/page";
 
@@ -38,7 +41,7 @@ export function useProjectPage() {
 			{ id: "status", label: "Status", options: dynamicStatuses },
 			{ id: "priority", label: "Priority", options: TASK_PRIORITIES },
 			{ id: "board", label: "Board", options: dynamicStatuses },
-			{ id: "tag", label: "Tag", options: TASK_TAGS },
+			{ id: "category", label: "Category", options: DEFAULT_TASK_CATEGORIES },
 		];
 	}, [boardColumns]);
 

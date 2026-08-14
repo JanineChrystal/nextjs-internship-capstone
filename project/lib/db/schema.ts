@@ -17,8 +17,9 @@ export const workspaceStatusEnum = pgEnum("WorkspaceStatus", [
 ]);
 export const projectStatusEnum = pgEnum("ProjectStatus", [
 	"active",
-	"archived",
 	"completed",
+	"overdue",
+	"archived",
 ]);
 export const accessLevelEnum = pgEnum("AccessLevel", [
 	"owner",

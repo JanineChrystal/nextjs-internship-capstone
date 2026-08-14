@@ -1,80 +1,171 @@
-// TODO: Task 4.4 - Build task creation and editing functionality
-// TODO: Task 5.4 - Implement optimistic UI updates for smooth interactions
+"use client";
 
-/*
-TODO: Implementation Notes for Interns:
+import { useCallback, useEffect, useState } from "react";
+import type { z } from "zod";
+import {
+	type CreateTaskInput,
+	createTaskAction,
+	deleteTaskAction,
+	getTasksAction,
+	moveTaskAction,
+	updateTaskAction,
+} from "@/lib/actions/task-actions";
+import type { TaskOutputDTO } from "@/lib/dtos/task-dto";
+import type { updateTaskSchema } from "@/lib/validations/task-schema";
 
-Custom hook for task data management:
-- Fetch tasks for a project
-- Create new task
-- Update task
-- Delete task
-- Move task between lists
-- Bulk operations
-
-Features:
-- Optimistic updates for smooth UX
-- Real-time synchronization
-- Conflict resolution
-- Undo functionality
-- Batch operations
-
-Example structure:
 export function useTasks(projectId: string) {
-  const queryClient = useQueryClient()
-  
-  const {
-    data: tasks,
-    isLoading,
-    error
-  } = useQuery({
-    queryKey: ['tasks', projectId],
-    queryFn: () => queries.tasks.getByProject(projectId),
-    enabled: !!projectId
-  })
-  
-  const createTask = useMutation({
-    mutationFn: queries.tasks.create,
-    onMutate: async (newTask) => {
-      // Optimistic update
-      await queryClient.cancelQueries({ queryKey: ['tasks', projectId] })
-      const previousTasks = queryClient.getQueryData(['tasks', projectId])
-      queryClient.setQueryData(['tasks', projectId], (old: Task[]) => [...old, { ...newTask, id: 'temp-' + Date.now() }])
-      return { previousTasks }
-    },
-    onError: (err, newTask, context) => {
-      // Rollback on error
-      queryClient.setQueryData(['tasks', projectId], context?.previousTasks)
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] })
-    }
-  })
-  
-  return {
-    tasks,
-    isLoading,
-    error,
-    createTask: createTask.mutate,
-    isCreating: createTask.isPending
-  }
-}
-*/
+	// Local State
+	const [tasks, setTasks] = useState<TaskOutputDTO[]>([]);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [error, setError] = useState<string | null>(null);
+	const [isCreating, setIsCreating] = useState<boolean>(false);
+	const [isUpdating, setIsUpdating] = useState<boolean>(false);
+	const [isDeleting, setIsDeleting] = useState<boolean>(false);
+	const [isMoving, setIsMoving] = useState<boolean>(false);
 
-// Placeholder to prevent import errors
-export function useTasks(projectId: string) {
-	console.log(`TODO: Implement useTasks hook for project ${projectId}`);
+	// Handlers & Callbacks
+	const fetchTasks = useCallback(async () => {
+		if (!projectId) return;
+		setIsLoading(true);
+		setError(null);
+		try {
+			const result = await getTasksAction(projectId);
+			if (result.success && result.data) {
+				setTasks(result.data);
+			} else {
+				setError(result.error || "Failed to fetch tasks");
+			}
+		} catch (err) {
+			setError(
+				err instanceof Error ? err.message : "An unexpected error occurred",
+			);
+		} finally {
+			setIsLoading(false);
+		}
+	}, [projectId]);
+
+	const createTask = useCallback(
+		async (data: CreateTaskInput, boardId = "default-board") => {
+			setIsCreating(true);
+			setError(null);
+			try {
+				const result = await createTaskAction(projectId, boardId, data);
+				if (result.success && result.data) {
+					setTasks((prev) => [result.data as TaskOutputDTO, ...prev]);
+					return result.data;
+				}
+				setError(result.error || "Failed to create task");
+				return null;
+			} catch (err) {
+				setError(
+					err instanceof Error ? err.message : "An unexpected error occurred",
+				);
+				return null;
+			} finally {
+				setIsCreating(false);
+			}
+		},
+		[projectId],
+	);
+
+	const updateTask = useCallback(
+		async (taskId: string, data: z.infer<typeof updateTaskSchema>) => {
+			setIsUpdating(true);
+			setError(null);
+			try {
+				const result = await updateTaskAction(taskId, projectId, data);
+				if (result.success && result.data) {
+					setTasks((prev) =>
+						prev.map((t) =>
+							t.id === taskId ? (result.data as TaskOutputDTO) : t,
+						),
+					);
+					return result.data;
+				}
+				setError(result.error || "Failed to update task");
+				return null;
+			} catch (err) {
+				setError(
+					err instanceof Error ? err.message : "An unexpected error occurred",
+				);
+				return null;
+			} finally {
+				setIsUpdating(false);
+			}
+		},
+		[projectId],
+	);
+
+	const deleteTask = useCallback(
+		async (taskId: string) => {
+			setIsDeleting(true);
+			setError(null);
+			try {
+				const result = await deleteTaskAction(taskId, projectId);
+				if (result.success) {
+					setTasks((prev) => prev.filter((t) => t.id !== taskId));
+					return true;
+				}
+				setError(result.error || "Failed to delete task");
+				return false;
+			} catch (err) {
+				setError(
+					err instanceof Error ? err.message : "An unexpected error occurred",
+				);
+				return false;
+			} finally {
+				setIsDeleting(false);
+			}
+		},
+		[projectId],
+	);
+
+	const moveTask = useCallback(
+		async (taskId: string, newBoardId: string) => {
+			setIsMoving(true);
+			setError(null);
+			try {
+				const result = await moveTaskAction(taskId, newBoardId, projectId);
+				if (result.success && result.data) {
+					setTasks((prev) =>
+						prev.map((t) =>
+							t.id === taskId ? (result.data as TaskOutputDTO) : t,
+						),
+					);
+					return result.data;
+				}
+				setError(result.error || "Failed to move task");
+				return null;
+			} catch (err) {
+				setError(
+					err instanceof Error ? err.message : "An unexpected error occurred",
+				);
+				return null;
+			} finally {
+				setIsMoving(false);
+			}
+		},
+		[projectId],
+	);
+
+	// Effects
+	useEffect(() => {
+		fetchTasks();
+	}, [fetchTasks]);
+
+	// Return Statement
 	return {
-		tasks: [],
-		isLoading: false,
-		error: null,
-		createTask: (data: any) => console.log("TODO: Create task", data),
-		updateTask: (id: string, data: any) =>
-			console.log(`TODO: Update task ${id}`, data),
-		deleteTask: (id: string) => console.log(`TODO: Delete task ${id}`),
-		moveTask: (taskId: string, newListId: string, position: number) =>
-			console.log(
-				`TODO: Move task ${taskId} to list ${newListId} at position ${position}`,
-			),
+		tasks,
+		isLoading,
+		error,
+		refetch: fetchTasks,
+		createTask,
+		updateTask,
+		deleteTask,
+		moveTask,
+		isCreating,
+		isUpdating,
+		isDeleting,
+		isMoving,
 	};
 }

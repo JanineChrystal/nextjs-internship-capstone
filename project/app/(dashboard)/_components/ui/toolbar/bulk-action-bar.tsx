@@ -1,4 +1,4 @@
-import { CheckCircle, Trash2, X } from "lucide-react";
+import { Archive, CheckCircle, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/buttons/button";
 
 interface BulkActionBarProps {
@@ -6,7 +6,9 @@ interface BulkActionBarProps {
 	onClearSelection: () => void;
 	onDelete: () => void;
 	onComplete?: () => void;
+	onArchive?: () => void;
 	deleteLabel?: string;
+	archiveLabel?: string;
 }
 
 export function BulkActionBar({
@@ -14,7 +16,9 @@ export function BulkActionBar({
 	onClearSelection,
 	onDelete,
 	onComplete,
+	onArchive,
 	deleteLabel = "Delete",
+	archiveLabel = "Archive",
 }: BulkActionBarProps) {
 	if (selectedCount === 0) return null;
 
@@ -36,6 +40,17 @@ export function BulkActionBar({
 					</Button>
 				</div>
 				<div className="flex items-center gap-2">
+					{onArchive && (
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={onArchive}
+							className="h-8 text-primary hover:text-primary hover:bg-primary/10"
+						>
+							<Archive className="w-4 h-4 mr-2" />
+							{archiveLabel}
+						</Button>
+					)}
 					{onComplete && (
 						<Button
 							variant="ghost"

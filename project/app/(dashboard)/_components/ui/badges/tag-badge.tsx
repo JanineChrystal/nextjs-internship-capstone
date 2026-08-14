@@ -1,17 +1,16 @@
 import { cn } from "@/lib/utils";
-import type { TaskTag } from "@/types/task";
 import {
 	getDynamicBadgeColor,
 	TAG_CONFIG,
 } from "../../../projects/_constants/badges";
 
 interface TagBadgeProps {
-	tag: TaskTag | string;
+	tag: string;
 	className?: string;
 }
 
 export function TagBadge({ tag, className }: TagBadgeProps) {
-	const colorClass = TAG_CONFIG[tag as TaskTag] || getDynamicBadgeColor(tag);
+	const colorClass = TAG_CONFIG[tag] || getDynamicBadgeColor(tag);
 
 	return (
 		<div

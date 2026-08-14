@@ -147,7 +147,7 @@ export function ProjectEditForm({
 				<div className="relative flex items-center gap-2 text-secondary text-label-sm px-2 py-1 rounded-md transition-all bg-surface-container-high focus-within:ring-2 focus-within:ring-primary">
 					<Calendar size={14} className="shrink-0" />
 					<input
-						type="date"
+						type="datetime-local"
 						{...form.register("startDate")}
 						className="appearance-none bg-transparent outline-none py-0 w-full text-secondary"
 					/>
@@ -159,7 +159,7 @@ export function ProjectEditForm({
 				<div className="relative flex items-center gap-2 text-secondary text-label-sm px-2 py-1 rounded-md transition-all bg-surface-container-high focus-within:ring-2 focus-within:ring-primary">
 					<Calendar size={14} className="shrink-0" />
 					<input
-						type="date"
+						type="datetime-local"
 						{...form.register("dueDate")}
 						className="appearance-none bg-transparent outline-none py-0 w-full text-secondary"
 					/>

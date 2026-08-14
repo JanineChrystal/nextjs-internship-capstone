@@ -1,38 +1,79 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { z } from "zod";
 import { getCurrentUser } from "@/lib/dal/auth";
-import { createTaskInDB } from "@/lib/dal/tasks";
+import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
+import {
+	bulkCompleteTasksInDB,
+	bulkDeleteTasksInDB,
+	createTaskInDB,
+	deleteTaskInDB,
+	getTasksByProjectId,
+	moveTaskBoardDAL,
+	updateTaskInDB,
+} from "@/lib/dal/tasks";
 import type { TaskOutputDTO } from "@/lib/dtos/task-dto";
-import { insertTaskDbSchema } from "@/lib/validations/task-schema";
+import type { NewDbTask } from "@/lib/types/task";
+import {
+	insertTaskDbSchema,
+	moveTaskSchema,
+	updateTaskSchema,
+} from "@/lib/validations/task-schema";
+
+export async function getTasksAction(
+	projectId: string,
+): Promise<{ success: boolean; data?: TaskOutputDTO[]; error?: string }> {
+	try {
+		const user = await getCurrentUser();
+		if (!user) return { success: false, error: "Unauthorized" };
+
+		const tasks = await getTasksByProjectId(projectId);
+		return { success: true, data: tasks };
+	} catch (error) {
+		console.error("getTasksAction error:", error);
+		return { success: false, error: "Failed to fetch tasks" };
+	}
+}
+
+export interface CreateTaskInput {
+	name: string;
+	category?: string;
+	status?: string;
+	priority?: "low" | "medium" | "high" | "urgent";
+	notes?: string;
+	startDate?: string;
+	dueDate?: string;
+}
 
 export async function createTaskAction(
 	projectId: string,
 	boardId: string,
-	formData: FormData,
+	inputData: CreateTaskInput,
 ): Promise<{ success: boolean; data?: TaskOutputDTO; error?: string }> {
 	try {
-		// Auth check
-		const user = await getCurrentUser();
-		if (!user) {
+		// Auth & Permission check
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"create_task",
+		);
+		if (!hasPermission) {
 			return { success: false, error: "Unauthorized" };
 		}
 
-		// Parse form data payload
+		// Parse payload
 		const rawData = {
 			projectId,
 			boardId,
-			name: formData.get("name"),
-			category: formData.get("category"),
-			status: formData.get("status") || "Not Started",
-			priority: formData.get("priority") || "medium",
-			startDate: formData.get("startDate")
-				? new Date(formData.get("startDate") as string)
+			name: inputData.name,
+			status: inputData.status,
+			priority: inputData.priority,
+			category: inputData.category,
+			notes: inputData.notes,
+			startDate: inputData.startDate
+				? new Date(inputData.startDate)
 				: undefined,
-			dueDate: formData.get("dueDate")
-				? new Date(formData.get("dueDate") as string)
-				: undefined,
-			notes: formData.get("notes"),
+			dueDate: inputData.dueDate ? new Date(inputData.dueDate) : undefined,
 		};
 
 		// Zod Validation (Using the DB schema directly for raw backend inserts)
@@ -41,10 +82,10 @@ export async function createTaskAction(
 			return { success: false, error: "Invalid form data" };
 		}
 
-		const data = validationResult.data;
+		const validatedData = validationResult.data;
 
 		// DAL Call
-		const newTask = await createTaskInDB(data);
+		const newTask = await createTaskInDB(validatedData);
 
 		// Cache Revalidation
 		revalidatePath(`/projects/${projectId}`);
@@ -53,6 +94,144 @@ export async function createTaskAction(
 		return { success: true, data: newTask };
 	} catch (error) {
 		console.error("createTaskAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function updateTaskAction(
+	taskId: string,
+	projectId: string,
+	inputData: z.infer<typeof updateTaskSchema>,
+): Promise<{ success: boolean; data?: TaskOutputDTO; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"edit_task",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		const validationResult = updateTaskSchema.safeParse(inputData);
+		if (!validationResult.success) {
+			return { success: false, error: "Invalid task data" };
+		}
+
+		const updatePayload: Partial<NewDbTask> = {
+			name: validationResult.data.name,
+			status: validationResult.data.status,
+			priority: validationResult.data.priority,
+			category: validationResult.data.category,
+			notes: validationResult.data.notes,
+			boardId: validationResult.data.boardId,
+			startDate: validationResult.data.startDate
+				? new Date(validationResult.data.startDate)
+				: undefined,
+			dueDate: validationResult.data.dueDate
+				? new Date(validationResult.data.dueDate)
+				: undefined,
+		};
+
+		const updatedTask = await updateTaskInDB(taskId, updatePayload);
+
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true, data: updatedTask };
+	} catch (error) {
+		console.error("updateTaskAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function deleteTaskAction(
+	taskId: string,
+	projectId: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"delete_task",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		await deleteTaskInDB(taskId);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true };
+	} catch (error) {
+		console.error("deleteTaskAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function bulkDeleteTasksAction(
+	taskIds: string[],
+	projectId: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"delete_task",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		await bulkDeleteTasksInDB(taskIds);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true };
+	} catch (error) {
+		console.error("bulkDeleteTasksAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function bulkCompleteTasksAction(
+	taskIds: string[],
+	projectId: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"edit_task",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		await bulkCompleteTasksInDB(taskIds);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true };
+	} catch (error) {
+		console.error("bulkCompleteTasksAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function moveTaskAction(
+	taskId: string,
+	newBoardId: string,
+	projectId: string,
+): Promise<{ success: boolean; data?: TaskOutputDTO; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"edit_task",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		const validationResult = moveTaskSchema.safeParse({ taskId, newBoardId });
+		if (!validationResult.success) {
+			return { success: false, error: "Invalid move data" };
+		}
+
+		const movedTask = await moveTaskBoardDAL(taskId, newBoardId);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true, data: movedTask };
+	} catch (error) {
+		console.error("moveTaskAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };
 	}
 }

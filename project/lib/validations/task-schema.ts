@@ -18,12 +18,6 @@ export const selectAttachmentDbSchema = createSelectSchema(attachments);
 //UI VALIDATION SCHEMAS
 export const TaskStatusSchema = z.string().min(1, "Status is required").trim();
 export const TaskPrioritySchema = z.enum(["low", "medium", "high", "urgent"]);
-export const TaskTagSchema = z.enum([
-	"Design",
-	"Research",
-	"Analytics",
-	"Content",
-]);
 export const TaskBoardSchema = z
 	.string()
 	.min(1, "Board column is required")
@@ -40,7 +34,13 @@ export const DEFAULT_TASK_STATUSES = [
 	"Completed",
 ];
 export const TASK_PRIORITIES = TaskPrioritySchema.options;
-export const TASK_TAGS = TaskTagSchema.options;
+export const DEFAULT_TASK_CATEGORIES = [
+	"Design",
+	"Research",
+	"Analytics",
+	"Content",
+	"Development",
+];
 export const TASK_BOARDS = ["In Progress", "Completed", "Up Next", "Backlog"];
 
 export const AssigneeSchema = z.object({
@@ -84,15 +84,40 @@ export const GridTaskSchema = z.object({
 	id: z.string(),
 	name: z.string(),
 	description: z.string().optional(),
+	notes: z.string().optional(),
+	category: TaskCategorySchema,
 	assignees: z.array(AssigneeSchema),
 	startDate: z.string(),
 	dueDate: z.string(),
 	board: TaskBoardSchema,
 	status: TaskStatusSchema,
 	priority: TaskPrioritySchema,
-	tag: TaskTagSchema,
 	isCompleted: z.boolean(),
 	checklist: z.array(ChecklistItemSchema).optional(),
 	attachments: z.array(AttachmentSchema).optional(),
 	links: z.array(LinkSchema).optional(),
+});
+
+export const updateTaskSchema = z.object({
+	name: z.string().optional(),
+	status: TaskStatusSchema.optional(),
+	priority: TaskPrioritySchema.optional(),
+	category: TaskCategorySchema.optional(),
+	notes: z.string().optional(),
+	dueDate: z.string().optional(),
+	startDate: z.string().optional(),
+	boardId: z.string().optional(),
+	isCompleted: z.boolean().optional(),
+});
+
+export const bulkUpdateTaskStatusSchema = z.object({
+	taskIds: z.array(z.string()),
+	status: TaskStatusSchema,
+	boardId: z.string().optional(),
+	isCompleted: z.boolean().optional(),
+});
+
+export const moveTaskSchema = z.object({
+	taskId: z.string(),
+	newBoardId: z.string(),
 });

@@ -31,7 +31,7 @@ export function GridView({
 		handleClearSelection,
 		handleBulkDelete,
 		handleBulkComplete,
-	} = useGridView(externalFilters);
+	} = useGridView(projectId || "", externalFilters);
 
 	const isSelectionActive = isSelectionModeActive || selectedTaskIds.size > 0;
 

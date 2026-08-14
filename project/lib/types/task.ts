@@ -13,10 +13,10 @@ import type {
 	GridTaskSchema,
 	LinkSchema,
 	TaskBoardSchema,
+	TaskCategorySchema,
 	TaskItemSchema,
 	TaskPrioritySchema,
 	TaskStatusSchema,
-	TaskTagSchema,
 } from "@/lib/validations/task-schema";
 
 export type TaskItem = z.infer<typeof TaskItemSchema>;
@@ -36,12 +36,12 @@ export interface TaskPropertyConfig {
 }
 
 export type TaskModalActionId = "TOGGLE_COMPLETION" | "DUPLICATE" | "DELETE";
-export type TaskPropertyId = "tag" | "status" | "priority" | "board";
+export type TaskPropertyId = "category" | "status" | "priority" | "board";
 export type PriorityType = "low" | "medium" | "high" | "urgent";
 
 export type TaskStatus = z.infer<typeof TaskStatusSchema>;
 export type TaskPriority = z.infer<typeof TaskPrioritySchema>;
-export type TaskTag = z.infer<typeof TaskTagSchema>;
+export type TaskCategory = z.infer<typeof TaskCategorySchema>;
 export type TaskBoard = z.infer<typeof TaskBoardSchema>;
 export type Assignee = z.infer<typeof AssigneeSchema>;
 export type ChecklistItem = z.infer<typeof ChecklistItemSchema>;

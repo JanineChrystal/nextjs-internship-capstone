@@ -6,15 +6,23 @@ export type SelectOption = {
 export type FormFieldConfig = {
 	id: string;
 	label: string;
-	type: "text" | "date" | "select";
+	type: "text" | "date" | "datetime-local" | "select";
 	placeholder?: string;
 	options?: readonly SelectOption[];
 };
 
 export const projectStatusOptions = [
 	{ label: "Active", value: "active" },
-	{ label: "Planning", value: "planning" },
 	{ label: "Completed", value: "completed" },
+	{ label: "Overdue", value: "overdue" },
+	{ label: "Archived", value: "archived" },
+] as const;
+
+export const projectPriorityOptions = [
+	{ label: "Low", value: "low" },
+	{ label: "Medium", value: "medium" },
+	{ label: "High", value: "high" },
+	{ label: "Urgent", value: "urgent" },
 ] as const;
 
 export const projectFormFields: FormFieldConfig[] = [
@@ -25,6 +33,12 @@ export const projectFormFields: FormFieldConfig[] = [
 		options: projectStatusOptions,
 	},
 	{
+		id: "priority",
+		label: "Priority",
+		type: "select",
+		options: projectPriorityOptions,
+	},
+	{
 		id: "category",
 		label: "Category",
 		type: "text",
@@ -33,11 +47,11 @@ export const projectFormFields: FormFieldConfig[] = [
 	{
 		id: "startDate",
 		label: "Start Date",
-		type: "date",
+		type: "datetime-local",
 	},
 	{
 		id: "dueDate",
 		label: "Due Date",
-		type: "date",
+		type: "datetime-local",
 	},
 ];

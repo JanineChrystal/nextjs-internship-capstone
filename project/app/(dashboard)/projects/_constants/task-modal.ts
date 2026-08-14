@@ -1,8 +1,8 @@
 import { CheckCircle, Copy, Trash2 } from "lucide-react";
 import {
+	DEFAULT_TASK_CATEGORIES,
 	DEFAULT_TASK_STATUSES,
 	TASK_PRIORITIES,
-	TASK_TAGS,
 } from "@/lib/validations/task-schema";
 import type {
 	GridTask,
@@ -16,7 +16,7 @@ export const DEFAULT_TASK_DATA: Partial<GridTask> = {
 	isCompleted: false,
 	status: "Backlog",
 	priority: "medium",
-	tag: "Design",
+	category: "Design",
 	board: "Backlog",
 	startDate: "--",
 	dueDate: "--",
@@ -49,7 +49,7 @@ export const TASK_MODAL_ACTIONS: TaskModalAction[] = [
 ];
 
 export const TASK_PROPERTIES_CONFIG: TaskPropertyConfig[] = [
-	{ id: "tag", label: "Category", options: TASK_TAGS },
+	{ id: "category", label: "Category", options: DEFAULT_TASK_CATEGORIES },
 	{ id: "status", label: "Status", options: DEFAULT_TASK_STATUSES },
 	{ id: "priority", label: "Priority", options: TASK_PRIORITIES },
 ];

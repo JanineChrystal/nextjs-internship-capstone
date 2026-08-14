@@ -25,7 +25,6 @@ export function TaskCard({
 	tagColor = "default",
 	comments,
 	attachments,
-	date,
 	priority,
 	progress,
 }: TaskCardProps) {

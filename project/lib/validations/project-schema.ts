@@ -25,7 +25,7 @@ export const projectSchema = z.object({
 	tasksCount: z.number().int().nonnegative().optional(),
 	progress: z.number().min(0).max(100).optional(),
 	status: z
-		.enum(["active", "completed", "overdue", "on hold"])
+		.enum(["active", "completed", "overdue", "archived"])
 		.default("active")
 		.optional(),
 	priority: z
@@ -45,6 +45,7 @@ export const createProjectSchema = projectSchema.pick({
 	dueDate: true,
 	status: true,
 	description: true,
+	priority: true,
 });
 
 export type CreateProjectFormValues = z.infer<typeof createProjectSchema>;

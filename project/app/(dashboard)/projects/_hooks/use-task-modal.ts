@@ -1,9 +1,18 @@
+import { useParams } from "next/navigation";
 import * as React from "react";
+import {
+	createTaskAction,
+	deleteTaskAction,
+	updateTaskAction,
+} from "@/lib/actions/task-actions";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask, TaskModalActionId } from "@/types/task";
 import { DEFAULT_TASK_DATA } from "../_constants/task-modal";
 
 export function useTaskModal() {
+	const params = useParams();
+	const projectId = params?.id as string;
+
 	// External Stores
 	const {
 		tasks,
@@ -31,21 +40,42 @@ export function useTaskModal() {
 	const existingTask = tasks.find((t) => t.id === selectedTaskId);
 
 	// Action Handlers
-	const handleChange = (updates: Partial<GridTask>) => {
+	const handleChange = async (updates: Partial<GridTask>) => {
 		const newData = { ...taskData, ...updates };
 		setTaskData(newData);
-		if (isEditMode && selectedTaskId) {
+		if (isEditMode && selectedTaskId && projectId) {
 			updateTask(selectedTaskId, updates);
+			// Fire and forget server action
+			await updateTaskAction(selectedTaskId, projectId, updates);
 		}
 	};
 
-	const handleCreate = () => {
+	const handleCreate = async () => {
 		const finalData = { ...taskData };
 		if (!finalData.name?.trim()) {
 			finalData.name = "Untitled Task";
 		}
-		createTask(finalData as Omit<GridTask, "id">);
+
+		// Create optimistic ID
+		const tempId = crypto.randomUUID();
+		const newTask = { ...finalData, id: tempId } as GridTask;
+		createTask(newTask);
 		closeTaskModal();
+
+		if (projectId) {
+			const boardId = finalData.board || "default-board";
+			// We should map GridTask -> newDbTask schema fields
+			const payload = {
+				name: newTask.name,
+				category:
+					newTask.category || (newTask.category as string) || "Uncategorized",
+				status: newTask.status || "Not Started",
+				priority: newTask.priority || "medium",
+				startDate: newTask.startDate,
+				dueDate: newTask.dueDate,
+			};
+			await createTaskAction(projectId, boardId, payload);
+		}
 	};
 
 	const addChecklistItem = () => {
@@ -124,17 +154,31 @@ export function useTaskModal() {
 		handleChange({ links: newLinks });
 	};
 
-	const handleDuplicate = () => {
-		if (selectedTaskId) {
+	const handleDuplicate = async () => {
+		if (selectedTaskId && projectId) {
 			duplicateTask(selectedTaskId);
 			closeTaskModal();
+			const sourceTask = tasks.find((t) => t.id === selectedTaskId);
+			if (sourceTask) {
+				const payload = {
+					name: `${sourceTask.name} (Copy)`,
+					category:
+						sourceTask.category ||
+						(sourceTask.category as string) ||
+						"Uncategorized",
+					status: sourceTask.status,
+					priority: sourceTask.priority,
+				};
+				await createTaskAction(projectId, "default-board", payload);
+			}
 		}
 	};
 
-	const handleDelete = () => {
-		if (selectedTaskId) {
+	const handleDelete = async () => {
+		if (selectedTaskId && projectId) {
 			deleteTask(selectedTaskId);
 			closeTaskModal();
+			await deleteTaskAction(selectedTaskId, projectId);
 		}
 	};
 
@@ -142,29 +186,35 @@ export function useTaskModal() {
 		setIsCommentsOpen((prev) => !prev);
 	};
 
-	const handleAction = (actionId: TaskModalActionId, targetTaskId?: string) => {
+	const handleAction = async (
+		actionId: TaskModalActionId,
+		targetTaskId?: string,
+	) => {
 		const targetId = targetTaskId || selectedTaskId;
-		if (!targetId) return;
+		if (!targetId || !projectId) return;
 
 		switch (actionId) {
 			case "TOGGLE_COMPLETION": {
 				if (targetTaskId && targetTaskId !== selectedTaskId) {
 					const targetTask = tasks.find((t) => t.id === targetTaskId);
 					if (targetTask) {
-						updateTask(targetTaskId, {
+						const updates = {
 							isCompleted: !targetTask.isCompleted,
 							status: !targetTask.isCompleted ? "Completed" : "In Progress",
 							board: !targetTask.isCompleted ? "Completed" : targetTask.board,
-						});
+						};
+						updateTask(targetTaskId, updates);
+						await updateTaskAction(targetTaskId, projectId, updates);
 					}
 				} else {
-					toggleTaskCompletion();
+					toggleTaskCompletion(); // This handles its own handleChange which fires the action
 				}
 				break;
 			}
 			case "DUPLICATE":
 				if (targetTaskId && targetTaskId !== selectedTaskId) {
 					duplicateTask(targetTaskId);
+					// replicate duplicate logic here if needed
 				} else {
 					handleDuplicate();
 				}
@@ -172,6 +222,7 @@ export function useTaskModal() {
 			case "DELETE":
 				if (targetTaskId && targetTaskId !== selectedTaskId) {
 					deleteTask(targetTaskId);
+					await deleteTaskAction(targetTaskId, projectId);
 				} else {
 					handleDelete();
 				}

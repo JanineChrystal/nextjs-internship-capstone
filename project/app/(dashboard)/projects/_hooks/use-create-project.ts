@@ -21,6 +21,7 @@ export function useCreateProject({ onClose }: UseCreateProjectProps) {
 			title: "",
 			status: "active",
 			category: "",
+			priority: "low",
 			startDate: "",
 			dueDate: "",
 			description: "",

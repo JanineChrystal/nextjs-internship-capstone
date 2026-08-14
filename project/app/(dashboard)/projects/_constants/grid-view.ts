@@ -1,4 +1,7 @@
-import { TASK_PRIORITIES, TASK_TAGS } from "@/lib/validations/task-schema";
+import {
+	DEFAULT_TASK_CATEGORIES,
+	TASK_PRIORITIES,
+} from "@/lib/validations/task-schema";
 import type { ColumnDef } from "@/types/grid-table";
 import type { GridTask } from "@/types/task";
 
@@ -10,7 +13,7 @@ export const GRID_COLUMN_CLASSES = {
 	due: "w-24 shrink-0 flex justify-center",
 	status: "w-36 shrink-0",
 	priority: "w-28 shrink-0",
-	tag: "w-28 shrink-0",
+	category: "w-28 shrink-0",
 };
 
 export const GRID_COLUMNS: ColumnDef[] = [
@@ -29,7 +32,11 @@ export const GRID_COLUMNS: ColumnDef[] = [
 		title: "Priority",
 		className: GRID_COLUMN_CLASSES.priority,
 	},
-	{ key: "tag", title: "Tag", className: GRID_COLUMN_CLASSES.tag },
+	{
+		key: "category",
+		title: "Category",
+		className: GRID_COLUMN_CLASSES.category,
+	},
 ];
 
 export const GRID_DATE_CELLS = [
@@ -49,9 +56,9 @@ export const GRID_DROPDOWN_CELLS = [
 		options: TASK_PRIORITIES,
 	},
 	{
-		id: "tag" as const,
-		className: GRID_COLUMN_CLASSES.tag,
-		options: TASK_TAGS,
+		id: "category" as const,
+		className: GRID_COLUMN_CLASSES.category,
+		options: DEFAULT_TASK_CATEGORIES,
 	},
 ];
 
@@ -70,7 +77,7 @@ export const mockTasks: GridTask[] = [
 		board: "In Progress",
 		status: "In Progress",
 		priority: "high",
-		tag: "Design",
+		category: "Design",
 		isCompleted: false,
 	},
 	{
@@ -87,7 +94,7 @@ export const mockTasks: GridTask[] = [
 		board: "Completed",
 		status: "Completed",
 		priority: "urgent",
-		tag: "Research",
+		category: "Research",
 		isCompleted: true,
 	},
 	{
@@ -104,7 +111,7 @@ export const mockTasks: GridTask[] = [
 		board: "Up Next",
 		status: "Not Started",
 		priority: "medium",
-		tag: "Analytics",
+		category: "Analytics",
 		isCompleted: false,
 	},
 	{
@@ -121,7 +128,7 @@ export const mockTasks: GridTask[] = [
 		board: "Backlog",
 		status: "Not Started",
 		priority: "low",
-		tag: "Content",
+		category: "Content",
 		isCompleted: false,
 	},
 ];

@@ -1,7 +1,14 @@
 import { useMemo, useState } from "react";
+import {
+	bulkCompleteTasksAction,
+	bulkDeleteTasksAction,
+} from "@/lib/actions/task-actions";
 import { useTaskStore } from "@/stores/use-task-store";
 
-export function useGridView(externalFilters?: Record<string, string[]>) {
+export function useGridView(
+	projectId: string,
+	externalFilters?: Record<string, string[]>,
+) {
 	// External Stores
 	const { tasks, bulkDeleteTasks, bulkCompleteTasks } = useTaskStore();
 
@@ -97,14 +104,24 @@ export function useGridView(externalFilters?: Record<string, string[]>) {
 		setIsSelectionModeActive(false);
 	};
 
-	const handleBulkDelete = () => {
+	const handleBulkDelete = async () => {
+		if (selectedTaskIds.size === 0) return;
+		const ids = Array.from(selectedTaskIds);
 		bulkDeleteTasks(selectedTaskIds);
 		handleClearSelection();
+		if (projectId) {
+			await bulkDeleteTasksAction(ids, projectId);
+		}
 	};
 
-	const handleBulkComplete = () => {
+	const handleBulkComplete = async () => {
+		if (selectedTaskIds.size === 0) return;
+		const ids = Array.from(selectedTaskIds);
 		bulkCompleteTasks(selectedTaskIds);
 		handleClearSelection();
+		if (projectId) {
+			await bulkCompleteTasksAction(ids, projectId);
+		}
 	};
 
 	const handleSort = (key: string) => {

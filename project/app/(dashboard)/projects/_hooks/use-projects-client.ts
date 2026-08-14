@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { useProjectFilters } from "@/app/(dashboard)/_hooks/use-project-filters";
+import {
+	bulkArchiveProjectsAction,
+	bulkDeleteProjectsAction,
+	deleteProjectAction,
+} from "@/lib/actions/project-actions";
 import type { Project } from "@/lib/validations/project-schema";
 import { useProjectStore } from "@/stores/use-project-store";
 
@@ -49,16 +54,29 @@ export function useProjectsClient(initialProjects: Project[]) {
 		setIsDeleteModalOpen(true);
 	};
 
-	const confirmDelete = () => {
+	const confirmDelete = async () => {
 		if (projectToDelete) {
 			deleteProjects(new Set([projectToDelete]));
+			await deleteProjectAction(projectToDelete);
 			setProjectToDelete(null);
 		} else {
 			deleteProjects(selectedProjectIds);
+			await bulkDeleteProjectsAction(Array.from(selectedProjectIds));
 			setSelectedProjectIds(new Set());
 			setIsSelectMode(false);
 		}
 		setIsDeleteModalOpen(false);
+	};
+
+	const initiateBulkArchive = async () => {
+		if (selectedProjectIds.size > 0) {
+			const ids = Array.from(selectedProjectIds);
+			// Optimistically remove from view or update status in store
+			// For now, we rely on the revalidatePath from the server action
+			await bulkArchiveProjectsAction(ids);
+			setSelectedProjectIds(new Set());
+			setIsSelectMode(false);
+		}
 	};
 
 	const closeDeleteModal = () => {
@@ -85,6 +103,7 @@ export function useProjectsClient(initialProjects: Project[]) {
 			toggleSelection,
 			initiateSingleDelete,
 			initiateBulkDelete,
+			initiateBulkArchive,
 			confirmDelete,
 			projectToDelete,
 		},

@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { useTaskStore } from "@/stores/use-task-store";
-import type { GridTask, TaskPriority, TaskTag } from "@/types/task";
+import type { GridTask, TaskPriority } from "@/types/task";
 import { useDraggableTask } from "./use-drag-task";
 
 export function useTaskCard(task: GridTask) {
@@ -28,9 +28,9 @@ export function useTaskCard(task: GridTask) {
 				task.priority.slice(1).toLowerCase()) as TaskPriority)
 		: null;
 
-	const formattedTag = task.tag
-		? ((task.tag.charAt(0).toUpperCase() +
-				task.tag.slice(1).toLowerCase()) as TaskTag)
+	const formattedTag = task.category
+		? task.category.charAt(0).toUpperCase() +
+			task.category.slice(1).toLowerCase()
 		: null;
 
 	return {
@@ -45,6 +45,7 @@ export function useTaskCard(task: GridTask) {
 		tasksTotal,
 		formattedPriority,
 		formattedTag,
+		formattedCategory: formattedTag,
 		toggleTaskSelection,
 		openTaskModal,
 	};

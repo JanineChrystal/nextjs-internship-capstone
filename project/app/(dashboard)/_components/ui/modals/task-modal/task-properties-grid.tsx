@@ -19,7 +19,6 @@ import type {
 	TaskBoard,
 	TaskPriority,
 	TaskStatus,
-	TaskTag,
 } from "@/types/task";
 import {
 	DATE_PICKER_CONFIG,
@@ -58,8 +57,9 @@ export function TaskPropertiesGrid({
 
 	const renderBadge = (id: string, value: string) => {
 		switch (id) {
+			case "category":
 			case "tag":
-				return <TagBadge tag={value as TaskTag} />;
+				return <TagBadge tag={value} />;
 			case "status":
 				return <StatusBadge status={value as TaskStatus} />;
 			case "priority":

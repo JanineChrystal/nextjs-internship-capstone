@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
-import type { GridTask, TaskPriority, TaskStatus, TaskTag } from "@/types/task";
+import type { GridTask, TaskPriority, TaskStatus } from "@/types/task";
 import { PriorityBadge } from "../../../../_components/ui/badges/priority-badge";
 import { StatusBadge } from "../../../../_components/ui/badges/status-badge";
 import { TagBadge } from "../../../../_components/ui/badges/tag-badge";
@@ -48,8 +48,9 @@ export function GridRow({
 				return <StatusBadge status={value as TaskStatus} />;
 			case "priority":
 				return <PriorityBadge priority={value as TaskPriority} />;
+			case "category":
 			case "tag":
-				return <TagBadge tag={value as TaskTag} />;
+				return <TagBadge tag={value} />;
 			default:
 				return null;
 		}

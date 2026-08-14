@@ -1,58 +1,59 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ActiveFilter } from "@/components/ui/filters/tag-filter";
 import type { Project } from "@/lib/validations/project-schema";
 
 export function useProjectFilters(projects: Project[]) {
-	const [ownedActive, setOwnedActive] = useState(false);
-	const [assignedActive, setAssignedActive] = useState(false);
-	const [activeTags, setActiveTags] = useState<ActiveFilter[]>([]);
+	const [filterValues, setFilterValues] = useState<Record<string, string[]>>(
+		{},
+	);
+
 	const filteredProjects = useMemo(() => {
 		return projects.filter((project) => {
-			// --- Tag Filters Logic ---
-			if (activeTags.length > 0) {
-				const matchesAllTags = activeTags.every((tag) => {
-					return project[tag.key as keyof typeof project] === tag.value;
-				});
+			for (const [key, selectedValues] of Object.entries(filterValues)) {
+				if (selectedValues.length === 0) continue;
 
-				if (!matchesAllTags) return false;
+				const projectValue = project[key as keyof typeof project];
+				// Handle boolean flags like isOwned if they are mapped to strings
+				if (typeof projectValue === "boolean") {
+					const stringVal = projectValue ? "true" : "false";
+					if (!selectedValues.includes(stringVal)) return false;
+				} else if (key === "category") {
+					const categoryStr =
+						(projectValue as string)?.trim() || "Uncategorized";
+					if (!selectedValues.includes(categoryStr.toLowerCase())) return false;
+				} else if (typeof projectValue === "string") {
+					if (!selectedValues.includes(projectValue.toLowerCase()))
+						return false;
+				}
 			}
-
-			// --- Quick Filters Logic ---
-			// if (ownedActive && !project.isOwned) return false;
-			// if (assignedActive && !project.isAssigned) return false;
 
 			return true;
 		});
-	}, [projects, activeTags]);
+	}, [projects, filterValues]);
 
-	// Helper functions for the TagFilter component
-	const handleAddTag = (newFilter: ActiveFilter) => {
-		setActiveTags((prev) => [
-			...prev.filter((f) => f.key !== newFilter.key),
-			newFilter,
-		]);
+	const handleFilterChange = (fieldId: string, optionValue: string) => {
+		setFilterValues((prev) => {
+			const current = prev[fieldId] || [];
+			const updated = current.includes(optionValue)
+				? current.filter((v) => v !== optionValue)
+				: [...current, optionValue];
+
+			return {
+				...prev,
+				[fieldId]: updated,
+			};
+		});
 	};
 
-	const handleRemoveTag = (key: string) => {
-		setActiveTags((prev) => prev.filter((f) => f.key !== key));
-	};
-
-	const handleResetTags = () => {
-		setActiveTags([]);
+	const handleResetFilters = () => {
+		setFilterValues({});
 	};
 
 	return {
 		filteredProjects,
-		ownedActive,
-		setOwnedActive,
-		assignedActive,
-		setAssignedActive,
-		activeTags,
-		setActiveTags,
-		handleAddTag,
-		handleRemoveTag,
-		handleResetTags,
+		filterValues,
+		handleFilterChange,
+		handleResetFilters,
 	};
 }

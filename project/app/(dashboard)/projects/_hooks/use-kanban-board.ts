@@ -21,7 +21,7 @@ export function useKanbanBoard(
 	const addColumn = useBoardStore((state) => state.addColumn);
 
 	const { tasks, columns, handleDragStart, handleDragOver, handleDragEnd } =
-		useKanbanDnd(externalFilters);
+		useKanbanDnd(projectId, externalFilters);
 
 	const sortedColumns = useMemo(
 		() => [...columns].sort((a, b) => a.order - b.order),
