@@ -12,7 +12,7 @@ import type {
 
 export const DEFAULT_TASK_DATA: Partial<GridTask> = {
 	name: "",
-	description: "",
+	notes: "",
 	isCompleted: false,
 	status: "Backlog",
 	priority: "medium",

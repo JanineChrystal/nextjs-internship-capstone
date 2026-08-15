@@ -9,10 +9,10 @@ interface TaskState {
 	selectedTaskIds: Set<string>;
 	openTaskModal: (taskId?: string) => void;
 	closeTaskModal: () => void;
-	createTask: (task: Omit<GridTask, "id">) => void;
+	createTask: (task: GridTask) => void;
 	updateTask: (id: string, updates: Partial<GridTask>) => void;
 	deleteTask: (id: string) => void;
-	duplicateTask: (id: string) => void;
+	duplicateTask: (id: string) => string | undefined;
 	bulkDeleteTasks: (ids: Set<string>) => void;
 	bulkCompleteTasks: (ids: Set<string>) => void;
 	setTasks: (tasks: GridTask[]) => void;
@@ -20,6 +20,7 @@ interface TaskState {
 	clearTaskSelection: () => void;
 	updateTaskStatus: (taskId: string, newStatus: string) => void;
 	moveTaskToColumn: (taskId: string, targetColumnId: string) => void;
+	reorderTasksInColumn: (orderedTaskIds: string[]) => void;
 }
 
 export const useTaskStore = create<TaskState>((set) => ({
@@ -32,14 +33,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 		set({ isTaskModalOpen: true, selectedTaskId: taskId || null }),
 	closeTaskModal: () => set({ isTaskModalOpen: false, selectedTaskId: null }),
 
-	createTask: (taskData) =>
-		set((state) => {
-			const newTask: GridTask = {
-				...taskData,
-				id: crypto.randomUUID(),
-			};
-			return { tasks: [newTask, ...state.tasks] };
-		}),
+	createTask: (task) => set((state) => ({ tasks: [task, ...state.tasks] })),
 
 	updateTask: (id, updates) =>
 		set((state) => ({
@@ -53,7 +47,9 @@ export const useTaskStore = create<TaskState>((set) => ({
 			tasks: state.tasks.filter((task) => task.id !== id),
 		})),
 
-	duplicateTask: (id) =>
+	duplicateTask: (id) => {
+		let newTaskId: string | undefined;
+
 		set((state) => {
 			const taskToDuplicate = state.tasks.find((t) => t.id === id);
 			if (!taskToDuplicate) return state;
@@ -91,6 +87,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 				id: crypto.randomUUID(),
 				name: newName,
 			};
+			newTaskId = duplicatedTask.id;
 
 			// Insert duplicate right after original
 			const index = state.tasks.findIndex((t) => t.id === id);
@@ -98,7 +95,10 @@ export const useTaskStore = create<TaskState>((set) => ({
 			newTasks.splice(index + 1, 0, duplicatedTask);
 
 			return { tasks: newTasks };
-		}),
+		});
+
+		return newTaskId;
+	},
 
 	bulkDeleteTasks: (ids) =>
 		set((state) => ({
@@ -164,4 +164,21 @@ export const useTaskStore = create<TaskState>((set) => ({
 					: task,
 			),
 		})),
+
+	reorderTasksInColumn: (orderedTaskIds) =>
+		set((state) => {
+			const orderIndex = new Map(orderedTaskIds.map((id, idx) => [id, idx]));
+			const reorderedGroup = state.tasks
+				.filter((t) => orderIndex.has(t.id))
+				.sort(
+					(a, b) => (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0),
+				);
+
+			let groupIndex = 0;
+			const tasks = state.tasks.map((task) =>
+				orderIndex.has(task.id) ? reorderedGroup[groupIndex++] : task,
+			);
+
+			return { tasks };
+		}),
 }));

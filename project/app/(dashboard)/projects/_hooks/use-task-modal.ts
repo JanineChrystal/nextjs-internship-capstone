@@ -5,10 +5,17 @@ import {
 	deleteTaskAction,
 	updateTaskAction,
 } from "@/lib/actions/task-actions";
+import { setTaskAssigneesAction } from "@/lib/actions/task-assignee-actions";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask, TaskModalActionId } from "@/types/task";
 import { DEFAULT_TASK_DATA } from "../_constants/task-modal";
+import { useTaskAttachments } from "./use-task-attachments";
+import { useTaskChecklist } from "./use-task-checklist";
+
+function toApiDateInput(value: string | undefined): string | undefined {
+	return value && value !== "--" ? value : undefined;
+}
 
 export function useTaskModal() {
 	const params = useParams();
@@ -32,24 +39,71 @@ export function useTaskModal() {
 	const [taskData, setTaskData] =
 		React.useState<Partial<GridTask>>(DEFAULT_TASK_DATA);
 	const [isCommentsOpen, setIsCommentsOpen] = React.useState(true);
-	const [isAddingLink, setIsAddingLink] = React.useState(false);
-	const [linkUrl, setLinkUrl] = React.useState("");
 
 	const isInitializedRef = React.useRef(false);
-	const fileInputRef = React.useRef<HTMLInputElement>(null);
 
 	// Derived State
 	const isEditMode = !!selectedTaskId;
 	const existingTask = tasks.find((t) => t.id === selectedTaskId);
 
+	const resolveBoardId = (boardTitle: string | undefined): string | undefined =>
+		columns.find((c) => c.title === boardTitle)?.id || columns[0]?.id;
+
+	// Composed Sub-Hooks
+	const checklist = useTaskChecklist({
+		taskData,
+		setTaskData,
+		isEditMode,
+		selectedTaskId,
+		projectId,
+	});
+	const attachments = useTaskAttachments({
+		taskData,
+		setTaskData,
+		isEditMode,
+		selectedTaskId,
+		projectId,
+	});
+
 	// Action Handlers
 	const handleChange = async (updates: Partial<GridTask>) => {
 		const newData = { ...taskData, ...updates };
 		setTaskData(newData);
-		if (isEditMode && selectedTaskId && projectId) {
-			updateTask(selectedTaskId, updates);
-			// Fire and forget server action
-			await updateTaskAction(selectedTaskId, projectId, updates);
+		if (!isEditMode || !selectedTaskId || !projectId) return;
+
+		// Checklist/attachments/links are persisted through their own dedicated
+		// handlers, not through the generic field update action.
+		if (updates.checklist || updates.attachments || updates.links) return;
+
+		const previousTasks = useTaskStore.getState().tasks;
+		updateTask(selectedTaskId, updates);
+
+		try {
+			if (updates.assignees) {
+				const result = await setTaskAssigneesAction(
+					selectedTaskId,
+					projectId,
+					updates.assignees.map((a) => a.userId),
+				);
+				if (!result.success) throw new Error(result.error);
+				return;
+			}
+
+			const result = await updateTaskAction(selectedTaskId, projectId, {
+				name: updates.name,
+				status: updates.status,
+				priority: updates.priority,
+				category: updates.category,
+				notes: updates.notes,
+				boardId: updates.board ? resolveBoardId(updates.board) : undefined,
+				startDate: toApiDateInput(updates.startDate),
+				dueDate: toApiDateInput(updates.dueDate),
+				isCompleted: updates.isCompleted,
+			});
+			if (!result.success) throw new Error(result.error);
+		} catch (error) {
+			useTaskStore.getState().setTasks(previousTasks);
+			console.error("Failed to update task:", error);
 		}
 	};
 
@@ -59,49 +113,65 @@ export function useTaskModal() {
 			finalData.name = "Untitled Task";
 		}
 
-		// Create optimistic ID
 		const tempId = crypto.randomUUID();
-		const newTask = { ...finalData, id: tempId } as GridTask;
+		const newTask = {
+			...DEFAULT_TASK_DATA,
+			...finalData,
+			id: tempId,
+			projectId,
+		} as GridTask;
 		createTask(newTask);
 		closeTaskModal();
 
-		if (projectId) {
-			const boardId = finalData.board || columns[0]?.id || "default-board";
-			// We should map GridTask -> newDbTask schema fields
+		if (!projectId) return;
+
+		const boardId = resolveBoardId(finalData.board);
+		if (!boardId) {
+			deleteTask(tempId);
+			console.error("Failed to create task: no board available");
+			return;
+		}
+
+		try {
 			const payload = {
 				name: newTask.name,
-				category:
-					newTask.category || (newTask.category as string) || "Uncategorized",
+				category: newTask.category || "Uncategorized",
 				status: newTask.status || "Not Started",
 				priority: newTask.priority || "medium",
-				startDate: newTask.startDate,
-				dueDate: newTask.dueDate,
+				notes: newTask.notes,
+				startDate: toApiDateInput(newTask.startDate),
+				dueDate: toApiDateInput(newTask.dueDate),
 			};
-			await createTaskAction(projectId, boardId, payload);
+			const result = await createTaskAction(projectId, boardId, payload);
+			if (!result.success || !result.data) throw new Error(result.error);
+
+			updateTask(tempId, { id: result.data.id });
+		} catch (error) {
+			deleteTask(tempId);
+			console.error("Failed to create task:", error);
 		}
 	};
 
-	const addChecklistItem = () => {
-		const newItem = { id: crypto.randomUUID(), title: "", completed: false };
-		const newChecklist = [...(taskData.checklist || []), newItem];
-		handleChange({ checklist: newChecklist });
-	};
+	const duplicateOnServer = async (sourceTask: GridTask, newTaskId: string) => {
+		try {
+			const boardId = resolveBoardId(sourceTask.board);
+			if (!boardId) throw new Error("No board available");
 
-	const updateChecklistItem = (
-		id: string,
-		updates: Partial<{ title: string; completed: boolean }>,
-	) => {
-		const newChecklist = (taskData.checklist || []).map((item) =>
-			item.id === id ? { ...item, ...updates } : item,
-		);
-		handleChange({ checklist: newChecklist });
-	};
+			const payload = {
+				name: `${sourceTask.name} (Copy)`,
+				category: sourceTask.category || "Uncategorized",
+				status: sourceTask.status,
+				priority: sourceTask.priority,
+				notes: sourceTask.notes,
+			};
+			const result = await createTaskAction(projectId, boardId, payload);
+			if (!result.success || !result.data) throw new Error(result.error);
 
-	const removeChecklistItem = (id: string) => {
-		const newChecklist = (taskData.checklist || []).filter(
-			(item) => item.id !== id,
-		);
-		handleChange({ checklist: newChecklist });
+			updateTask(newTaskId, { id: result.data.id, name: payload.name });
+		} catch (error) {
+			deleteTask(newTaskId);
+			console.error("Failed to duplicate task:", error);
+		}
 	};
 
 	const toggleTaskCompletion = () => {
@@ -112,83 +182,71 @@ export function useTaskModal() {
 		});
 	};
 
-	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const files = e.target.files;
-		if (files && files.length > 0) {
-			const newAttachments = Array.from(files).map((f) => ({
-				id: crypto.randomUUID(),
-				name: f.name,
-				url: URL.createObjectURL(f),
-			}));
-			const updated = [...(taskData.attachments || []), ...newAttachments];
-			setTaskData({ ...taskData, attachments: updated });
-			if (isEditMode) handleChange({ attachments: updated });
-		}
-		if (fileInputRef.current) fileInputRef.current.value = "";
-	};
-
-	const removeAttachment = (id: string) => {
-		const newAttachments = (taskData.attachments || []).filter(
-			(item) => item.id !== id,
-		);
-		handleChange({ attachments: newAttachments });
-	};
-
-	const submitLink = () => {
-		if (!linkUrl.trim()) {
-			setIsAddingLink(false);
-			return;
-		}
-		const urlStr = linkUrl.trim();
-		const newLink = {
-			id: crypto.randomUUID(),
-			title: urlStr.replace(/^https?:\/\//, "").split("/")[0] || urlStr,
-			url: urlStr.startsWith("http") ? urlStr : `https://${urlStr}`,
-		};
-		const updated = [...(taskData.links || []), newLink];
-		setTaskData({ ...taskData, links: updated });
-		if (isEditMode) handleChange({ links: updated });
-		setLinkUrl("");
-		setIsAddingLink(false);
-	};
-
-	const removeLink = (id: string) => {
-		const newLinks = (taskData.links || []).filter((item) => item.id !== id);
-		handleChange({ links: newLinks });
-	};
-
 	const handleDuplicate = async () => {
-		if (selectedTaskId && projectId) {
-			duplicateTask(selectedTaskId);
-			closeTaskModal();
-			const sourceTask = tasks.find((t) => t.id === selectedTaskId);
-			if (sourceTask) {
-				const payload = {
-					name: `${sourceTask.name} (Copy)`,
-					category:
-						sourceTask.category ||
-						(sourceTask.category as string) ||
-						"Uncategorized",
-					status: sourceTask.status,
-					priority: sourceTask.priority,
-				};
-				const targetBoardId =
-					sourceTask.board || columns[0]?.id || "default-board";
-				await createTaskAction(projectId, targetBoardId, payload);
-			}
-		}
+		if (!selectedTaskId || !projectId) return;
+		const sourceTask = tasks.find((t) => t.id === selectedTaskId);
+		if (!sourceTask) return;
+
+		const newTaskId = duplicateTask(selectedTaskId);
+		closeTaskModal();
+		if (!newTaskId) return;
+
+		await duplicateOnServer(sourceTask, newTaskId);
 	};
 
 	const handleDelete = async () => {
-		if (selectedTaskId && projectId) {
-			deleteTask(selectedTaskId);
-			closeTaskModal();
-			await deleteTaskAction(selectedTaskId, projectId);
+		if (!selectedTaskId || !projectId) return;
+		const previousTasks = useTaskStore.getState().tasks;
+
+		deleteTask(selectedTaskId);
+		closeTaskModal();
+
+		try {
+			const result = await deleteTaskAction(selectedTaskId, projectId);
+			if (!result.success) throw new Error(result.error);
+		} catch (error) {
+			useTaskStore.getState().setTasks(previousTasks);
+			console.error("Failed to delete task:", error);
 		}
 	};
 
 	const toggleComments = () => {
 		setIsCommentsOpen((prev) => !prev);
+	};
+
+	const toggleOtherTaskCompletion = async (targetTaskId: string) => {
+		const targetTask = tasks.find((t) => t.id === targetTaskId);
+		if (!targetTask) return;
+		const previousTasks = useTaskStore.getState().tasks;
+		const updates = {
+			isCompleted: !targetTask.isCompleted,
+			status: !targetTask.isCompleted ? "Completed" : "In Progress",
+			board: !targetTask.isCompleted ? "Completed" : targetTask.board,
+		};
+		updateTask(targetTaskId, updates);
+		try {
+			const result = await updateTaskAction(targetTaskId, projectId, {
+				status: updates.status,
+				isCompleted: updates.isCompleted,
+				boardId: resolveBoardId(updates.board),
+			});
+			if (!result.success) throw new Error(result.error);
+		} catch (error) {
+			useTaskStore.getState().setTasks(previousTasks);
+			console.error("Failed to toggle task completion:", error);
+		}
+	};
+
+	const deleteOtherTask = async (targetTaskId: string) => {
+		const previousTasks = useTaskStore.getState().tasks;
+		deleteTask(targetTaskId);
+		try {
+			const result = await deleteTaskAction(targetTaskId, projectId);
+			if (!result.success) throw new Error(result.error);
+		} catch (error) {
+			useTaskStore.getState().setTasks(previousTasks);
+			console.error("Failed to delete task:", error);
+		}
 	};
 
 	const handleAction = async (
@@ -197,37 +255,30 @@ export function useTaskModal() {
 	) => {
 		const targetId = targetTaskId || selectedTaskId;
 		if (!targetId || !projectId) return;
+		const isOtherTask = targetTaskId && targetTaskId !== selectedTaskId;
 
 		switch (actionId) {
-			case "TOGGLE_COMPLETION": {
-				if (targetTaskId && targetTaskId !== selectedTaskId) {
-					const targetTask = tasks.find((t) => t.id === targetTaskId);
-					if (targetTask) {
-						const updates = {
-							isCompleted: !targetTask.isCompleted,
-							status: !targetTask.isCompleted ? "Completed" : "In Progress",
-							board: !targetTask.isCompleted ? "Completed" : targetTask.board,
-						};
-						updateTask(targetTaskId, updates);
-						await updateTaskAction(targetTaskId, projectId, updates);
-					}
+			case "TOGGLE_COMPLETION":
+				if (isOtherTask) {
+					await toggleOtherTaskCompletion(targetId);
 				} else {
-					toggleTaskCompletion(); // This handles its own handleChange which fires the action
+					toggleTaskCompletion();
 				}
 				break;
-			}
 			case "DUPLICATE":
-				if (targetTaskId && targetTaskId !== selectedTaskId) {
-					duplicateTask(targetTaskId);
-					// replicate duplicate logic here if needed
+				if (isOtherTask) {
+					const sourceTask = tasks.find((t) => t.id === targetId);
+					if (!sourceTask) return;
+					const newTaskId = duplicateTask(targetId);
+					if (!newTaskId) return;
+					await duplicateOnServer(sourceTask, newTaskId);
 				} else {
 					handleDuplicate();
 				}
 				break;
 			case "DELETE":
-				if (targetTaskId && targetTaskId !== selectedTaskId) {
-					deleteTask(targetTaskId);
-					await deleteTaskAction(targetTaskId, projectId);
+				if (isOtherTask) {
+					await deleteOtherTask(targetId);
 				} else {
 					handleDelete();
 				}
@@ -259,6 +310,8 @@ export function useTaskModal() {
 	}, [isTaskModalOpen, isEditMode, existingTask]);
 
 	return {
+		projectId,
+		selectedTaskId,
 		isTaskModalOpen,
 		closeTaskModal,
 		isEditMode,
@@ -266,19 +319,9 @@ export function useTaskModal() {
 		setTaskData,
 		handleChange,
 		handleCreate,
-		addChecklistItem,
-		updateChecklistItem,
-		removeChecklistItem,
+		...checklist,
 		toggleTaskCompletion,
-		fileInputRef,
-		isAddingLink,
-		setIsAddingLink,
-		linkUrl,
-		setLinkUrl,
-		handleFileChange,
-		removeAttachment,
-		submitLink,
-		removeLink,
+		...attachments,
 		handleDuplicate,
 		handleDelete,
 		isCommentsOpen,

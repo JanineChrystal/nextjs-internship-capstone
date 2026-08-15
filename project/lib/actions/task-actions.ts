@@ -11,11 +11,13 @@ import {
 	deleteTaskInDB,
 	getTasksByProjectId,
 	moveTaskBoardDAL,
+	reorderTasksInDB,
 	updateTaskInDB,
 } from "@/lib/dal/tasks";
 import type { TaskOutputDTO } from "@/lib/dtos/task-dto";
 import type { NewDbTask } from "@/lib/types/task";
 import {
+	bulkUpdateTaskStatusSchema,
 	insertTaskDbSchema,
 	moveTaskSchema,
 	updateTaskSchema,
@@ -132,7 +134,7 @@ export async function updateTaskAction(
 				: undefined,
 		};
 
-		const updatedTask = await updateTaskInDB(taskId, updatePayload);
+		const updatedTask = await updateTaskInDB(taskId, projectId, updatePayload);
 
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true, data: updatedTask };
@@ -155,7 +157,7 @@ export async function deleteTaskAction(
 			return { success: false, error: "Unauthorized" };
 		}
 
-		await deleteTaskInDB(taskId);
+		await deleteTaskInDB(taskId, projectId);
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true };
 	} catch (error) {
@@ -177,7 +179,7 @@ export async function bulkDeleteTasksAction(
 			return { success: false, error: "Unauthorized" };
 		}
 
-		await bulkDeleteTasksInDB(taskIds);
+		await bulkDeleteTasksInDB(taskIds, projectId);
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true };
 	} catch (error) {
@@ -199,7 +201,15 @@ export async function bulkCompleteTasksAction(
 			return { success: false, error: "Unauthorized" };
 		}
 
-		await bulkCompleteTasksInDB(taskIds);
+		const validationResult = bulkUpdateTaskStatusSchema.safeParse({
+			taskIds,
+			status: "Completed",
+		});
+		if (!validationResult.success) {
+			return { success: false, error: "Invalid bulk complete data" };
+		}
+
+		await bulkCompleteTasksInDB(taskIds, projectId);
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true };
 	} catch (error) {
@@ -227,11 +237,34 @@ export async function moveTaskAction(
 			return { success: false, error: "Invalid move data" };
 		}
 
-		const movedTask = await moveTaskBoardDAL(taskId, newBoardId);
+		const movedTask = await moveTaskBoardDAL(taskId, projectId, newBoardId);
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true, data: movedTask };
 	} catch (error) {
 		console.error("moveTaskAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function reorderTasksAction(
+	projectId: string,
+	boardId: string,
+	taskIds: string[],
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"edit_task",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		await reorderTasksInDB(projectId, boardId, taskIds);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true };
+	} catch (error) {
+		console.error("reorderTasksAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };
 	}
 }

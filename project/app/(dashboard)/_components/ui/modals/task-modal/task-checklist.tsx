@@ -5,22 +5,22 @@ import type { GridTask } from "@/types/task";
 
 interface TaskChecklistProps {
 	taskData: Partial<GridTask>;
-	isEditMode: boolean;
-	handleChange: (updates: Partial<GridTask>) => void;
 	addChecklistItem: () => void;
 	updateChecklistItem: (
 		id: string,
 		updates: Partial<{ title: string; completed: boolean }>,
 	) => void;
+	commitChecklistItem: (id: string) => void;
+	toggleChecklistItem: (id: string, completed: boolean) => void;
 	removeChecklistItem: (id: string) => void;
 }
 
 export function TaskChecklist({
 	taskData,
-	isEditMode,
-	handleChange,
 	addChecklistItem,
 	updateChecklistItem,
+	commitChecklistItem,
+	toggleChecklistItem,
 	removeChecklistItem,
 }: TaskChecklistProps) {
 	return (
@@ -42,11 +42,7 @@ export function TaskChecklist({
 						<div key={item.id} className="flex items-center gap-3 group">
 							<button
 								type="button"
-								onClick={() =>
-									updateChecklistItem(item.id, {
-										completed: !item.completed,
-									})
-								}
+								onClick={() => toggleChecklistItem(item.id, !item.completed)}
 								className="text-secondary hover:text-primary transition-colors focus:outline-none"
 								aria-label="Toggle checklist item"
 							>
@@ -61,9 +57,7 @@ export function TaskChecklist({
 								onChange={(e) =>
 									updateChecklistItem(item.id, { title: e.target.value })
 								}
-								onBlur={() =>
-									isEditMode && handleChange({ checklist: taskData.checklist })
-								}
+								onBlur={() => commitChecklistItem(item.id)}
 								className={`flex-1 border-none bg-transparent shadow-none px-0 focus-visible:ring-0 ${
 									item.completed ? "line-through text-secondary" : ""
 								}`}

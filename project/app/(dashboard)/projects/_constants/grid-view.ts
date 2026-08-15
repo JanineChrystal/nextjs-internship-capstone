@@ -3,7 +3,6 @@ import {
 	TASK_PRIORITIES,
 } from "@/lib/validations/task-schema";
 import type { ColumnDef } from "@/types/grid-table";
-import type { GridTask } from "@/types/task";
 
 export const GRID_COLUMN_CLASSES = {
 	checkbox: "w-10 shrink-0",
@@ -59,76 +58,5 @@ export const GRID_DROPDOWN_CELLS = [
 		id: "category" as const,
 		className: GRID_COLUMN_CLASSES.category,
 		options: DEFAULT_TASK_CATEGORIES,
-	},
-];
-
-export const mockTasks: GridTask[] = [
-	{
-		id: "1",
-		name: "Finalize campaign creatives",
-		assignees: [
-			{
-				name: "Sarah",
-				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-			},
-		],
-		startDate: "Oct 12",
-		dueDate: "Oct 18",
-		board: "In Progress",
-		status: "In Progress",
-		priority: "high",
-		category: "Design",
-		isCompleted: false,
-	},
-	{
-		id: "2",
-		name: "Define target audience segments",
-		assignees: [
-			{
-				name: "Mike",
-				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
-			},
-		],
-		startDate: "Oct 01",
-		dueDate: "Oct 05",
-		board: "Completed",
-		status: "Completed",
-		priority: "urgent",
-		category: "Research",
-		isCompleted: true,
-	},
-	{
-		id: "3",
-		name: "Setup tracking dashboards",
-		assignees: [
-			{
-				name: "Alex",
-				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-			},
-		],
-		startDate: "Oct 15",
-		dueDate: "Oct 20",
-		board: "Up Next",
-		status: "Not Started",
-		priority: "medium",
-		category: "Analytics",
-		isCompleted: false,
-	},
-	{
-		id: "4",
-		name: "Draft press release",
-		assignees: [
-			{
-				name: "Emma",
-				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma",
-			},
-		],
-		startDate: "--",
-		dueDate: "Oct 25",
-		board: "Backlog",
-		status: "Not Started",
-		priority: "low",
-		category: "Content",
-		isCompleted: false,
 	},
 ];

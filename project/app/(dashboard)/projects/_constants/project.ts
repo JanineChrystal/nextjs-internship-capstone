@@ -22,38 +22,6 @@ export const FILTERABLE_VIEWS: ProjectViewType[] = [
 	"calendar",
 ];
 
-export const PROJECT_MEMBERS: {
-	name: string;
-	email: string;
-	avatarUrl: string;
-}[] = [
-	{
-		name: "Sarah",
-		email: "sarah@example.com",
-		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-	},
-	{
-		name: "Mike",
-		email: "mike@example.com",
-		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
-	},
-	{
-		name: "Alex",
-		email: "alex@example.com",
-		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-	},
-	{
-		name: "John",
-		email: "john@example.com",
-		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-	},
-	{
-		name: "Emily",
-		email: "emily@example.com",
-		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily",
-	},
-];
-
 export const mockProjects: Project[] = [
 	{
 		id: "11111111-1111-1111-1111-111111111111",

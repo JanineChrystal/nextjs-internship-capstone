@@ -74,11 +74,11 @@ export function AssigneeSelector({
 							</div>
 							{filteredMembers.map((member) => {
 								const isSelected = assignees.some(
-									(a) => a.name === member.name,
+									(a) => a.userId === member.userId,
 								);
 								return (
 									<button
-										key={member.name}
+										key={member.userId}
 										type="button"
 										onClick={() => handleSelect(member)}
 										className="relative flex w-full text-left cursor-pointer select-none items-center gap-3 rounded-sm px-2 py-2 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground"

@@ -1,9 +1,14 @@
 import { notFound, redirect } from "next/navigation";
+import { getAttachmentsByTaskIds } from "@/lib/dal/attachments";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { getProjectBoardsDAL } from "@/lib/dal/boards";
+import { getChecklistItemsByTaskIds } from "@/lib/dal/checklists";
 import { getProjectById } from "@/lib/dal/projects";
+import { getTaskAssigneesByTaskIds } from "@/lib/dal/task-assignees";
 import { getTasksByProjectId } from "@/lib/dal/tasks";
 import { toProjectUI } from "@/lib/dtos/project-dto";
+import { toTaskUI } from "@/lib/dtos/task-dto";
+import type { GridTask } from "@/lib/types/task";
 import { ProjectDetailClient } from "./project-detail-client";
 
 export default async function ProjectPage({
@@ -30,12 +35,31 @@ export default async function ProjectPage({
 
 	const projectUI = toProjectUI(project, user.id);
 
+	const taskIds = tasks.map((task) => task.id);
+	const [assigneesByTask, checklistByTask, attachmentsByTask] =
+		await Promise.all([
+			getTaskAssigneesByTaskIds(taskIds),
+			getChecklistItemsByTaskIds(taskIds),
+			getAttachmentsByTaskIds(taskIds),
+		]);
+	const boardTitleById = new Map(boards.map((board) => [board.id, board.name]));
+
+	const tasksUI: GridTask[] = tasks.map((task) =>
+		toTaskUI(
+			task,
+			boardTitleById.get(task.boardId) ?? "",
+			assigneesByTask.get(task.id) ?? [],
+			checklistByTask.get(task.id) ?? [],
+			attachmentsByTask.get(task.id) ?? [],
+		),
+	);
+
 	return (
 		<ProjectDetailClient
 			projectId={resolvedParams.id}
 			project={project}
 			projectUI={projectUI}
-			tasks={tasks}
+			tasks={tasksUI}
 			boards={boards}
 		/>
 	);

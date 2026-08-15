@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import { FilterPopover } from "@/components/ui/filters/filter-popover";
 import type { ProjectOutputDTO } from "@/lib/dtos/project-dto";
-import type { TaskOutputDTO } from "@/lib/dtos/task-dto";
 import type { GridTask } from "@/lib/types/task";
 import type { Project } from "@/lib/validations/project-schema";
 import { useBoardStore } from "@/stores/use-board-store";
@@ -58,7 +57,7 @@ interface ProjectDetailClientProps {
 	projectId: string;
 	project: ProjectOutputDTO;
 	projectUI: Project;
-	tasks: TaskOutputDTO[];
+	tasks: GridTask[];
 	boards: { id: string; name: string; position: number }[];
 }
 
@@ -82,7 +81,7 @@ export function ProjectDetailClient({
 				useProjectStore.getState().updateProject(project.id, projectUI);
 			}
 
-			setTasks(tasks as unknown as GridTask[]);
+			setTasks(tasks);
 
 			const formattedColumns = boards.map((b) => ({
 				id: b.id,

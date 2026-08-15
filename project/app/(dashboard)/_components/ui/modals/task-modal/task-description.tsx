@@ -17,13 +17,9 @@ export function TaskDescription({
 		<div className="space-y-3 pt-4 border-t border-outline-variant/50">
 			<h3 className="text-sm font-semibold text-foreground">Notes</h3>
 			<textarea
-				value={taskData.description || ""}
-				onChange={(e) =>
-					setTaskData({ ...taskData, description: e.target.value })
-				}
-				onBlur={() =>
-					isEditMode && handleChange({ description: taskData.description })
-				}
+				value={taskData.notes || ""}
+				onChange={(e) => setTaskData({ ...taskData, notes: e.target.value })}
+				onBlur={() => isEditMode && handleChange({ notes: taskData.notes })}
 				placeholder="Add detailed task description or notes here..."
 				aria-label="Task description"
 				className="w-full min-h-30 p-3 rounded-lg border border-outline-variant bg-transparent resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"

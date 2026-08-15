@@ -20,6 +20,7 @@ import { TaskPropertiesGrid } from "./task-properties-grid";
 
 export function TaskModal() {
 	const {
+		selectedTaskId,
 		isTaskModalOpen,
 		closeTaskModal,
 		isEditMode,
@@ -29,6 +30,8 @@ export function TaskModal() {
 		handleCreate,
 		addChecklistItem,
 		updateChecklistItem,
+		commitChecklistItem,
+		toggleChecklistItem,
 		removeChecklistItem,
 		toggleTaskCompletion,
 		fileInputRef,
@@ -119,10 +122,10 @@ export function TaskModal() {
 
 						<TaskChecklist
 							taskData={taskData}
-							isEditMode={isEditMode}
-							handleChange={handleChange}
 							addChecklistItem={addChecklistItem}
 							updateChecklistItem={updateChecklistItem}
+							commitChecklistItem={commitChecklistItem}
+							toggleChecklistItem={toggleChecklistItem}
 							removeChecklistItem={removeChecklistItem}
 						/>
 
@@ -162,7 +165,10 @@ export function TaskModal() {
 						}`}
 					>
 						<div className="w-full md:w-80 h-full flex flex-col">
-							<TaskComments />
+							<TaskComments
+								taskId={selectedTaskId ?? undefined}
+								isOpen={isCommentsOpen}
+							/>
 						</div>
 					</div>
 				)}

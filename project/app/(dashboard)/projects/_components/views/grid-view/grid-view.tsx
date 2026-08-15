@@ -1,6 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
+import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { GridTable } from "@/components/views/grid-table/grid-table";
@@ -29,8 +30,11 @@ export function GridView({
 		handleToggleSelectionMode,
 		handleToggleSelect,
 		handleClearSelection,
-		handleBulkDelete,
-		handleBulkComplete,
+		warningModal,
+		initiateBulkDelete,
+		initiateBulkComplete,
+		confirmWarningAction,
+		closeWarningModal,
 	} = useGridView(projectId || "", externalFilters);
 
 	const isSelectionActive = isSelectionModeActive || selectedTaskIds.size > 0;
@@ -71,6 +75,7 @@ export function GridView({
 				renderRow={(task) => (
 					<GridRow
 						task={task}
+						projectId={projectId || ""}
 						isSelected={selectedTaskIds.has(task.id)}
 						isSelectionActive={isSelectionActive}
 						onToggleSelect={(checked) => handleToggleSelect(task.id, checked)}
@@ -82,8 +87,28 @@ export function GridView({
 			<BulkActionBar
 				selectedCount={selectedTaskIds.size}
 				onClearSelection={handleClearSelection}
-				onDelete={handleBulkDelete}
-				onComplete={handleBulkComplete}
+				onDelete={initiateBulkDelete}
+				onComplete={initiateBulkComplete}
+			/>
+
+			<WarningModal
+				isOpen={warningModal.isOpen}
+				onClose={closeWarningModal}
+				onConfirm={confirmWarningAction}
+				variant={warningModal.actionType === "delete" ? "danger" : "warning"}
+				title={
+					warningModal.actionType === "delete"
+						? "Delete tasks with unfinished checklist items?"
+						: "Complete tasks with unfinished checklist items?"
+				}
+				message={
+					warningModal.actionType === "delete"
+						? "One or more selected tasks still have unchecked checklist items. Deleting them will also remove those items."
+						: "One or more selected tasks still have unchecked checklist items. Marking them complete won't check those items off."
+				}
+				confirmText={
+					warningModal.actionType === "delete" ? "Delete" : "Complete"
+				}
 			/>
 		</div>
 	);

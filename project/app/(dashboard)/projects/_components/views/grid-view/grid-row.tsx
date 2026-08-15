@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { updateTaskAction } from "@/lib/actions/task-actions";
+import { setTaskAssigneesAction } from "@/lib/actions/task-assignee-actions";
 import { cn } from "@/lib/utils";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
@@ -23,6 +25,7 @@ import {
 
 interface GridRowProps {
 	task: GridTask;
+	projectId: string;
 	isSelected: boolean;
 	isSelectionActive?: boolean;
 	onToggleSelect: (checked: boolean) => void;
@@ -30,6 +33,7 @@ interface GridRowProps {
 
 export function GridRow({
 	task,
+	projectId,
 	isSelected,
 	isSelectionActive,
 	onToggleSelect,
@@ -41,6 +45,48 @@ export function GridRow({
 		() => boardColumns.map((col) => col.title),
 		[boardColumns],
 	);
+
+	const persistUpdate = async (updates: Partial<GridTask>) => {
+		if (!projectId) return;
+		const previousTasks = useTaskStore.getState().tasks;
+		updateTask(task.id, updates);
+
+		try {
+			const boardId = updates.board
+				? boardColumns.find((c) => c.title === updates.board)?.id
+				: undefined;
+			const result = await updateTaskAction(task.id, projectId, {
+				status: updates.status,
+				priority: updates.priority,
+				category: updates.category,
+				boardId,
+				startDate: updates.startDate,
+				dueDate: updates.dueDate,
+			});
+			if (!result.success) throw new Error(result.error);
+		} catch (error) {
+			useTaskStore.getState().setTasks(previousTasks);
+			console.error("Failed to update task:", error);
+		}
+	};
+
+	const persistAssignees = async (newAssignees: GridTask["assignees"]) => {
+		if (!projectId) return;
+		const previousTasks = useTaskStore.getState().tasks;
+		updateTask(task.id, { assignees: newAssignees });
+
+		try {
+			const result = await setTaskAssigneesAction(
+				task.id,
+				projectId,
+				newAssignees.map((a) => a.userId),
+			);
+			if (!result.success) throw new Error(result.error);
+		} catch (error) {
+			useTaskStore.getState().setTasks(previousTasks);
+			console.error("Failed to update assignees:", error);
+		}
+	};
 
 	const renderBadge = (id: string, value: string) => {
 		switch (id) {
@@ -80,9 +126,7 @@ export function GridRow({
 			<GridAssigneeCell
 				className={GRID_COLUMN_CLASSES.assignee}
 				assignees={task.assignees}
-				onAssigneesChange={(newAssignees) =>
-					updateTask(task.id, { assignees: newAssignees })
-				}
+				onAssigneesChange={(newAssignees) => persistAssignees(newAssignees)}
 			/>
 
 			{GRID_DATE_CELLS.map((cell) => (
@@ -90,7 +134,7 @@ export function GridRow({
 					key={cell.id}
 					className={cell.className}
 					date={task[cell.id]}
-					onSelect={(date) => updateTask(task.id, { [cell.id]: date })}
+					onSelect={(date) => persistUpdate({ [cell.id]: date })}
 				/>
 			))}
 
@@ -104,7 +148,7 @@ export function GridRow({
 						if (cell.id === "status") {
 							updates.board = value;
 						}
-						updateTask(task.id, updates);
+						persistUpdate(updates);
 					}}
 				>
 					{renderBadge(cell.id, task[cell.id] as string)}

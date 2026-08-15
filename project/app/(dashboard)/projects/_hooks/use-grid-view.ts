@@ -1,16 +1,13 @@
 import { useMemo, useState } from "react";
-import {
-	bulkCompleteTasksAction,
-	bulkDeleteTasksAction,
-} from "@/lib/actions/task-actions";
 import { useTaskStore } from "@/stores/use-task-store";
+import { useTaskBulkActions } from "./use-task-bulk-actions";
 
 export function useGridView(
 	projectId: string,
 	externalFilters?: Record<string, string[]>,
 ) {
 	// External Stores
-	const { tasks, bulkDeleteTasks, bulkCompleteTasks } = useTaskStore();
+	const { tasks } = useTaskStore();
 
 	// Local State
 	const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(
@@ -104,43 +101,11 @@ export function useGridView(
 		setIsSelectionModeActive(false);
 	};
 
-	const handleBulkDelete = async () => {
-		if (selectedTaskIds.size === 0) return;
-		const previousTasks = useTaskStore.getState().tasks;
-		const ids = Array.from(selectedTaskIds);
-
-		bulkDeleteTasks(selectedTaskIds);
-		handleClearSelection();
-
-		if (projectId) {
-			try {
-				const result = await bulkDeleteTasksAction(ids, projectId);
-				if (result && !result.success) throw new Error(result.error);
-			} catch (error) {
-				useTaskStore.getState().setTasks(previousTasks);
-				console.error("Failed to bulk delete tasks:", error);
-			}
-		}
-	};
-
-	const handleBulkComplete = async () => {
-		if (selectedTaskIds.size === 0) return;
-		const previousTasks = useTaskStore.getState().tasks;
-		const ids = Array.from(selectedTaskIds);
-
-		bulkCompleteTasks(selectedTaskIds);
-		handleClearSelection();
-
-		if (projectId) {
-			try {
-				const result = await bulkCompleteTasksAction(ids, projectId);
-				if (result && !result.success) throw new Error(result.error);
-			} catch (error) {
-				useTaskStore.getState().setTasks(previousTasks);
-				console.error("Failed to bulk complete tasks:", error);
-			}
-		}
-	};
+	const bulkActions = useTaskBulkActions({
+		projectId,
+		selectedTaskIds,
+		clearSelection: handleClearSelection,
+	});
 
 	const handleSort = (key: string) => {
 		setSortConfig((current) => {
@@ -183,8 +148,7 @@ export function useGridView(
 		handleSelectAll,
 		handleToggleSelect,
 		handleClearSelection,
-		handleBulkDelete,
-		handleBulkComplete,
+		...bulkActions,
 		handleToggleFilter,
 		handleResetFilters,
 	};

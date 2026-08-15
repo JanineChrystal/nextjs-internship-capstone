@@ -1,21 +1,17 @@
 import { useCallback, useMemo, useState } from "react";
 import type { CalendarEvent } from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
-import type { Project } from "@/lib/validations/project-schema";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { CalendarDeadlineItem } from "@/types/calendar";
 
-export function useCalendarView(_projectId: string) {
+export function useCalendarView(projectId: string) {
 	const tasks = useTaskStore((state) => state.tasks);
 	const { openTaskModal } = useTaskStore();
 
-	const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-	const [editProjectData] = useState<Project | undefined>(undefined);
 
-	// In a real implementation, we'd filter by projectId.
 	const projectTasks = useMemo(() => {
-		return tasks.filter((t) => t.dueDate);
-	}, [tasks]);
+		return tasks.filter((t) => t.dueDate && t.projectId === projectId);
+	}, [tasks, projectId]);
 
 	const calendarEvents: CalendarEvent[] = useMemo(() => {
 		return projectTasks.map((task) => ({
@@ -39,13 +35,10 @@ export function useCalendarView(_projectId: string) {
 					date: task.dueDate,
 					type: "task",
 					columnId: task.board,
-					priority:
-						task.priority.toLowerCase() === "normal"
-							? "medium"
-							: (task.priority.toLowerCase() as "low" | "medium" | "high"),
+					priority: task.priority.toLowerCase() as "low" | "medium" | "high",
 					category: task.board,
-					comments: 2,
-					attachments: 1,
+					comments: 0,
+					attachments: task.attachments?.length ?? 0,
 				}) as CalendarDeadlineItem,
 		);
 	}, [projectTasks]);
@@ -73,12 +66,9 @@ export function useCalendarView(_projectId: string) {
 	);
 
 	return {
-		isProjectModalOpen,
 		selectedEventId,
-		editProjectData,
 		calendarEvents,
 		sidePanelItems,
-		setIsProjectModalOpen,
 		handleSingleClick,
 		handleDoubleClick,
 		handleDateClick,

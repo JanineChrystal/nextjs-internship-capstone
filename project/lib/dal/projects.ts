@@ -316,6 +316,79 @@ export async function inviteUserToProjectInDB(
 	}
 }
 
+export interface ProjectMemberOutputDTO {
+	userId: string;
+	name: string;
+	email: string;
+	avatarUrl: string;
+}
+
+function toMemberName(user: {
+	firstName: string | null;
+	lastName: string | null;
+	email: string;
+}): string {
+	const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ");
+	return fullName || user.email;
+}
+
+export async function getProjectMembersDAL(
+	projectId: string,
+): Promise<ProjectMemberOutputDTO[]> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		const [project] = await db
+			.select()
+			.from(projects)
+			.where(and(eq(projects.id, projectId), isNull(projects.deletedAt)));
+
+		if (!project) return [];
+
+		const [owner] = await db
+			.select()
+			.from(users)
+			.where(eq(users.id, project.ownerId));
+
+		const memberRows = await db
+			.select({ user: users })
+			.from(projectMembers)
+			.innerJoin(users, eq(projectMembers.userId, users.id))
+			.where(
+				and(
+					eq(projectMembers.projectId, projectId),
+					isNull(projectMembers.deletedAt),
+				),
+			);
+
+		const members: ProjectMemberOutputDTO[] = [];
+		if (owner) {
+			members.push({
+				userId: owner.id,
+				name: toMemberName(owner),
+				email: owner.email,
+				avatarUrl: owner.imageUrl ?? "",
+			});
+		}
+		for (const { user: member } of memberRows) {
+			if (members.some((m) => m.userId === member.id)) continue;
+			members.push({
+				userId: member.id,
+				name: toMemberName(member),
+				email: member.email,
+				avatarUrl: member.imageUrl ?? "",
+			});
+		}
+
+		return members;
+	} catch (error) {
+		throw new Error("Failed to fetch project members from database", {
+			cause: error,
+		});
+	}
+}
+
 export async function assignTeamToProjectInDB(
 	projectId: string,
 	teamId: string,

@@ -1,17 +1,8 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { BigCalendar } from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
 import { CalendarSidePanel } from "@/app/(dashboard)/_components/ui/side-panels";
 import { useCalendarView } from "../../../_hooks/use-calendar-view";
-
-const ProjectModal = dynamic(
-	() =>
-		import("@/app/(dashboard)/_components/ui/modals/project-modal").then(
-			(m) => m.ProjectModal,
-		),
-	{ ssr: false },
-);
 
 interface CalendarViewProps {
 	projectId: string;
@@ -19,12 +10,9 @@ interface CalendarViewProps {
 
 export function CalendarView({ projectId }: CalendarViewProps) {
 	const {
-		isProjectModalOpen,
 		selectedEventId,
-		editProjectData,
 		calendarEvents,
 		sidePanelItems,
-		setIsProjectModalOpen,
 		handleSingleClick,
 		handleDoubleClick,
 		handleDateClick,
@@ -49,12 +37,6 @@ export function CalendarView({ projectId }: CalendarViewProps) {
 				items={sidePanelItems}
 				onItemClick={handleSingleClick}
 				onItemDoubleClick={handleDoubleClick}
-			/>
-
-			<ProjectModal
-				isOpen={isProjectModalOpen}
-				onClose={() => setIsProjectModalOpen(false)}
-				initialData={editProjectData}
 			/>
 		</div>
 	);

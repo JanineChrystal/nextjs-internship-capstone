@@ -1,9 +1,16 @@
-import type { DbAttachment, DbChecklist, DbTask } from "@/lib/types/task";
+import type {
+	Assignee,
+	DbAttachment,
+	DbChecklist,
+	DbTask,
+	GridTask,
+} from "@/lib/types/task";
 
 export interface TaskOutputDTO {
 	id: string;
 	projectId: string;
 	boardId: string;
+	position: number;
 	name: string;
 	category: string | null;
 	status: string;
@@ -15,20 +22,65 @@ export interface TaskOutputDTO {
 	updatedAt: Date;
 }
 
+// Strips characters that would let stored text inject markup when rendered as-is.
+function sanitizeText<T extends string | null>(value: T): T {
+	if (value === null) return value;
+	return value.replace(/[<>]/g, "") as T;
+}
+
 export function toTaskDTO(task: DbTask): TaskOutputDTO {
 	return {
 		id: task.id,
 		projectId: task.projectId,
 		boardId: task.boardId,
-		name: task.name,
-		category: task.category,
+		position: task.position,
+		name: sanitizeText(task.name),
+		category: sanitizeText(task.category),
 		status: task.status,
 		priority: task.priority,
 		startDate: task.startDate,
 		dueDate: task.dueDate,
-		notes: task.notes,
+		notes: sanitizeText(task.notes),
 		createdAt: task.createdAt,
 		updatedAt: task.updatedAt,
+	};
+}
+
+function toTaskDateInputValue(date: Date | null): string {
+	return date ? date.toISOString() : "--";
+}
+
+export function toTaskUI(
+	dto: TaskOutputDTO,
+	boardTitle: string,
+	assignees: Assignee[],
+	checklist: ChecklistOutputDTO[],
+	attachments: AttachmentOutputDTO[],
+): GridTask {
+	return {
+		id: dto.id,
+		projectId: dto.projectId,
+		name: dto.name,
+		notes: dto.notes ?? "",
+		category: dto.category ?? undefined,
+		assignees,
+		startDate: toTaskDateInputValue(dto.startDate),
+		dueDate: toTaskDateInputValue(dto.dueDate),
+		board: boardTitle,
+		status: dto.status,
+		priority: dto.priority as GridTask["priority"],
+		isCompleted: dto.status === "Completed",
+		checklist: checklist.map((item) => ({
+			id: item.id,
+			title: item.title,
+			completed: item.isCompleted,
+		})),
+		attachments: attachments.map((item) => ({
+			id: item.id,
+			name: item.name,
+			url: item.url,
+		})),
+		links: [],
 	};
 }
 

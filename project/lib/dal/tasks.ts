@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { projects, tasks } from "@/lib/db/schema";
+import { boards, projects, tasks } from "@/lib/db/schema";
 import { type TaskOutputDTO, toTaskDTO } from "@/lib/dtos/task-dto";
 import type { NewDbTask } from "@/lib/types/task";
 
@@ -28,7 +28,19 @@ export async function createTaskInDB(data: NewDbTask): Promise<TaskOutputDTO> {
 	}
 
 	try {
-		const result = await db.insert(tasks).values(data).returning();
+		const existingBoardTasks = await db
+			.select({ position: tasks.position })
+			.from(tasks)
+			.where(and(eq(tasks.boardId, data.boardId), isNull(tasks.deletedAt)));
+		const maxPosition =
+			existingBoardTasks.length > 0
+				? Math.max(...existingBoardTasks.map((t) => t.position))
+				: -1;
+
+		const result = await db
+			.insert(tasks)
+			.values({ ...data, position: maxPosition + 1 })
+			.returning();
 
 		return toTaskDTO(result[0]);
 	} catch (error) {
@@ -56,7 +68,8 @@ export async function getTasksByBoardId(
 					isNull(tasks.deletedAt),
 					isNull(projects.deletedAt),
 				),
-			);
+			)
+			.orderBy(tasks.position);
 
 		return results.map((row) => toTaskDTO(row.task));
 	} catch (error) {
@@ -66,6 +79,7 @@ export async function getTasksByBoardId(
 
 export async function moveTaskBoardDAL(
 	taskId: string,
+	projectId: string,
 	newBoardId: string,
 ): Promise<TaskOutputDTO> {
 	const user = await getCurrentUser();
@@ -73,7 +87,6 @@ export async function moveTaskBoardDAL(
 
 	try {
 		// Get the new board to find its name to sync the status
-		const { boards } = await import("@/lib/db/schema");
 		const [board] = await db
 			.select()
 			.from(boards)
@@ -83,8 +96,16 @@ export async function moveTaskBoardDAL(
 		const result = await db
 			.update(tasks)
 			.set({ boardId: newBoardId, status: board.name, updatedAt: new Date() })
-			.where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)))
+			.where(
+				and(
+					eq(tasks.id, taskId),
+					eq(tasks.projectId, projectId),
+					isNull(tasks.deletedAt),
+				),
+			)
 			.returning();
+
+		if (result.length === 0) throw new Error("Task not found");
 
 		return toTaskDTO(result[0]);
 	} catch (error) {
@@ -112,7 +133,8 @@ export async function getTasksByProjectId(
 					isNull(tasks.deletedAt),
 					isNull(projects.deletedAt),
 				),
-			);
+			)
+			.orderBy(tasks.position);
 
 		return results.map((row) => toTaskDTO(row.task));
 	} catch (error) {
@@ -122,6 +144,7 @@ export async function getTasksByProjectId(
 
 export async function updateTaskInDB(
 	taskId: string,
+	projectId: string,
 	data: Partial<NewDbTask>,
 ): Promise<TaskOutputDTO> {
 	const user = await getCurrentUser();
@@ -131,7 +154,13 @@ export async function updateTaskInDB(
 		const result = await db
 			.update(tasks)
 			.set({ ...data, updatedAt: new Date() })
-			.where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)))
+			.where(
+				and(
+					eq(tasks.id, taskId),
+					eq(tasks.projectId, projectId),
+					isNull(tasks.deletedAt),
+				),
+			)
 			.returning();
 
 		if (result.length === 0) throw new Error("Task not found");
@@ -142,7 +171,10 @@ export async function updateTaskInDB(
 	}
 }
 
-export async function deleteTaskInDB(taskId: string): Promise<void> {
+export async function deleteTaskInDB(
+	taskId: string,
+	projectId: string,
+): Promise<void> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
@@ -150,13 +182,22 @@ export async function deleteTaskInDB(taskId: string): Promise<void> {
 		await db
 			.update(tasks)
 			.set({ deletedAt: new Date(), updatedAt: new Date() })
-			.where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)));
+			.where(
+				and(
+					eq(tasks.id, taskId),
+					eq(tasks.projectId, projectId),
+					isNull(tasks.deletedAt),
+				),
+			);
 	} catch (error) {
 		throw new Error("Failed to delete task in database", { cause: error });
 	}
 }
 
-export async function bulkDeleteTasksInDB(taskIds: string[]): Promise<void> {
+export async function bulkDeleteTasksInDB(
+	taskIds: string[],
+	projectId: string,
+): Promise<void> {
 	if (taskIds.length === 0) return;
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
@@ -165,7 +206,13 @@ export async function bulkDeleteTasksInDB(taskIds: string[]): Promise<void> {
 		await db
 			.update(tasks)
 			.set({ deletedAt: new Date(), updatedAt: new Date() })
-			.where(and(inArray(tasks.id, taskIds), isNull(tasks.deletedAt)));
+			.where(
+				and(
+					inArray(tasks.id, taskIds),
+					eq(tasks.projectId, projectId),
+					isNull(tasks.deletedAt),
+				),
+			);
 	} catch (error) {
 		throw new Error("Failed to bulk delete tasks in database", {
 			cause: error,
@@ -173,14 +220,16 @@ export async function bulkDeleteTasksInDB(taskIds: string[]): Promise<void> {
 	}
 }
 
-export async function bulkCompleteTasksInDB(taskIds: string[]): Promise<void> {
+export async function bulkCompleteTasksInDB(
+	taskIds: string[],
+	projectId: string,
+): Promise<void> {
 	if (taskIds.length === 0) return;
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
 	try {
 		// Need to get the "Completed" board
-		const { boards } = await import("@/lib/db/schema");
 		const [completedBoard] = await db
 			.select()
 			.from(boards)
@@ -201,10 +250,47 @@ export async function bulkCompleteTasksInDB(taskIds: string[]): Promise<void> {
 		await db
 			.update(tasks)
 			.set(updateData)
-			.where(and(inArray(tasks.id, taskIds), isNull(tasks.deletedAt)));
+			.where(
+				and(
+					inArray(tasks.id, taskIds),
+					eq(tasks.projectId, projectId),
+					isNull(tasks.deletedAt),
+				),
+			);
 	} catch (error) {
 		throw new Error("Failed to bulk complete tasks in database", {
 			cause: error,
 		});
+	}
+}
+
+export async function reorderTasksInDB(
+	projectId: string,
+	boardId: string,
+	taskIds: string[],
+): Promise<void> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		// Drizzle doesn't support bulk update with different values easily in a single query for Postgres without raw SQL case statements,
+		// so we update them in a transaction.
+		await db.transaction(async (tx) => {
+			for (let i = 0; i < taskIds.length; i++) {
+				await tx
+					.update(tasks)
+					.set({ position: i, updatedAt: new Date() })
+					.where(
+						and(
+							eq(tasks.id, taskIds[i]),
+							eq(tasks.boardId, boardId),
+							eq(tasks.projectId, projectId),
+							isNull(tasks.deletedAt),
+						),
+					);
+			}
+		});
+	} catch (error) {
+		throw new Error("Failed to reorder tasks", { cause: error });
 	}
 }

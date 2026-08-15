@@ -260,6 +260,7 @@ export const tasks = pgTable("Tasks", {
 	boardId: uuid("boardId")
 		.references(() => boards.id, { onDelete: "cascade" })
 		.notNull(),
+	position: integer("position").default(0).notNull(),
 	name: text("name").notNull(),
 	category: text("category"),
 	status: text("status").default("Not Started").notNull(),

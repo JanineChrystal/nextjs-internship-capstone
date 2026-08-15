@@ -23,7 +23,7 @@ export function TaskAssignees({ taskData, handleChange }: TaskAssigneesProps) {
 
 				{(taskData.assignees || []).map((assignee: Assignee) => (
 					<div
-						key={assignee.name}
+						key={assignee.userId}
 						className="flex items-center gap-2 p-1.5 px-3 rounded-full border border-outline-variant bg-surface-container-lowest"
 					>
 						<Image

@@ -3,6 +3,7 @@ import { useBoardStore } from "@/stores/use-board-store";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useTaskStore } from "@/stores/use-task-store";
 import { useKanbanDnd } from "./use-kanban-dnd";
+import { useTaskBulkActions } from "./use-task-bulk-actions";
 
 export function useKanbanBoard(
 	projectId: string,
@@ -16,12 +17,16 @@ export function useKanbanBoard(
 	const handleClearSelection = useTaskStore(
 		(state) => state.clearTaskSelection,
 	);
-	const handleBulkDelete = useTaskStore((state) => state.bulkDeleteTasks);
-	const handleBulkComplete = useTaskStore((state) => state.bulkCompleteTasks);
 	const addColumn = useBoardStore((state) => state.addColumn);
 
 	const { tasks, columns, handleDragStart, handleDragOver, handleDragEnd } =
 		useKanbanDnd(projectId, externalFilters);
+
+	const bulkActions = useTaskBulkActions({
+		projectId,
+		selectedTaskIds,
+		clearSelection: handleClearSelection,
+	});
 
 	const sortedColumns = useMemo(
 		() => [...columns].sort((a, b) => a.order - b.order),
@@ -35,8 +40,7 @@ export function useKanbanBoard(
 		columns,
 		sortedColumns,
 		handleClearSelection,
-		handleBulkDelete,
-		handleBulkComplete,
+		...bulkActions,
 		addColumn,
 		handleDragStart,
 		handleDragOver,

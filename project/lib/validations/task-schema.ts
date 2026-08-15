@@ -44,8 +44,9 @@ export const DEFAULT_TASK_CATEGORIES = [
 export const TASK_BOARDS = ["In Progress", "Completed", "Up Next", "Backlog"];
 
 export const AssigneeSchema = z.object({
+	userId: z.string(),
 	name: z.string(),
-	avatarUrl: z.string().url(),
+	avatarUrl: z.string(),
 	email: z.string().email().optional(),
 });
 
@@ -82,8 +83,8 @@ export const TaskItemSchema = z.object({
 
 export const GridTaskSchema = z.object({
 	id: z.string(),
+	projectId: z.string().optional(),
 	name: z.string(),
-	description: z.string().optional(),
 	notes: z.string().optional(),
 	category: TaskCategorySchema,
 	assignees: z.array(AssigneeSchema),
