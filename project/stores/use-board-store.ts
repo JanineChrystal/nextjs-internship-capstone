@@ -41,23 +41,21 @@ export const useBoardStore = create<BoardState>((set) => ({
 			return { columns: newColumns };
 		}),
 
-	deleteColumn: (id: string, fallbackColumnId?: string) =>
+	deleteColumn: (id: string) =>
 		set((state) => {
-			// Find fallback: either provided, or the first column that isn't the one being deleted
-			const fallback = fallbackColumnId
-				? state.columns.find((c) => c.id === fallbackColumnId)
-				: state.columns.find((c) => c.id !== id);
+			const columnToDelete = state.columns.find((c) => c.id === id);
 
-			if (fallback) {
+			// Board deletion sends the board's tasks to trash (soft-deleted
+			// server-side), matching the server behavior in deleteBoardDAL -
+			// not a reassignment to a fallback column.
+			if (columnToDelete) {
 				const tasksStore = useTaskStore.getState();
-				const tasksInColumn = tasksStore.tasks.filter((t) => t.board === id);
-
-				tasksInColumn.forEach((task) => {
-					tasksStore.updateTask(task.id, {
-						board: fallback.title,
-						status: fallback.title,
-					});
-				});
+				const taskIdsInColumn = tasksStore.tasks
+					.filter((t) => t.board === columnToDelete.title)
+					.map((t) => t.id);
+				if (taskIdsInColumn.length > 0) {
+					tasksStore.bulkDeleteTasks(new Set(taskIdsInColumn));
+				}
 			}
 
 			const remainingColumns = state.columns

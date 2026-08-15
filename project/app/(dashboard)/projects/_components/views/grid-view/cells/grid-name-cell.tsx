@@ -1,4 +1,5 @@
 import { Info, MoreHorizontal } from "lucide-react";
+import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { Button } from "@/components/ui/buttons/button";
 import {
 	DropdownMenu,
@@ -23,7 +24,12 @@ export function GridNameCell({
 	taskName,
 }: GridNameCellProps) {
 	const { openTaskModal } = useTaskStore();
-	const { handleAction } = useTaskModal();
+	const {
+		handleAction,
+		deleteWarning,
+		confirmDeleteWarning,
+		closeDeleteWarning,
+	} = useTaskModal();
 
 	return (
 		<div
@@ -70,6 +76,16 @@ export function GridNameCell({
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>
+
+			<WarningModal
+				isOpen={deleteWarning.isOpen}
+				onClose={closeDeleteWarning}
+				onConfirm={confirmDeleteWarning}
+				variant="danger"
+				title="Delete task with unfinished checklist items?"
+				message={`"${deleteWarning.taskName}" still has unchecked checklist items. Deleting it will also remove those items.`}
+				confirmText="Delete"
+			/>
 		</div>
 	);
 }

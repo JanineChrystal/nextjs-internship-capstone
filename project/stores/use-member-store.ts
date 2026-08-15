@@ -1,4 +1,11 @@
 import { create } from "zustand";
+import {
+	getProjectMembersDetailedAction,
+	inviteUserToProjectAction,
+	removeMemberAction,
+	updateMemberJobRoleAction,
+	updateMemberRoleAction,
+} from "@/lib/actions/project-actions";
 import type {
 	FlaggedCommentItem,
 	PendingInviteItem,
@@ -7,51 +14,7 @@ import type {
 	ShareLinkConfig,
 } from "@/types/member";
 
-// Mock Data Initializer for the store
-const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {
-	"prj-1": [
-		{
-			userId: "usr-1",
-			name: "Janine Chrystal",
-			email: "janine@example.com",
-			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Janine",
-			jobRole: "Project Owner",
-			roleAccess: "owner",
-			status: "joined",
-			joinedAt: new Date().toISOString(),
-		},
-		{
-			userId: "usr-2",
-			name: "Alex Developer",
-			email: "alex@example.com",
-			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-			jobRole: "Frontend Developer",
-			roleAccess: "member",
-			status: "joined",
-			joinedAt: new Date(Date.now() - 86400000).toISOString(),
-		},
-		{
-			userId: "usr-3",
-			name: "Sarah Designer",
-			email: "sarah@example.com",
-			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-			jobRole: "UI/UX Designer",
-			roleAccess: "co-owner",
-			status: "joined",
-			joinedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-		},
-		{
-			userId: "usr-4",
-			name: "Guest User",
-			email: "guest@example.com",
-			avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest",
-			jobRole: "External Consultant",
-			roleAccess: "guest",
-			status: "invited",
-			joinedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-		},
-	],
-};
+const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {};
 
 const INITIAL_FLAGGED_COMMENTS: Record<string, FlaggedCommentItem[]> = {
 	"prj-1": [
@@ -76,24 +39,28 @@ interface MemberState {
 	flaggedComments: Record<string, FlaggedCommentItem[]>;
 	isProjectPublic: Record<string, boolean>;
 
-	// Modal Actions
-	addPendingInvite: (invite: PendingInviteItem) => void;
-	removePendingInvite: (recipient: string) => void;
-	clearPendingInvites: () => void;
-	sendBulkInvites: (scope: "project" | "workspace", targetId: string) => void;
-
-	// Settings Actions
+	// Real, server-backed actions
+	fetchProjectMembers: (projectId: string) => Promise<void>;
+	sendBulkInvites: (
+		scope: "project" | "workspace",
+		targetId: string,
+	) => Promise<void>;
 	updateMemberRoleAccess: (
 		projectId: string,
 		userId: string,
 		role: RoleAccess,
-	) => void;
+	) => Promise<void>;
 	updateMemberJobRole: (
 		projectId: string,
 		userId: string,
 		jobRole: string,
-	) => void;
-	removeMember: (projectId: string, userId: string) => void;
+	) => Promise<void>;
+	removeMember: (projectId: string, userId: string) => Promise<void>;
+
+	// Modal Actions
+	addPendingInvite: (invite: PendingInviteItem) => void;
+	removePendingInvite: (recipient: string) => void;
+	clearPendingInvites: () => void;
 
 	regenerateShareToken: (projectId: string) => void;
 	updateDefaultShareRole: (projectId: string, role: "member" | "guest") => void;
@@ -107,7 +74,7 @@ interface MemberState {
 	toggleProjectVisibility: (projectId: string, isPublic: boolean) => void;
 }
 
-export const useMemberStore = create<MemberState>((set) => ({
+export const useMemberStore = create<MemberState>((set, get) => ({
 	projectMembers: INITIAL_MEMBERS,
 	pendingInvites: [],
 	shareLinks: {
@@ -136,79 +103,111 @@ export const useMemberStore = create<MemberState>((set) => ({
 
 	clearPendingInvites: () => set({ pendingInvites: [] }),
 
-	sendBulkInvites: (scope, targetId) =>
-		set((state) => {
-			// In a real app, this would dispatch an API call here.
-			console.log(
-				`Sending bulk invites for ${scope} ${targetId}`,
-				state.pendingInvites,
+	fetchProjectMembers: async (projectId) => {
+		const result = await getProjectMembersDetailedAction(projectId);
+		if (!result.success || !result.data) return;
+
+		const members = result.data as ProjectMember[];
+		set((state) => ({
+			projectMembers: { ...state.projectMembers, [projectId]: members },
+		}));
+	},
+
+	sendBulkInvites: async (scope, targetId) => {
+		if (scope !== "project") {
+			set({ pendingInvites: [] });
+			return;
+		}
+
+		const invites = get().pendingInvites;
+		set({ pendingInvites: [] });
+
+		for (const invite of invites) {
+			const result = await inviteUserToProjectAction(
+				targetId,
+				invite.recipient,
+				invite.jobRole,
+				invite.roleAccess,
 			);
-
-			// Mocking adding them instantly for UI demonstration:
-			if (scope === "project") {
-				const newMembers = state.pendingInvites.map((invite, index) => ({
-					userId: `new-usr-${Date.now()}-${index}`,
-					name: invite.recipient.split("@")[0],
-					email: invite.recipient.includes("@")
-						? invite.recipient
-						: `${invite.recipient}@example.com`,
-					avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${invite.recipient}`,
-					jobRole: invite.jobRole,
-					roleAccess: invite.roleAccess,
-					status: "invited" as const,
-					joinedAt: new Date().toISOString(),
-				}));
-
-				const currentProjectMembers = state.projectMembers[targetId] || [];
-				return {
-					pendingInvites: [], // clear queue
-					projectMembers: {
-						...state.projectMembers,
-						[targetId]: [...currentProjectMembers, ...newMembers],
-					},
-				};
+			if (!result.success) {
+				console.error(
+					"Failed to invite member:",
+					invite.recipient,
+					result.error,
+				);
 			}
+		}
 
-			// Workspace logic placeholder
-			return { pendingInvites: [] };
-		}),
+		await get().fetchProjectMembers(targetId);
+	},
 
-	updateMemberRoleAccess: (projectId, userId, role) =>
-		set((state) => {
-			const members = state.projectMembers[projectId] || [];
-			return {
+	updateMemberRoleAccess: async (projectId, userId, role) => {
+		if (role === "owner") return;
+		const previousMembers = get().projectMembers[projectId] || [];
+		set((state) => ({
+			projectMembers: {
+				...state.projectMembers,
+				[projectId]: previousMembers.map((m) =>
+					m.userId === userId ? { ...m, roleAccess: role } : m,
+				),
+			},
+		}));
+
+		const result = await updateMemberRoleAction(projectId, userId, role);
+		if (!result.success) {
+			set((state) => ({
 				projectMembers: {
 					...state.projectMembers,
-					[projectId]: members.map((m) =>
-						m.userId === userId ? { ...m, roleAccess: role } : m,
-					),
+					[projectId]: previousMembers,
 				},
-			};
-		}),
+			}));
+			console.error("Failed to update member role:", result.error);
+		}
+	},
 
-	updateMemberJobRole: (projectId, userId, jobRole) =>
-		set((state) => {
-			const members = state.projectMembers[projectId] || [];
-			return {
+	updateMemberJobRole: async (projectId, userId, jobRole) => {
+		const previousMembers = get().projectMembers[projectId] || [];
+		set((state) => ({
+			projectMembers: {
+				...state.projectMembers,
+				[projectId]: previousMembers.map((m) =>
+					m.userId === userId ? { ...m, jobRole } : m,
+				),
+			},
+		}));
+
+		const result = await updateMemberJobRoleAction(projectId, userId, jobRole);
+		if (!result.success) {
+			set((state) => ({
 				projectMembers: {
 					...state.projectMembers,
-					[projectId]: members.map((m) =>
-						m.userId === userId ? { ...m, jobRole: jobRole } : m,
-					),
+					[projectId]: previousMembers,
 				},
-			};
-		}),
+			}));
+			console.error("Failed to update member job role:", result.error);
+		}
+	},
 
-	removeMember: (projectId, userId) =>
-		set((state) => {
-			const members = state.projectMembers[projectId] || [];
-			return {
+	removeMember: async (projectId, userId) => {
+		const previousMembers = get().projectMembers[projectId] || [];
+		set((state) => ({
+			projectMembers: {
+				...state.projectMembers,
+				[projectId]: previousMembers.filter((m) => m.userId !== userId),
+			},
+		}));
+
+		const result = await removeMemberAction(projectId, userId);
+		if (!result.success) {
+			set((state) => ({
 				projectMembers: {
 					...state.projectMembers,
-					[projectId]: members.filter((m) => m.userId !== userId),
+					[projectId]: previousMembers,
 				},
-			};
-		}),
+			}));
+			console.error("Failed to remove member:", result.error);
+		}
+	},
 
 	regenerateShareToken: (projectId) =>
 		set((state) => {

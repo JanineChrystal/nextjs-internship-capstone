@@ -1,10 +1,19 @@
+import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
+import { useBoardMutations } from "./use-board-mutations";
 
 export function useKanbanColumn(id: string, title: string) {
-	const deleteColumn = useBoardStore((state) => state.deleteColumn);
-	const renameColumn = useBoardStore((state) => state.renameColumn);
+	const params = useParams();
+	const projectId = params?.id as string;
+
+	const {
+		renameBoard,
+		initiateDeleteBoard,
+		deleteWarning,
+		confirmDeleteBoard,
+		closeDeleteWarning,
+	} = useBoardMutations(projectId);
 	const openTaskModal = useTaskStore((state) => state.openTaskModal);
 
 	const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -19,7 +28,7 @@ export function useKanbanColumn(id: string, title: string) {
 
 	const handleRenameSubmit = () => {
 		if (editTitle.trim() && editTitle !== title) {
-			renameColumn(id, editTitle.trim());
+			renameBoard(id, editTitle.trim());
 		} else {
 			setEditTitle(title);
 		}
@@ -35,6 +44,8 @@ export function useKanbanColumn(id: string, title: string) {
 		e.stopPropagation();
 	};
 
+	const deleteColumn = () => initiateDeleteBoard(id, title);
+
 	return {
 		isEditingTitle,
 		editTitle,
@@ -44,6 +55,9 @@ export function useKanbanColumn(id: string, title: string) {
 		handleRenameSubmit,
 		handleKeyDown,
 		deleteColumn,
+		deleteWarning,
+		confirmDeleteBoard,
+		closeDeleteWarning,
 		openTaskModal,
 	};
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle, Circle } from "lucide-react";
+import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { Button } from "@/components/ui/buttons/button";
 import {
 	Dialog,
@@ -24,6 +25,7 @@ export function TaskModal() {
 		isTaskModalOpen,
 		closeTaskModal,
 		isEditMode,
+		isOverdue,
 		taskData,
 		setTaskData,
 		handleChange,
@@ -43,6 +45,9 @@ export function TaskModal() {
 		removeAttachment,
 		submitLink,
 		removeLink,
+		deleteWarning,
+		confirmDeleteWarning,
+		closeDeleteWarning,
 		isCommentsOpen,
 		toggleComments,
 		handleAction,
@@ -55,7 +60,7 @@ export function TaskModal() {
 		>
 			<DialogContent
 				showCloseButton={false}
-				className="sm:max-w-5xl p-0 gap-0 overflow-hidden bg-surface flex flex-col md:flex-row h-fit max-h-[90vh] min-h-150 overflow-y-auto md:overflow-hidden"
+				className="sm:max-w-5xl p-0 gap-0 overflow-hidden bg-surface flex flex-col md:flex-row h-fit md:h-[90vh] max-h-[90vh] min-h-150 overflow-y-auto md:overflow-hidden"
 			>
 				{/* Top Right Floating Toolbar */}
 				<TaskModalToolbar
@@ -95,6 +100,11 @@ export function TaskModal() {
 								aria-label="Task name"
 								className="text-xl font-semibold border-none shadow-none focus-visible:ring-0 px-0 h-auto bg-transparent flex-1"
 							/>
+							{isOverdue && (
+								<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-error/10 text-error border border-error/20 shrink-0">
+									Overdue
+								</span>
+							)}
 						</DialogTitle>
 					</DialogHeader>
 
@@ -172,6 +182,16 @@ export function TaskModal() {
 						</div>
 					</div>
 				)}
+
+				<WarningModal
+					isOpen={deleteWarning.isOpen}
+					onClose={closeDeleteWarning}
+					onConfirm={confirmDeleteWarning}
+					variant="danger"
+					title="Delete task with unfinished checklist items?"
+					message={`"${deleteWarning.taskName}" still has unchecked checklist items. Deleting it will also remove those items.`}
+					confirmText="Delete"
+				/>
 			</DialogContent>
 		</Dialog>
 	);

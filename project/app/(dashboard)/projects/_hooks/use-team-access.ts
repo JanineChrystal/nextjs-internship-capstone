@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useMemberStore } from "@/stores/use-member-store";
 import type { RoleAccess } from "@/types/member";
 import { emptyMembers } from "../_constants/settings-view";
@@ -12,7 +12,13 @@ export function useTeamAccess(projectId: string, currentUserRole: RoleAccess) {
 		updateMemberRoleAccess,
 		updateMemberJobRole,
 		removeMember,
+		fetchProjectMembers,
 	} = useMemberStore();
+
+	// Effects
+	useEffect(() => {
+		if (projectId) fetchProjectMembers(projectId);
+	}, [projectId, fetchProjectMembers]);
 
 	// Derived state (with stable reference fallback)
 	const members = projectMembers[projectId] ?? emptyMembers;

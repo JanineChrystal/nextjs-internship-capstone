@@ -35,6 +35,38 @@ export function GridTable<T>({
 				className,
 			)}
 		>
+			{/* Horizontal scroll container: keeps the table usable on narrow
+			 * viewports instead of clipping columns. */}
+			<div className="overflow-x-auto">
+				<div className="min-w-fit">
+					<GridTableInner
+						data={data}
+						columns={columns}
+						renderRow={renderRow}
+						keyExtractor={keyExtractor}
+						renderEmptyState={renderEmptyState}
+						renderFooter={renderFooter}
+						sortConfig={sortConfig}
+						onSort={onSort}
+					/>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function GridTableInner<T>({
+	data,
+	columns,
+	renderRow,
+	keyExtractor,
+	renderEmptyState,
+	renderFooter,
+	sortConfig,
+	onSort,
+}: Omit<GridTableProps<T>, "className">) {
+	return (
+		<>
 			{/* Header */}
 			<div className="flex w-full items-center px-4 py-3 border-b border-outline-variant bg-surface-container-lowest">
 				{columns.map((col) => {
@@ -119,6 +151,6 @@ export function GridTable<T>({
 					{renderFooter()}
 				</div>
 			)}
-		</div>
+		</>
 	);
 }

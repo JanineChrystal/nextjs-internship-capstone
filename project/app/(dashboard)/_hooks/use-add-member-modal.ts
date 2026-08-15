@@ -62,8 +62,8 @@ export function useAddMemberModal(
 		[addPendingInvite, form, scope],
 	);
 
-	const handleSendAll = useCallback(() => {
-		sendBulkInvites(scope, targetId);
+	const handleSendAll = useCallback(async () => {
+		await sendBulkInvites(scope, targetId);
 		onOpenChange(false);
 	}, [sendBulkInvites, scope, targetId, onOpenChange]);
 

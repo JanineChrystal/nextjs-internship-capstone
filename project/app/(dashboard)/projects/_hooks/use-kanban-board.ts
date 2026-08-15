@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { useBoardStore } from "@/stores/use-board-store";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useTaskStore } from "@/stores/use-task-store";
+import { useBoardMutations } from "./use-board-mutations";
 import { useKanbanDnd } from "./use-kanban-dnd";
 import { useTaskBulkActions } from "./use-task-bulk-actions";
 
@@ -17,7 +17,7 @@ export function useKanbanBoard(
 	const handleClearSelection = useTaskStore(
 		(state) => state.clearTaskSelection,
 	);
-	const addColumn = useBoardStore((state) => state.addColumn);
+	const { createBoard } = useBoardMutations(projectId);
 
 	const { tasks, columns, handleDragStart, handleDragOver, handleDragEnd } =
 		useKanbanDnd(projectId, externalFilters);
@@ -41,7 +41,7 @@ export function useKanbanBoard(
 		sortedColumns,
 		handleClearSelection,
 		...bulkActions,
-		addColumn,
+		addColumn: createBoard,
 		handleDragStart,
 		handleDragOver,
 		handleDragEnd,

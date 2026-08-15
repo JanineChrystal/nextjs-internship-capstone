@@ -18,7 +18,14 @@ import {
 export async function getCommentsAction(
 	taskId: string,
 	projectId: string,
-): Promise<{ success: boolean; data?: CommentOutputDTO[]; error?: string }> {
+	limit = 20,
+	offset = 0,
+): Promise<{
+	success: boolean;
+	data?: CommentOutputDTO[];
+	hasMore?: boolean;
+	error?: string;
+}> {
 	try {
 		const hasPermission = await verifyProjectPermissionDAL(
 			projectId,
@@ -26,8 +33,8 @@ export async function getCommentsAction(
 		);
 		if (!hasPermission) return { success: false, error: "Unauthorized" };
 
-		const comments = await getCommentsByTaskId(taskId, projectId);
-		return { success: true, data: comments };
+		const result = await getCommentsByTaskId(taskId, projectId, limit, offset);
+		return { success: true, data: result.comments, hasMore: result.hasMore };
 	} catch (error) {
 		console.error("getCommentsAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };

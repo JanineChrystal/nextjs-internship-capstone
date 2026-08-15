@@ -2,6 +2,7 @@
 
 import { AlertCircle, X } from "lucide-react";
 import { DeadlineCard } from "@/app/(dashboard)/_components/ui/cards/deadline-card";
+import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import type { CalendarDeadlineItem } from "@/types/calendar";
 import { useCalendarSelection } from "./_hooks/use-calendar-selection";
@@ -27,6 +28,10 @@ export function CalendarSidePanel({
 		handleClearSelection,
 		handleBulkDelete,
 		handleBulkComplete,
+		handleBulkArchive,
+		warningModal,
+		confirmWarningAction,
+		closeWarningModal,
 	} = useCalendarSelection(items);
 
 	return (
@@ -73,6 +78,29 @@ export function CalendarSidePanel({
 				onClearSelection={handleClearSelection}
 				onDelete={handleBulkDelete}
 				onComplete={handleBulkComplete}
+				onArchive={handleBulkArchive}
+			/>
+
+			<WarningModal
+				isOpen={warningModal.isOpen}
+				onClose={closeWarningModal}
+				onConfirm={confirmWarningAction}
+				variant={warningModal.actionType === "delete" ? "danger" : "warning"}
+				title={
+					warningModal.actionType === "delete"
+						? "Delete items with unfinished work?"
+						: warningModal.actionType === "archive"
+							? "Archive projects with ongoing tasks?"
+							: "Complete items with unfinished work?"
+				}
+				message="One or more selected items still have incomplete checklist items or ongoing tasks. Continuing will affect that unfinished work too."
+				confirmText={
+					warningModal.actionType === "delete"
+						? "Delete"
+						: warningModal.actionType === "archive"
+							? "Archive"
+							: "Complete"
+				}
 			/>
 		</div>
 	);

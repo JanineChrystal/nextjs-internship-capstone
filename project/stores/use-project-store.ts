@@ -3,7 +3,7 @@ import type { Project } from "@/lib/validations/project-schema";
 
 interface ProjectState {
 	projects: Project[];
-	addProject: (project: Omit<Project, "id">) => void;
+	addProject: (project: Project | Omit<Project, "id">) => void;
 	deleteProjects: (ids: Set<string>) => void;
 	updateProject: (id: string, updates: Partial<Project>) => void;
 	setProjects: (projects: Project[]) => void;
@@ -15,10 +15,16 @@ export const useProjectStore = create<ProjectState>((set) => ({
 	// CREATE
 	addProject: (projectData) =>
 		set((state) => {
+			// Respect a caller-supplied id (e.g. a real DB id being hydrated into
+			// the store, or an optimistic temp id awaiting server confirmation).
+			// Only mint a new one if the caller genuinely didn't provide any.
 			const newProject: Project = {
 				...projectData,
-				id: crypto.randomUUID(),
-			};
+				id:
+					"id" in projectData && projectData.id
+						? projectData.id
+						: crypto.randomUUID(),
+			} as Project;
 			return { projects: [newProject, ...state.projects] };
 		}),
 

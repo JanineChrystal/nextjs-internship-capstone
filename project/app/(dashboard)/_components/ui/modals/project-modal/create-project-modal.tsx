@@ -1,4 +1,3 @@
-import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/buttons/button";
 import { CreatableCombobox } from "@/components/ui/combobox/creatable-combobox";
@@ -6,8 +5,8 @@ import { ManageCategoriesModal } from "@/components/ui/modals/manage-categories-
 import type { CreateProjectFormValues } from "@/lib/validations/project-schema";
 import { useCategoryStore } from "@/stores/use-category-store";
 import { projectFormFields } from "../../../../projects/_constants/create-project";
-import { mockProjectMembers } from "../../../../projects/_constants/mock-data";
 import { useCreateProject } from "../../../../projects/_hooks/use-create-project";
+import { ProjectTeamSection } from "./project-team-section";
 
 export function CreateProjectModal({ onClose }: { onClose: () => void }) {
 	const { form, onSubmit } = useCreateProject({ onClose });
@@ -114,29 +113,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
 			</div>
 
 			{/* Team Members */}
-			<div className="space-y-2">
-				<span className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider">
-					Team Members
-				</span>
-				<div className="flex items-center gap-3 flex-wrap">
-					{mockProjectMembers.map((member) => (
-						<div
-							key={member.id}
-							className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold border border-border"
-							title={member.name}
-						>
-							{member.initials}
-						</div>
-					))}
-					<button
-						type="button"
-						aria-label="Add team member"
-						className="w-10 h-10 rounded-full border border-dashed border-input flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all"
-					>
-						<Plus className="w-5 h-5" />
-					</button>
-				</div>
-			</div>
+			<ProjectTeamSection />
 
 			{/* Description */}
 			<div className="space-y-2">

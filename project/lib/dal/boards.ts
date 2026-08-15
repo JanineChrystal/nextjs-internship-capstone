@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { boards, projects } from "@/lib/db/schema";
+import { boards, projects, tasks } from "@/lib/db/schema";
 
 export async function getProjectBoardsDAL(projectId: string) {
 	const user = await getCurrentUser();
@@ -28,15 +28,17 @@ export async function getProjectBoardsDAL(projectId: string) {
 	}
 }
 
-export async function createBoardDAL(
-	projectId: string,
-	workspaceId: string,
-	name: string,
-) {
+export async function createBoardDAL(projectId: string, name: string) {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
 	try {
+		const [project] = await db
+			.select({ workspaceId: projects.workspaceId })
+			.from(projects)
+			.where(and(eq(projects.id, projectId), isNull(projects.deletedAt)));
+		if (!project) throw new Error("Project not found");
+
 		// Get highest position
 		const existingBoards = await getProjectBoardsDAL(projectId);
 		const maxPosition =
@@ -48,7 +50,7 @@ export async function createBoardDAL(
 			.insert(boards)
 			.values({
 				projectId,
-				workspaceId,
+				workspaceId: project.workspaceId,
 				name,
 				position: maxPosition + 1,
 			})
@@ -59,7 +61,11 @@ export async function createBoardDAL(
 	}
 }
 
-export async function renameBoardDAL(boardId: string, newName: string) {
+export async function renameBoardDAL(
+	boardId: string,
+	projectId: string,
+	newName: string,
+) {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
@@ -67,11 +73,75 @@ export async function renameBoardDAL(boardId: string, newName: string) {
 		const result = await db
 			.update(boards)
 			.set({ name: newName, updatedAt: new Date() })
-			.where(and(eq(boards.id, boardId), isNull(boards.deletedAt)))
+			.where(
+				and(
+					eq(boards.id, boardId),
+					eq(boards.projectId, projectId),
+					isNull(boards.deletedAt),
+				),
+			)
 			.returning();
 		return result[0];
 	} catch (error) {
 		throw new Error("Failed to rename board", { cause: error });
+	}
+}
+
+export async function deleteBoardDAL(boardId: string, projectId: string) {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		await db.transaction(async (tx) => {
+			// Soft-delete the board's tasks first ("moved to trash").
+			await tx
+				.update(tasks)
+				.set({ deletedAt: new Date(), updatedAt: new Date() })
+				.where(
+					and(
+						eq(tasks.boardId, boardId),
+						eq(tasks.projectId, projectId),
+						isNull(tasks.deletedAt),
+					),
+				);
+
+			await tx
+				.update(boards)
+				.set({ deletedAt: new Date(), updatedAt: new Date() })
+				.where(
+					and(
+						eq(boards.id, boardId),
+						eq(boards.projectId, projectId),
+						isNull(boards.deletedAt),
+					),
+				);
+		});
+	} catch (error) {
+		throw new Error("Failed to delete board", { cause: error });
+	}
+}
+
+export async function countTasksInBoardDAL(
+	boardId: string,
+	projectId: string,
+): Promise<number> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		const results = await db
+			.select({ id: tasks.id })
+			.from(tasks)
+			.where(
+				and(
+					eq(tasks.boardId, boardId),
+					eq(tasks.projectId, projectId),
+					isNull(tasks.deletedAt),
+				),
+			);
+		return results.length;
+	} catch (error) {
+		throw new Error("Failed to count tasks in board", { cause: error });
 	}
 }
 

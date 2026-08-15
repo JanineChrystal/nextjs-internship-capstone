@@ -92,6 +92,15 @@ export function TaskCard({ task }: TaskCardProps) {
 				{task.name}
 			</button>
 
+			{tasksTotal > 0 && (
+				<div className="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+					<div
+						className="h-full bg-primary rounded-full transition-all"
+						style={{ width: `${(tasksCompleted / tasksTotal) * 100}%` }}
+					/>
+				</div>
+			)}
+
 			<div className="flex items-center justify-between mt-2 pt-3 border-t border-outline-variant/50">
 				<div className="flex -space-x-2">
 					{task.assignees?.map((assignee) => (

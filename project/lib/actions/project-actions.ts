@@ -11,7 +11,12 @@ import {
 	bulkDeleteProjectsInDB,
 	createProjectInDB,
 	deleteProjectInDB,
+	getProjectMembersDetailedDAL,
 	inviteUserToProjectInDB,
+	type ProjectMemberDetailedOutputDTO,
+	removeMemberFromProjectDAL,
+	updateMemberJobRoleInDB,
+	updateMemberRoleInDB,
 	updateProjectInDB,
 } from "@/lib/dal/projects";
 import type { ProjectOutputDTO } from "@/lib/dtos/project-dto";
@@ -266,17 +271,19 @@ export async function bulkCompleteProjectsAction(
 export async function inviteUserToProjectAction(
 	projectId: string,
 	email: string,
+	jobRole?: string,
+	accessLevel?: "co-owner" | "member" | "guest",
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		const hasPermission = await verifyProjectPermissionDAL(
 			projectId,
-			"edit_project",
+			"manage_members",
 		);
 		if (!hasPermission) {
 			return { success: false, error: "Unauthorized" };
 		}
 
-		await inviteUserToProjectInDB(projectId, email);
+		await inviteUserToProjectInDB(projectId, email, jobRole, accessLevel);
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true };
 	} catch (error) {
@@ -284,6 +291,98 @@ export async function inviteUserToProjectAction(
 		if (error instanceof Error && error.message === "User not found") {
 			return { success: false, error: "User not found" };
 		}
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function getProjectMembersDetailedAction(
+	projectId: string,
+): Promise<{
+	success: boolean;
+	data?: ProjectMemberDetailedOutputDTO[];
+	error?: string;
+}> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"view_project",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		const members = await getProjectMembersDetailedDAL(projectId);
+		return { success: true, data: members };
+	} catch (error) {
+		console.error("getProjectMembersDetailedAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function updateMemberRoleAction(
+	projectId: string,
+	userId: string,
+	accessLevel: "co-owner" | "member" | "guest",
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"manage_members",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		await updateMemberRoleInDB(projectId, userId, accessLevel);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true };
+	} catch (error) {
+		console.error("updateMemberRoleAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function updateMemberJobRoleAction(
+	projectId: string,
+	userId: string,
+	jobRole: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"manage_members",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		await updateMemberJobRoleInDB(projectId, userId, jobRole);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true };
+	} catch (error) {
+		console.error("updateMemberJobRoleAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function removeMemberAction(
+	projectId: string,
+	userId: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"manage_members",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		await removeMemberFromProjectDAL(projectId, userId);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true };
+	} catch (error) {
+		console.error("removeMemberAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };
 	}
 }

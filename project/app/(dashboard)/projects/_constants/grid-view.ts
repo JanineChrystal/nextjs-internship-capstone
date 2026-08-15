@@ -7,12 +7,15 @@ import type { ColumnDef } from "@/types/grid-table";
 export const GRID_COLUMN_CLASSES = {
 	checkbox: "w-10 shrink-0",
 	taskName: "flex-1 min-w-[200px]",
-	assignee: "w-40 shrink-0 flex justify-center",
-	start: "w-24 shrink-0 flex justify-center",
+	// Assignee/priority/category are secondary on small screens - hide them
+	// so the grid degrades to a leaner table instead of forcing a wide
+	// horizontal scroll for every viewport.
+	assignee: "hidden md:flex w-40 shrink-0 justify-center",
+	start: "hidden sm:flex w-24 shrink-0 justify-center",
 	due: "w-24 shrink-0 flex justify-center",
 	status: "w-36 shrink-0",
-	priority: "w-28 shrink-0",
-	category: "w-28 shrink-0",
+	priority: "hidden md:block w-28 shrink-0",
+	category: "hidden lg:block w-28 shrink-0",
 };
 
 export const GRID_COLUMNS: ColumnDef[] = [

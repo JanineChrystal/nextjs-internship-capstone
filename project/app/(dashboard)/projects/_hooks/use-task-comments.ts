@@ -7,6 +7,8 @@ import {
 } from "@/lib/actions/comment-actions";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
 
+const PAGE_SIZE = 20;
+
 export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 	const params = useParams();
 	const projectId = params?.id as string;
@@ -15,6 +17,12 @@ export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 	const [comments, setComments] = React.useState<CommentOutputDTO[]>([]);
 	const [newComment, setNewComment] = React.useState("");
 	const [isLoading, setIsLoading] = React.useState(false);
+	const [isLoadingMore, setIsLoadingMore] = React.useState(false);
+	const [hasMore, setHasMore] = React.useState(false);
+	const [replyingTo, setReplyingTo] = React.useState<{
+		id: string;
+		authorName: string;
+	} | null>(null);
 
 	// Handlers
 	const handleSubmitComment = async () => {
@@ -22,33 +30,81 @@ export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 		if (!body || !taskId || !projectId) return;
 
 		setNewComment("");
-		const result = await createCommentAction(taskId, projectId, body);
+		const parentId = replyingTo?.id;
+		setReplyingTo(null);
+
+		const result = await createCommentAction(taskId, projectId, body, parentId);
 		if (result.success && result.data) {
 			setComments((prev) => [...prev, result.data as CommentOutputDTO]);
 		}
 	};
 
+	const handleReply = (comment: CommentOutputDTO) => {
+		setReplyingTo({ id: comment.id, authorName: comment.authorName });
+	};
+
+	const cancelReply = () => setReplyingTo(null);
+
 	const handleDeleteComment = async (commentId: string) => {
 		if (!projectId) return;
 		const previousComments = comments;
 
-		setComments((prev) => prev.filter((c) => c.id !== commentId));
+		// Tombstone locally too, rather than removing, so any replies stay
+		// attached to a visible (if redacted) parent.
+		setComments((prev) =>
+			prev.map((c) =>
+				c.id === commentId ? { ...c, isDeleted: true, body: "" } : c,
+			),
+		);
 		const result = await deleteCommentAction(commentId, projectId);
 		if (!result.success) {
 			setComments(previousComments);
 		}
 	};
 
+	const loadMore = async () => {
+		if (!taskId || !projectId || isLoadingMore) return;
+		setIsLoadingMore(true);
+		const result = await getCommentsAction(
+			taskId,
+			projectId,
+			PAGE_SIZE,
+			comments.filter((c) => !c.parentId).length,
+		);
+		if (result.success && result.data) {
+			setComments((prev) => {
+				const existingIds = new Set(prev.map((c) => c.id));
+				const merged = [
+					...(result.data as CommentOutputDTO[]).filter(
+						(c) => !existingIds.has(c.id),
+					),
+					...prev,
+				];
+				return merged.sort(
+					(a, b) =>
+						new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+				);
+			});
+			setHasMore(Boolean(result.hasMore));
+		}
+		setIsLoadingMore(false);
+	};
+
 	// Effects
 	React.useEffect(() => {
 		if (!isOpen || !taskId || !projectId) {
 			setComments([]);
+			setHasMore(false);
+			setReplyingTo(null);
 			return;
 		}
 
 		setIsLoading(true);
-		getCommentsAction(taskId, projectId).then((result) => {
-			if (result.success && result.data) setComments(result.data);
+		getCommentsAction(taskId, projectId, PAGE_SIZE, 0).then((result) => {
+			if (result.success && result.data) {
+				setComments(result.data);
+				setHasMore(Boolean(result.hasMore));
+			}
 			setIsLoading(false);
 		});
 	}, [isOpen, taskId, projectId]);
@@ -56,9 +112,15 @@ export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 	return {
 		comments,
 		isLoading,
+		isLoadingMore,
+		hasMore,
+		loadMore,
 		newComment,
 		setNewComment,
 		handleSubmitComment,
 		handleDeleteComment,
+		replyingTo,
+		handleReply,
+		cancelReply,
 	};
 }

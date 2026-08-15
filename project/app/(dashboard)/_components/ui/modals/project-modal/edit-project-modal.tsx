@@ -1,13 +1,16 @@
-import { Plus } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/buttons/button";
+import { CreatableCombobox } from "@/components/ui/combobox/creatable-combobox";
+import { ManageCategoriesModal } from "@/components/ui/modals/manage-categories-modal";
 import type {
 	CreateProjectFormValues,
 	Project,
 } from "@/lib/validations/project-schema";
+import { useCategoryStore } from "@/stores/use-category-store";
 import { projectFormFields } from "../../../../projects/_constants/create-project";
-import { mockProjectMembers } from "../../../../projects/_constants/mock-data";
 import { useEditProject } from "../../../../projects/_hooks/use-edit-project";
+import { ProjectTeamSection } from "./project-team-section";
 
 export function EditProjectModal({
 	onClose,
@@ -17,6 +20,13 @@ export function EditProjectModal({
 	initialData: Project;
 }) {
 	const { form, onSubmit } = useEditProject(initialData.id, initialData);
+	const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+
+	const { categories, fetchCategories } = useCategoryStore();
+
+	useEffect(() => {
+		fetchCategories("default", "project");
+	}, [fetchCategories]);
 
 	const handleSubmit = form.handleSubmit((_data) => {
 		onSubmit(undefined);
@@ -64,6 +74,31 @@ export function EditProjectModal({
 									</option>
 								))}
 							</select>
+						) : field.type === "creatable-combobox" ? (
+							<CreatableCombobox
+								options={categories.map((c) => ({
+									value: c.name,
+									label: c.name,
+									color: c.color,
+								}))}
+								value={
+									form.watch(
+										field.id as keyof CreateProjectFormValues,
+									) as string
+								}
+								onChange={(val) =>
+									form.setValue(
+										field.id as keyof CreateProjectFormValues,
+										val,
+										{
+											shouldValidate: true,
+											shouldDirty: true,
+										},
+									)
+								}
+								placeholder={field.placeholder}
+								onManageClick={() => setIsManageCategoriesOpen(true)}
+							/>
 						) : (
 							<input
 								id={field.id}
@@ -89,29 +124,7 @@ export function EditProjectModal({
 			</div>
 
 			{/* Team Members */}
-			<div className="space-y-2">
-				<span className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider">
-					Team Members
-				</span>
-				<div className="flex items-center gap-3 flex-wrap">
-					{mockProjectMembers.map((member) => (
-						<div
-							key={member.id}
-							className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold border border-border"
-							title={member.name}
-						>
-							{member.initials}
-						</div>
-					))}
-					<button
-						type="button"
-						aria-label="Add team member"
-						className="w-10 h-10 rounded-full border border-dashed border-input flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all"
-					>
-						<Plus className="w-5 h-5" />
-					</button>
-				</div>
-			</div>
+			<ProjectTeamSection projectId={initialData.id} />
 
 			{/* Description */}
 			<div className="space-y-2">
@@ -156,6 +169,13 @@ export function EditProjectModal({
 					</Button>
 				</div>
 			</div>
+
+			<ManageCategoriesModal
+				isOpen={isManageCategoriesOpen}
+				onClose={() => setIsManageCategoriesOpen(false)}
+				type="project"
+				workspaceId="default"
+			/>
 		</form>
 	);
 }

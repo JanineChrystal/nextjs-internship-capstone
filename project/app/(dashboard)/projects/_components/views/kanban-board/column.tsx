@@ -7,6 +7,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { MoreHorizontal, Plus } from "lucide-react";
+import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { Button } from "@/components/ui/buttons/button";
 import {
 	DropdownMenu,
@@ -53,6 +54,9 @@ export function Column({ id, title, dotColor, tasks }: ColumnProps) {
 		handleRenameSubmit,
 		handleKeyDown,
 		deleteColumn,
+		deleteWarning,
+		confirmDeleteBoard,
+		closeDeleteWarning,
 		openTaskModal,
 	} = useKanbanColumn(id, title);
 
@@ -62,7 +66,7 @@ export function Column({ id, title, dotColor, tasks }: ColumnProps) {
 				setIsEditingTitle(true);
 				break;
 			case "delete":
-				deleteColumn(id);
+				deleteColumn();
 				break;
 		}
 	};
@@ -144,12 +148,27 @@ export function Column({ id, title, dotColor, tasks }: ColumnProps) {
 			</div>
 
 			<Button
+				type="button"
 				variant="outline"
-				onClick={() => openTaskModal()}
+				onClick={() => openTaskModal(undefined, { board: title })}
 				className="w-full py-2 flex items-center justify-center gap-2 text-foreground hover:bg-surface-variant rounded-lg transition-colors font-label-sm text-label-sm mt-2 border border-dashed border-outline-variant bg-transparent"
 			>
 				<Plus className="w-4.5 h-4.5" /> Add Tasks
 			</Button>
+
+			<WarningModal
+				isOpen={deleteWarning.isOpen}
+				onClose={closeDeleteWarning}
+				onConfirm={confirmDeleteBoard}
+				variant="danger"
+				title={`Delete "${deleteWarning.boardTitle}" board?`}
+				message={`This board still has ${deleteWarning.taskCount} task${
+					deleteWarning.taskCount === 1 ? "" : "s"
+				}. Deleting it will move ${
+					deleteWarning.taskCount === 1 ? "that task" : "those tasks"
+				} to trash.`}
+				confirmText="Delete"
+			/>
 		</div>
 	);
 }

@@ -1,6 +1,5 @@
 import { CheckCircle, Copy, Trash2 } from "lucide-react";
 import {
-	DEFAULT_TASK_CATEGORIES,
 	DEFAULT_TASK_STATUSES,
 	TASK_PRIORITIES,
 } from "@/lib/validations/task-schema";
@@ -48,9 +47,11 @@ export const TASK_MODAL_ACTIONS: TaskModalAction[] = [
 	},
 ];
 
+// Category is rendered separately via CreatableCombobox (user-manageable,
+// like project category) rather than this static dropdown config. Board
+// drives status automatically, so there is no independent "status" entry.
 export const TASK_PROPERTIES_CONFIG: TaskPropertyConfig[] = [
-	{ id: "category", label: "Category", options: DEFAULT_TASK_CATEGORIES },
-	{ id: "status", label: "Status", options: DEFAULT_TASK_STATUSES },
+	{ id: "board", label: "Board", options: DEFAULT_TASK_STATUSES },
 	{ id: "priority", label: "Priority", options: TASK_PRIORITIES },
 ];
 

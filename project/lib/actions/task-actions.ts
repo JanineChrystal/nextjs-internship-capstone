@@ -9,9 +9,11 @@ import {
 	bulkDeleteTasksInDB,
 	createTaskInDB,
 	deleteTaskInDB,
+	getAllUserTasksDAL,
 	getTasksByProjectId,
 	moveTaskBoardDAL,
 	reorderTasksInDB,
+	type TaskWithBoardOutputDTO,
 	updateTaskInDB,
 } from "@/lib/dal/tasks";
 import type { TaskOutputDTO } from "@/lib/dtos/task-dto";
@@ -34,6 +36,23 @@ export async function getTasksAction(
 		return { success: true, data: tasks };
 	} catch (error) {
 		console.error("getTasksAction error:", error);
+		return { success: false, error: "Failed to fetch tasks" };
+	}
+}
+
+export async function getAllUserTasksAction(): Promise<{
+	success: boolean;
+	data?: TaskWithBoardOutputDTO[];
+	error?: string;
+}> {
+	try {
+		const user = await getCurrentUser();
+		if (!user) return { success: false, error: "Unauthorized" };
+
+		const tasks = await getAllUserTasksDAL();
+		return { success: true, data: tasks };
+	} catch (error) {
+		console.error("getAllUserTasksAction error:", error);
 		return { success: false, error: "Failed to fetch tasks" };
 	}
 }

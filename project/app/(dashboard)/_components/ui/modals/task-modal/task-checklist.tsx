@@ -10,7 +10,7 @@ interface TaskChecklistProps {
 		id: string,
 		updates: Partial<{ title: string; completed: boolean }>,
 	) => void;
-	commitChecklistItem: (id: string) => void;
+	commitChecklistItem: (id: string, title: string) => void;
 	toggleChecklistItem: (id: string, completed: boolean) => void;
 	removeChecklistItem: (id: string) => void;
 }
@@ -57,7 +57,7 @@ export function TaskChecklist({
 								onChange={(e) =>
 									updateChecklistItem(item.id, { title: e.target.value })
 								}
-								onBlur={() => commitChecklistItem(item.id)}
+								onBlur={() => commitChecklistItem(item.id, item.title)}
 								className={`flex-1 border-none bg-transparent shadow-none px-0 focus-visible:ring-0 ${
 									item.completed ? "line-through text-secondary" : ""
 								}`}

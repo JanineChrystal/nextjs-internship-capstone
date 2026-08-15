@@ -86,6 +86,18 @@ export function BaseTaskCard({
 				{task.title}
 			</p>
 
+			{/* Checklist Progress */}
+			{task.tasksTotal ? (
+				<div className="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+					<div
+						className="h-full bg-primary rounded-full transition-all"
+						style={{
+							width: `${((task.tasksCompleted ?? 0) / task.tasksTotal) * 100}%`,
+						}}
+					/>
+				</div>
+			) : null}
+
 			{/* Footer Metadata */}
 			{(showAvatar ||
 				task.comments ||

@@ -48,8 +48,13 @@ interface GenericCalendarProps {
 	defaultView?: View;
 	onEventSingleClick?: (event: CalendarEvent) => void;
 	onEventDoubleClick?: (event: CalendarEvent) => void;
+	// Fired only by the dedicated "+" icon - triggers creation.
 	onDateClick?: (date: Date) => void;
+	// Fired when the date cell's background (not the "+" icon, not an event)
+	// is clicked - used to filter/highlight, not to create anything.
+	onDateCellClick?: (date: Date) => void;
 	selectedEventId?: string | null;
+	selectedDate?: Date | null;
 	className?: string;
 }
 
@@ -117,32 +122,35 @@ function CustomEvent({ event }: { event: CalendarEvent }) {
 						<span className="text-foreground truncate">{event.title}</span>
 					</div>
 				</TooltipTrigger>
-				<TooltipContent className="flex flex-col gap-1 p-3 min-w-50" side="top">
+				<TooltipContent
+					className="flex flex-col gap-1 p-3 min-w-50 bg-surface text-on-surface border border-outline-variant shadow-md [&_svg]:fill-surface"
+					side="top"
+				>
 					<div className="font-semibold text-sm mb-1">{event.title}</div>
-					<div className="flex items-center justify-between text-xs text-muted-foreground">
+					<div className="flex items-center justify-between text-xs text-secondary">
 						<span>Start:</span>
-						<span className="text-foreground">
+						<span className="text-on-surface">
 							{format(event.start, "MMM d, yyyy")}
 						</span>
 					</div>
-					<div className="flex items-center justify-between text-xs text-muted-foreground">
+					<div className="flex items-center justify-between text-xs text-secondary">
 						<span>Due:</span>
-						<span className="text-foreground">
+						<span className="text-on-surface">
 							{format(event.end, "MMM d, yyyy")}
 						</span>
 					</div>
 					{event.extendedProps?.priority && (
-						<div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+						<div className="flex items-center justify-between text-xs text-secondary mt-1">
 							<span>Priority:</span>
-							<span className="text-foreground capitalize">
+							<span className="text-on-surface capitalize">
 								{event.extendedProps.priority}
 							</span>
 						</div>
 					)}
 					{event.extendedProps?.type && (
-						<div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+						<div className="flex items-center justify-between text-xs text-secondary mt-1">
 							<span>Type:</span>
-							<span className="text-foreground capitalize">
+							<span className="text-on-surface capitalize">
 								{event.extendedProps.type}
 							</span>
 						</div>
@@ -159,7 +167,9 @@ export function BigCalendar({
 	onEventSingleClick,
 	onEventDoubleClick,
 	onDateClick,
+	onDateCellClick,
 	selectedEventId,
+	selectedDate,
 	className,
 }: GenericCalendarProps) {
 	const [view, setView] = useState<View>(defaultView);
@@ -172,7 +182,10 @@ export function BigCalendar({
 				<div className="flex items-center justify-end w-full group p-1">
 					<button
 						type="button"
-						onClick={() => onDateClick?.(headerDate)}
+						onClick={(e) => {
+							e.stopPropagation();
+							onDateClick?.(headerDate);
+						}}
 						className="mr-auto opacity-0 group-hover:opacity-100 p-0.5 hover:bg-surface-variant rounded transition-all text-secondary hover:text-primary"
 						title="Create on this date"
 					>
@@ -221,6 +234,16 @@ export function BigCalendar({
 		[selectedEventId],
 	);
 
+	const dayPropGetter = useCallback(
+		(day: Date) => {
+			if (selectedDate && day.toDateString() === selectedDate.toDateString()) {
+				return { className: "rbc-day-selected" };
+			}
+			return {};
+		},
+		[selectedDate],
+	);
+
 	return (
 		<div className={`h-full w-full ${className}`}>
 			<Calendar
@@ -236,9 +259,10 @@ export function BigCalendar({
 				onSelectEvent={onEventSingleClick}
 				onDoubleClickEvent={onEventDoubleClick}
 				selectable={true}
-				onSelectSlot={(slotInfo) => onDateClick?.(slotInfo.start)}
+				onSelectSlot={(slotInfo) => onDateCellClick?.(slotInfo.start)}
 				components={components}
 				eventPropGetter={eventPropGetter}
+				dayPropGetter={dayPropGetter}
 				formats={{
 					dayFormat: "dd EEE",
 				}}

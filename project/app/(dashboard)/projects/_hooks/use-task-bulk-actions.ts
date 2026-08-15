@@ -3,6 +3,7 @@ import {
 	bulkCompleteTasksAction,
 	bulkDeleteTasksAction,
 } from "@/lib/actions/task-actions";
+import { hasIncompleteChecklist } from "@/lib/utils/task";
 import { useTaskStore } from "@/stores/use-task-store";
 
 interface UseTaskBulkActionsParams {
@@ -31,12 +32,7 @@ export function useTaskBulkActions({
 
 	// Handlers
 	const checkHasIncompleteChecklist = (ids: string[]) =>
-		tasks.some(
-			(t) =>
-				ids.includes(t.id) &&
-				(t.checklist?.length ?? 0) > 0 &&
-				t.checklist?.some((item) => !item.completed),
-		);
+		tasks.some((t) => ids.includes(t.id) && hasIncompleteChecklist(t));
 
 	const confirmDelete = async () => {
 		if (selectedTaskIds.size === 0) return;

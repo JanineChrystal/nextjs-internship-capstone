@@ -14,16 +14,25 @@ export function useCalendarView(projectId: string) {
 	}, [tasks, projectId]);
 
 	const calendarEvents: CalendarEvent[] = useMemo(() => {
-		return projectTasks.map((task) => ({
-			id: task.id,
-			title: task.name,
+		return projectTasks.map((task) => {
 			// biome-ignore lint/style/noNonNullAssertion: Filtered above
-			start: new Date(task.dueDate!),
-			// biome-ignore lint/style/noNonNullAssertion: Filtered above
-			end: new Date(task.dueDate!),
-			allDay: true,
-			extendedProps: { type: "task", priority: task.priority },
-		}));
+			const dueDate = new Date(task.dueDate!);
+			const startDate =
+				task.startDate && task.startDate !== "--"
+					? new Date(task.startDate)
+					: dueDate;
+			const hasExplicitTime =
+				dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0;
+
+			return {
+				id: task.id,
+				title: task.name,
+				start: startDate,
+				end: dueDate,
+				allDay: !hasExplicitTime,
+				extendedProps: { type: "task", priority: task.priority },
+			};
+		});
 	}, [projectTasks]);
 
 	const sidePanelItems: CalendarDeadlineItem[] = useMemo(() => {

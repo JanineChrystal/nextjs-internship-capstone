@@ -6,6 +6,7 @@ import {
 	updateTaskAction,
 } from "@/lib/actions/task-actions";
 import { setTaskAssigneesAction } from "@/lib/actions/task-assignee-actions";
+import { hasIncompleteChecklist } from "@/lib/utils/task";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask, TaskModalActionId } from "@/types/task";
@@ -26,6 +27,7 @@ export function useTaskModal() {
 		tasks,
 		isTaskModalOpen,
 		selectedTaskId,
+		createBoardTitle,
 		closeTaskModal,
 		createTask,
 		updateTask,
@@ -39,12 +41,23 @@ export function useTaskModal() {
 	const [taskData, setTaskData] =
 		React.useState<Partial<GridTask>>(DEFAULT_TASK_DATA);
 	const [isCommentsOpen, setIsCommentsOpen] = React.useState(true);
+	const [deleteWarning, setDeleteWarning] = React.useState<{
+		isOpen: boolean;
+		taskName: string;
+		onConfirm: (() => void) | null;
+	}>({ isOpen: false, taskName: "", onConfirm: null });
 
 	const isInitializedRef = React.useRef(false);
 
 	// Derived State
 	const isEditMode = !!selectedTaskId;
 	const existingTask = tasks.find((t) => t.id === selectedTaskId);
+	const isOverdue = Boolean(
+		taskData.dueDate &&
+			taskData.dueDate !== "--" &&
+			!taskData.isCompleted &&
+			new Date(taskData.dueDate) < new Date(),
+	);
 
 	const resolveBoardId = (boardTitle: string | undefined): string | undefined =>
 		columns.find((c) => c.title === boardTitle)?.id || columns[0]?.id;
@@ -194,7 +207,7 @@ export function useTaskModal() {
 		await duplicateOnServer(sourceTask, newTaskId);
 	};
 
-	const handleDelete = async () => {
+	const executeDeleteSelf = async () => {
 		if (!selectedTaskId || !projectId) return;
 		const previousTasks = useTaskStore.getState().tasks;
 
@@ -210,9 +223,31 @@ export function useTaskModal() {
 		}
 	};
 
+	const handleDelete = () => {
+		if (!selectedTaskId) return;
+		const task = tasks.find((t) => t.id === selectedTaskId);
+		if (task && hasIncompleteChecklist(task)) {
+			setDeleteWarning({
+				isOpen: true,
+				taskName: task.name,
+				onConfirm: executeDeleteSelf,
+			});
+		} else {
+			executeDeleteSelf();
+		}
+	};
+
 	const toggleComments = () => {
 		setIsCommentsOpen((prev) => !prev);
 	};
+
+	const confirmDeleteWarning = () => {
+		deleteWarning.onConfirm?.();
+		setDeleteWarning({ isOpen: false, taskName: "", onConfirm: null });
+	};
+
+	const closeDeleteWarning = () =>
+		setDeleteWarning({ isOpen: false, taskName: "", onConfirm: null });
 
 	const toggleOtherTaskCompletion = async (targetTaskId: string) => {
 		const targetTask = tasks.find((t) => t.id === targetTaskId);
@@ -237,7 +272,7 @@ export function useTaskModal() {
 		}
 	};
 
-	const deleteOtherTask = async (targetTaskId: string) => {
+	const executeDeleteOther = async (targetTaskId: string) => {
 		const previousTasks = useTaskStore.getState().tasks;
 		deleteTask(targetTaskId);
 		try {
@@ -246,6 +281,19 @@ export function useTaskModal() {
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
 			console.error("Failed to delete task:", error);
+		}
+	};
+
+	const deleteOtherTask = (targetTaskId: string) => {
+		const task = tasks.find((t) => t.id === targetTaskId);
+		if (task && hasIncompleteChecklist(task)) {
+			setDeleteWarning({
+				isOpen: true,
+				taskName: task.name,
+				onConfirm: () => executeDeleteOther(targetTaskId),
+			});
+		} else {
+			executeDeleteOther(targetTaskId);
 		}
 	};
 
@@ -278,7 +326,7 @@ export function useTaskModal() {
 				break;
 			case "DELETE":
 				if (isOtherTask) {
-					await deleteOtherTask(targetId);
+					deleteOtherTask(targetId);
 				} else {
 					handleDelete();
 				}
@@ -293,9 +341,15 @@ export function useTaskModal() {
 			if (isEditMode && existingTask) {
 				setTaskData(existingTask);
 			} else {
-				// Reset for create mode
+				// Reset for create mode. Prefer the board the modal was opened
+				// from (e.g. a column's "Add Tasks" button), falling back to
+				// the project's first real board rather than a hardcoded
+				// default that may not exist for this project.
+				const initialBoard = createBoardTitle || columns[0]?.title || "";
 				setTaskData({
 					...DEFAULT_TASK_DATA,
+					board: initialBoard,
+					status: initialBoard,
 					assignees: [],
 					checklist: [],
 					attachments: [],
@@ -307,7 +361,7 @@ export function useTaskModal() {
 		if (!isTaskModalOpen) {
 			isInitializedRef.current = false;
 		}
-	}, [isTaskModalOpen, isEditMode, existingTask]);
+	}, [isTaskModalOpen, isEditMode, existingTask, createBoardTitle, columns]);
 
 	return {
 		projectId,
@@ -315,6 +369,7 @@ export function useTaskModal() {
 		isTaskModalOpen,
 		closeTaskModal,
 		isEditMode,
+		isOverdue,
 		taskData,
 		setTaskData,
 		handleChange,
@@ -324,6 +379,9 @@ export function useTaskModal() {
 		...attachments,
 		handleDuplicate,
 		handleDelete,
+		deleteWarning,
+		confirmDeleteWarning,
+		closeDeleteWarning,
 		isCommentsOpen,
 		toggleComments,
 		handleAction,

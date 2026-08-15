@@ -270,6 +270,8 @@ export async function bulkCompleteProjectsInDB(
 export async function inviteUserToProjectInDB(
 	projectId: string,
 	email: string,
+	jobRole = "Contributor",
+	accessLevel: "co-owner" | "member" | "guest" = "member",
 ): Promise<void> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
@@ -304,10 +306,13 @@ export async function inviteUserToProjectInDB(
 				.values({
 					projectId: projectId,
 					userId: targetUser.id,
-					position: "Contributor",
-					accessLevel: "member",
+					position: jobRole,
+					accessLevel,
 				})
-				.onConflictDoNothing();
+				.onConflictDoUpdate({
+					target: [projectMembers.projectId, projectMembers.userId],
+					set: { deletedAt: null, position: jobRole, accessLevel },
+				});
 		});
 	} catch (error) {
 		if (error instanceof Error && error.message === "User not found")
@@ -386,6 +391,153 @@ export async function getProjectMembersDAL(
 		throw new Error("Failed to fetch project members from database", {
 			cause: error,
 		});
+	}
+}
+
+export interface ProjectMemberDetailedOutputDTO {
+	userId: string;
+	name: string;
+	email: string;
+	avatarUrl: string;
+	jobRole: string;
+	roleAccess: "owner" | "co-owner" | "member" | "guest";
+	status: "joined";
+	joinedAt: string;
+}
+
+export async function getProjectMembersDetailedDAL(
+	projectId: string,
+): Promise<ProjectMemberDetailedOutputDTO[]> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		const [project] = await db
+			.select()
+			.from(projects)
+			.where(and(eq(projects.id, projectId), isNull(projects.deletedAt)));
+
+		if (!project) return [];
+
+		const [owner] = await db
+			.select()
+			.from(users)
+			.where(eq(users.id, project.ownerId));
+
+		const memberRows = await db
+			.select({ member: projectMembers, user: users })
+			.from(projectMembers)
+			.innerJoin(users, eq(projectMembers.userId, users.id))
+			.where(
+				and(
+					eq(projectMembers.projectId, projectId),
+					isNull(projectMembers.deletedAt),
+				),
+			);
+
+		const members: ProjectMemberDetailedOutputDTO[] = [];
+		if (owner) {
+			members.push({
+				userId: owner.id,
+				name: toMemberName(owner),
+				email: owner.email,
+				avatarUrl: owner.imageUrl ?? "",
+				jobRole: "Project Owner",
+				roleAccess: "owner",
+				status: "joined",
+				joinedAt: project.createdAt.toISOString(),
+			});
+		}
+		for (const row of memberRows) {
+			if (members.some((m) => m.userId === row.user.id)) continue;
+			members.push({
+				userId: row.user.id,
+				name: toMemberName(row.user),
+				email: row.user.email,
+				avatarUrl: row.user.imageUrl ?? "",
+				jobRole: row.member.position,
+				roleAccess: row.member.accessLevel,
+				status: "joined",
+				joinedAt: row.member.createdAt.toISOString(),
+			});
+		}
+
+		return members;
+	} catch (error) {
+		throw new Error("Failed to fetch project members from database", {
+			cause: error,
+		});
+	}
+}
+
+export async function updateMemberRoleInDB(
+	projectId: string,
+	userId: string,
+	accessLevel: "co-owner" | "member" | "guest",
+): Promise<void> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		await db
+			.update(projectMembers)
+			.set({ accessLevel, updatedAt: new Date() })
+			.where(
+				and(
+					eq(projectMembers.projectId, projectId),
+					eq(projectMembers.userId, userId),
+					isNull(projectMembers.deletedAt),
+				),
+			);
+	} catch (error) {
+		throw new Error("Failed to update member role", { cause: error });
+	}
+}
+
+export async function updateMemberJobRoleInDB(
+	projectId: string,
+	userId: string,
+	jobRole: string,
+): Promise<void> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		await db
+			.update(projectMembers)
+			.set({ position: jobRole, updatedAt: new Date() })
+			.where(
+				and(
+					eq(projectMembers.projectId, projectId),
+					eq(projectMembers.userId, userId),
+					isNull(projectMembers.deletedAt),
+				),
+			);
+	} catch (error) {
+		throw new Error("Failed to update member job role", { cause: error });
+	}
+}
+
+export async function removeMemberFromProjectDAL(
+	projectId: string,
+	userId: string,
+): Promise<void> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		await db
+			.update(projectMembers)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(
+				and(
+					eq(projectMembers.projectId, projectId),
+					eq(projectMembers.userId, userId),
+					isNull(projectMembers.deletedAt),
+				),
+			);
+	} catch (error) {
+		throw new Error("Failed to remove member from project", { cause: error });
 	}
 }
 

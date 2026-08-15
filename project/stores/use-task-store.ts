@@ -7,7 +7,8 @@ interface TaskState {
 	isTaskModalOpen: boolean;
 	selectedTaskId: string | null;
 	selectedTaskIds: Set<string>;
-	openTaskModal: (taskId?: string) => void;
+	createBoardTitle: string | null;
+	openTaskModal: (taskId?: string, options?: { board?: string }) => void;
 	closeTaskModal: () => void;
 	createTask: (task: GridTask) => void;
 	updateTask: (id: string, updates: Partial<GridTask>) => void;
@@ -28,10 +29,20 @@ export const useTaskStore = create<TaskState>((set) => ({
 	isTaskModalOpen: false,
 	selectedTaskId: null,
 	selectedTaskIds: new Set<string>(),
+	createBoardTitle: null,
 
-	openTaskModal: (taskId) =>
-		set({ isTaskModalOpen: true, selectedTaskId: taskId || null }),
-	closeTaskModal: () => set({ isTaskModalOpen: false, selectedTaskId: null }),
+	openTaskModal: (taskId, options) =>
+		set({
+			isTaskModalOpen: true,
+			selectedTaskId: taskId || null,
+			createBoardTitle: options?.board || null,
+		}),
+	closeTaskModal: () =>
+		set({
+			isTaskModalOpen: false,
+			selectedTaskId: null,
+			createBoardTitle: null,
+		}),
 
 	createTask: (task) => set((state) => ({ tasks: [task, ...state.tasks] })),
 

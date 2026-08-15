@@ -1,19 +1,29 @@
 import "server-only";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { comments, tasks, users } from "@/lib/db/schema";
 import { type CommentOutputDTO, toCommentDTO } from "@/lib/dtos/comment-dto";
 
+export interface CommentsPageResult {
+	comments: CommentOutputDTO[];
+	hasMore: boolean;
+}
+
+// Paginates by top-level (root) comment thread, always including every reply
+// to whatever root comments are on the page - keeps replies from ever being
+// orphaned from their parent across a page boundary.
 export async function getCommentsByTaskId(
 	taskId: string,
 	projectId: string,
-): Promise<CommentOutputDTO[]> {
+	limit = 20,
+	offset = 0,
+): Promise<CommentsPageResult> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
 	try {
-		const results = await db
+		const rootRows = await db
 			.select({ comment: comments, author: users })
 			.from(comments)
 			.innerJoin(tasks, eq(comments.taskId, tasks.id))
@@ -22,13 +32,35 @@ export async function getCommentsByTaskId(
 				and(
 					eq(comments.taskId, taskId),
 					eq(tasks.projectId, projectId),
-					isNull(comments.deletedAt),
+					isNull(comments.parentId),
 					isNull(tasks.deletedAt),
 				),
 			)
-			.orderBy(comments.createdAt);
+			.orderBy(desc(comments.createdAt))
+			.limit(limit + 1)
+			.offset(offset);
 
-		return results.map((row) => toCommentDTO(row.comment, row.author));
+		const hasMore = rootRows.length > limit;
+		const pageRootRows = rootRows.slice(0, limit);
+		const rootIds = pageRootRows.map((row) => row.comment.id);
+
+		const replyRows =
+			rootIds.length > 0
+				? await db
+						.select({ comment: comments, author: users })
+						.from(comments)
+						.innerJoin(users, eq(comments.authorId, users.id))
+						.where(inArray(comments.parentId, rootIds))
+				: [];
+
+		const allRows = [...pageRootRows, ...replyRows].sort(
+			(a, b) => a.comment.createdAt.getTime() - b.comment.createdAt.getTime(),
+		);
+
+		return {
+			comments: allRows.map((row) => toCommentDTO(row.comment, row.author)),
+			hasMore,
+		};
 	} catch (error) {
 		throw new Error("Failed to fetch comments from database", {
 			cause: error,

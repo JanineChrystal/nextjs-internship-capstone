@@ -1,4 +1,4 @@
-import type * as React from "react";
+import * as React from "react";
 import {
 	createChecklistItemAction,
 	deleteChecklistItemAction,
@@ -21,6 +21,18 @@ export function useTaskChecklist({
 	selectedTaskId,
 	projectId,
 }: UseTaskChecklistParams) {
+	// Tracks the in-flight "create" request for each optimistic temp id, so
+	// a fast type-then-blur can await the real server id instead of racing it
+	// (updating against a temp id that doesn't exist server-side yet).
+	const pendingCreates = React.useRef<Map<string, Promise<string | null>>>(
+		new Map(),
+	);
+
+	const resolveItemId = async (id: string): Promise<string | null> => {
+		const pending = pendingCreates.current.get(id);
+		return pending ? await pending : id;
+	};
+
 	const addChecklistItem = async () => {
 		const tempId = crypto.randomUUID();
 		const newItem = { id: tempId, title: "", completed: false };
@@ -30,20 +42,30 @@ export function useTaskChecklist({
 		}));
 
 		if (!isEditMode || !selectedTaskId || !projectId) return;
-		const result = await createChecklistItemAction(
-			selectedTaskId,
-			projectId,
-			"",
-		);
-		if (result.success && result.data) {
-			const realId = result.data.id;
-			setTaskData((prev) => ({
-				...prev,
-				checklist: (prev.checklist || []).map((item) =>
-					item.id === tempId ? { ...item, id: realId } : item,
-				),
-			}));
-		}
+
+		const creationPromise = (async () => {
+			const result = await createChecklistItemAction(
+				selectedTaskId,
+				projectId,
+				"",
+			);
+			if (result.success && result.data) {
+				const realId = result.data.id;
+				setTaskData((prev) => ({
+					...prev,
+					checklist: (prev.checklist || []).map((item) =>
+						item.id === tempId ? { ...item, id: realId } : item,
+					),
+				}));
+				return realId;
+			}
+			console.error("Failed to create checklist item:", result.error);
+			return null;
+		})();
+
+		pendingCreates.current.set(tempId, creationPromise);
+		await creationPromise;
+		pendingCreates.current.delete(tempId);
 	};
 
 	const updateChecklistItem = (
@@ -58,13 +80,13 @@ export function useTaskChecklist({
 		}));
 	};
 
-	const commitChecklistItem = async (id: string) => {
-		if (!isEditMode || !selectedTaskId || !projectId) return;
-		const item = (taskData.checklist || []).find((i) => i.id === id);
-		if (!item) return;
+	const commitChecklistItem = async (id: string, title: string) => {
+		if (!isEditMode || !projectId) return;
+		const realId = await resolveItemId(id);
+		if (!realId) return;
 
-		const result = await updateChecklistItemAction(id, projectId, {
-			title: item.title,
+		const result = await updateChecklistItemAction(realId, projectId, {
+			title,
 		});
 		if (!result.success) {
 			console.error("Failed to save checklist item:", result.error);
@@ -73,9 +95,12 @@ export function useTaskChecklist({
 
 	const toggleChecklistItem = async (id: string, completed: boolean) => {
 		updateChecklistItem(id, { completed });
-		if (!isEditMode || !selectedTaskId || !projectId) return;
+		if (!isEditMode || !projectId) return;
 
-		const result = await updateChecklistItemAction(id, projectId, {
+		const realId = await resolveItemId(id);
+		if (!realId) return;
+
+		const result = await updateChecklistItemAction(realId, projectId, {
 			isCompleted: completed,
 		});
 		if (!result.success) {
@@ -91,8 +116,11 @@ export function useTaskChecklist({
 			checklist: (prev.checklist || []).filter((item) => item.id !== id),
 		}));
 
-		if (!isEditMode || !selectedTaskId || !projectId) return;
-		const result = await deleteChecklistItemAction(id, projectId);
+		if (!isEditMode || !projectId) return;
+		const realId = await resolveItemId(id);
+		if (!realId) return;
+
+		const result = await deleteChecklistItemAction(realId, projectId);
 		if (!result.success) {
 			setTaskData((prev) => ({ ...prev, checklist: previousChecklist }));
 			console.error("Failed to delete checklist item:", result.error);

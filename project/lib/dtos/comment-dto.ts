@@ -8,6 +8,7 @@ export interface CommentOutputDTO {
 	authorAvatarUrl: string;
 	parentId: string | null;
 	body: string;
+	isDeleted: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -36,6 +37,8 @@ export function toCommentDTO(
 		imageUrl: string | null;
 	},
 ): CommentOutputDTO {
+	const isDeleted = comment.deletedAt !== null;
+
 	return {
 		id: comment.id,
 		taskId: comment.taskId,
@@ -43,7 +46,8 @@ export function toCommentDTO(
 		authorName: toAuthorName(author),
 		authorAvatarUrl: author.imageUrl ?? "",
 		parentId: comment.parentId,
-		body: sanitizeText(comment.body),
+		body: isDeleted ? "" : sanitizeText(comment.body),
+		isDeleted,
 		createdAt: comment.createdAt,
 		updatedAt: comment.updatedAt,
 	};
