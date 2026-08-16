@@ -271,6 +271,13 @@ export const tasks = pgTable("Tasks", {
 	// never lose it.
 	isCompleted: boolean("isCompleted").default(false).notNull(),
 	status: text("status").default("Not Started").notNull(),
+	// When the user last set `status` by hand. Compared against dueDate to
+	// decide whether an overdue task should still display as "Overdue" or
+	// whether the user has deliberately overridden it since it lapsed.
+	statusOverriddenAt: timestamp("statusOverriddenAt"),
+	// The column the task was auto-moved out of when it was completed, so
+	// un-completing can put it back where it came from.
+	previousBoardId: uuid("previousBoardId"),
 	priority: taskPriorityEnum("priority").notNull(),
 	startDate: timestamp("startDate"),
 	dueDate: timestamp("dueDate"),

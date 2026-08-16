@@ -138,12 +138,8 @@ export const useTaskStore = create<TaskState>((set) => ({
 						? {
 								...task,
 								isCompleted: true,
-								...(completionColumn
-									? {
-											board: completionColumn.title,
-											status: completionColumn.title,
-										}
-									: {}),
+								status: "Completed",
+								...(completionColumn ? { board: completionColumn.title } : {}),
 							}
 						: task,
 				),
@@ -186,12 +182,12 @@ export const useTaskStore = create<TaskState>((set) => ({
 			};
 		}),
 
+	// Only the board changes: status is its own field and must not be
+	// overwritten by a column name when a card is dragged.
 	moveTaskToColumn: (taskId, targetBoardTitle) =>
 		set((state) => ({
 			tasks: state.tasks.map((task) =>
-				task.id === taskId
-					? { ...task, board: targetBoardTitle, status: targetBoardTitle }
-					: task,
+				task.id === taskId ? { ...task, board: targetBoardTitle } : task,
 			),
 		})),
 

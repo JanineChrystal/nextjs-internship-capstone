@@ -15,26 +15,25 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { SELECTABLE_TASK_STATUSES } from "@/lib/utils/task-status";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useCategoryStore } from "@/stores/use-category-store";
-import type {
-	GridTask,
-	TaskBoard,
-	TaskPriority,
-	TaskStatus,
-} from "@/types/task";
+import type { GridTask, TaskBoard, TaskPriority } from "@/types/task";
 import {
 	DATE_PICKER_CONFIG,
 	TASK_PROPERTIES_CONFIG,
 } from "../../../../projects/_constants/task-modal";
 import { BoardBadge } from "../../badges/board-badge";
 import { PriorityBadge } from "../../badges/priority-badge";
+import { StatusBadge } from "../../badges/status-badge";
 
 interface TaskPropertiesGridProps {
 	isCommentsOpen: boolean;
 	taskData: Partial<GridTask>;
 	handleChange: (updates: Partial<GridTask>) => void;
 	scheduleError?: string | null;
+	displayStatus?: string;
+	onStatusChange?: (status: string) => void;
 }
 
 export function TaskPropertiesGrid({
@@ -42,6 +41,8 @@ export function TaskPropertiesGrid({
 	taskData,
 	handleChange,
 	scheduleError,
+	displayStatus,
+	onStatusChange,
 }: TaskPropertiesGridProps) {
 	const boardColumns = useBoardStore((state) => state.columns);
 	const { categories, fetchCategories, addCategory } = useCategoryStore();
@@ -166,6 +167,29 @@ export function TaskPropertiesGrid({
 				/>
 			</div>
 
+			{/* Status - independent of the board. Shows the derived value (which
+			    may be "Overdue"), but only real statuses are selectable. */}
+			<div className="space-y-1">
+				<span className="block text-xs font-medium text-secondary uppercase tracking-wider">
+					Status
+				</span>
+				<DropdownMenu>
+					<DropdownMenuTrigger className="w-full focus:outline-none flex items-center justify-between p-2 rounded-md border border-outline-variant hover:bg-surface-variant transition-colors">
+						<StatusBadge status={displayStatus || taskData.status || ""} />
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="start">
+						{SELECTABLE_TASK_STATUSES.map((option) => (
+							<DropdownMenuItem
+								key={option}
+								onClick={() => onStatusChange?.(option)}
+							>
+								{option}
+							</DropdownMenuItem>
+						))}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
+
 			{/* Dynamically Rendered Dropdowns (Board, Priority) */}
 			{propertiesConfig.map((config) => (
 				<div key={config.id} className="space-y-1">
@@ -181,11 +205,9 @@ export function TaskPropertiesGrid({
 								<DropdownMenuItem
 									key={option}
 									onClick={() => {
-										const updates: Partial<GridTask> = { [config.id]: option };
-										if (config.id === "board") {
-											updates.status = option as TaskStatus;
-										}
-										handleChange(updates);
+										// Board and status are independent now: moving a task
+										// between columns must not rewrite its status.
+										handleChange({ [config.id]: option } as Partial<GridTask>);
 									}}
 								>
 									{option}

@@ -87,7 +87,15 @@ export const GridTaskSchema = z.object({
 	startDate: z.string(),
 	dueDate: z.string(),
 	board: TaskBoardSchema,
+	// Display status: may read "Overdue" even though that is never stored.
 	status: TaskStatusSchema,
+	// The status actually stored on the row, so the editor can show the user's
+	// own choice rather than a derived "Overdue".
+	storedStatus: TaskStatusSchema.optional(),
+	isOverdue: z.boolean().optional(),
+	// Where the task was before completion auto-moved it, so un-completing can
+	// send it back.
+	previousBoardId: z.string().nullable().optional(),
 	priority: TaskPrioritySchema,
 	isCompleted: z.boolean(),
 	checklist: z.array(ChecklistItemSchema).optional(),
@@ -104,7 +112,11 @@ export const updateTaskSchema = z.object({
 	dueDate: z.string().optional(),
 	startDate: z.string().optional(),
 	boardId: z.string().optional(),
+	previousBoardId: z.string().nullable().optional(),
 	isCompleted: z.boolean().optional(),
+	// Set when the user picks a status by hand, so a lapsed due date does not
+	// keep overriding their choice back to "Overdue".
+	statusOverriddenAt: z.string().optional(),
 });
 
 export const bulkUpdateTaskStatusSchema = z.object({

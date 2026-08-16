@@ -30,6 +30,10 @@ export const STATUS_CONFIG: Record<string, { color: string; icon: IconName }> =
 				"text-secondary bg-surface-container-high border-outline-variant/30",
 			icon: "circle",
 		},
+		Overdue: {
+			color: "text-error bg-error/10 border-error/20",
+			icon: "alert-triangle",
+		},
 		active: {
 			color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
 			icon: "clock",

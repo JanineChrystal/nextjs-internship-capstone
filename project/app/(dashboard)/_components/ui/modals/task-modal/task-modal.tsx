@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCircle, Circle } from "lucide-react";
+import { AlertTriangle, CheckCircle, Circle } from "lucide-react";
+import { StatusBadge } from "@/app/(dashboard)/_components/ui/badges/status-badge";
 import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { Button } from "@/components/ui/buttons/button";
 import {
@@ -26,6 +27,8 @@ export function TaskModal() {
 		closeTaskModal,
 		isEditMode,
 		isOverdue,
+		displayStatus,
+		handleStatusChange,
 		taskData,
 		setTaskData,
 		handleChange,
@@ -101,12 +104,24 @@ export function TaskModal() {
 								aria-label="Task name"
 								className="text-xl font-semibold border-none shadow-none focus-visible:ring-0 px-0 h-auto bg-transparent flex-1"
 							/>
-							{isOverdue && (
-								<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-error/10 text-error border border-error/20 shrink-0">
-									Overdue
-								</span>
+							{isEditMode && displayStatus && (
+								<div className="shrink-0">
+									<StatusBadge status={displayStatus} />
+								</div>
 							)}
 						</DialogTitle>
+
+						{/* Stays visible while the task is past due even if the user
+						    reassigns the status - only moving the due date clears it. */}
+						{isOverdue && (
+							<div className="flex items-start gap-2 mt-3 px-3 py-2 rounded-md bg-error/10 border border-error/20">
+								<AlertTriangle className="h-4 w-4 text-error shrink-0 mt-0.5" />
+								<p className="text-sm text-error">
+									This task is past its due date. Update the due date to clear
+									this notice.
+								</p>
+							</div>
+						)}
 					</DialogHeader>
 
 					<div className="p-6 space-y-8">
@@ -115,6 +130,8 @@ export function TaskModal() {
 							taskData={taskData}
 							handleChange={handleChange}
 							scheduleError={scheduleError}
+							displayStatus={displayStatus}
+							onStatusChange={handleStatusChange}
 						/>
 
 						<TaskAssignees taskData={taskData} handleChange={handleChange} />

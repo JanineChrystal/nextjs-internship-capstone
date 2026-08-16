@@ -288,9 +288,10 @@ export async function bulkCompleteTasksInDB(
 			updatedAt: new Date(),
 		};
 
+		updateData.status = "Completed";
+
 		if (completionBoard) {
 			updateData.boardId = completionBoard.id;
-			updateData.status = completionBoard.name;
 		}
 
 		await db

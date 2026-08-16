@@ -5,6 +5,7 @@ import type {
 	DbTask,
 	GridTask,
 } from "@/lib/types/task";
+import { deriveTaskStatus, isTaskOverdue } from "@/lib/utils/task-status";
 
 export interface TaskOutputDTO {
 	id: string;
@@ -15,6 +16,8 @@ export interface TaskOutputDTO {
 	category: string | null;
 	isCompleted: boolean;
 	status: string;
+	statusOverriddenAt: Date | null;
+	previousBoardId: string | null;
 	priority: string;
 	startDate: Date | null;
 	dueDate: Date | null;
@@ -39,6 +42,8 @@ export function toTaskDTO(task: DbTask): TaskOutputDTO {
 		category: sanitizeText(task.category),
 		isCompleted: task.isCompleted,
 		status: task.status,
+		statusOverriddenAt: task.statusOverriddenAt,
+		previousBoardId: task.previousBoardId,
 		priority: task.priority,
 		startDate: task.startDate,
 		dueDate: task.dueDate,
@@ -69,11 +74,19 @@ export function toTaskUI(
 		startDate: toTaskDateInputValue(dto.startDate),
 		dueDate: toTaskDateInputValue(dto.dueDate),
 		board: boardTitle,
-		// Status mirrors the board the task currently sits in, resolved on every
-		// read - so renaming a board can never leave a stale status behind.
-		status: boardTitle || dto.status,
+		status: deriveTaskStatus({
+			isCompleted: dto.isCompleted,
+			status: dto.status,
+			dueDate: dto.dueDate,
+			statusOverriddenAt: dto.statusOverriddenAt,
+		}),
+		storedStatus: dto.status,
+		isOverdue: isTaskOverdue({
+			isCompleted: dto.isCompleted,
+			dueDate: dto.dueDate,
+		}),
+		previousBoardId: dto.previousBoardId,
 		priority: dto.priority as GridTask["priority"],
-		// Read straight off the task: never inferred from a board or status name.
 		isCompleted: dto.isCompleted,
 		checklist: checklist.map((item) => ({
 			id: item.id,

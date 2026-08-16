@@ -162,9 +162,13 @@ export async function updateTaskAction(
 			category: validationResult.data.category,
 			notes: validationResult.data.notes,
 			boardId: validationResult.data.boardId,
+			previousBoardId: validationResult.data.previousBoardId,
 			// Authoritative completion flag - previously validated then dropped,
 			// which left completion state unsaved on single-task toggles.
 			isCompleted: validationResult.data.isCompleted,
+			statusOverriddenAt: validationResult.data.statusOverriddenAt
+				? new Date(validationResult.data.statusOverriddenAt)
+				: undefined,
 			startDate: validationResult.data.startDate
 				? new Date(validationResult.data.startDate)
 				: undefined,

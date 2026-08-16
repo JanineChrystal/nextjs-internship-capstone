@@ -7,6 +7,12 @@ import {
 } from "@/lib/actions/task-actions";
 import { setTaskAssigneesAction } from "@/lib/actions/task-assignee-actions";
 import { hasIncompleteChecklist } from "@/lib/utils/task";
+import {
+	deriveTaskStatus,
+	TASK_STATUS_COMPLETED,
+	TASK_STATUS_IN_PROGRESS,
+	TASK_STATUS_NOT_STARTED,
+} from "@/lib/utils/task-status";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask, TaskModalActionId } from "@/types/task";
@@ -94,6 +100,9 @@ export function useTaskModal() {
 	}>({ isOpen: false, taskName: "", onConfirm: null });
 
 	const isInitializedRef = React.useRef(false);
+	// Tracks a manual status pick made during this modal session, so the badge
+	// stops showing "Overdue" as soon as the user chooses something else.
+	const statusOverriddenAtRef = React.useRef<Date | null>(null);
 
 	// Derived State
 	const isEditMode = !!selectedTaskId;
@@ -104,6 +113,18 @@ export function useTaskModal() {
 			!taskData.isCompleted &&
 			new Date(taskData.dueDate) < new Date(),
 	);
+
+	// What the status badge beside the title shows. Overdue outranks the stored
+	// status unless the user has picked one since the task lapsed.
+	const displayStatus = deriveTaskStatus({
+		isCompleted: Boolean(taskData.isCompleted),
+		status: taskData.storedStatus || taskData.status || TASK_STATUS_NOT_STARTED,
+		dueDate:
+			taskData.dueDate && taskData.dueDate !== "--"
+				? new Date(taskData.dueDate)
+				: null,
+		statusOverriddenAt: statusOverriddenAtRef.current,
+	});
 
 	const resolveBoardId = (boardTitle: string | undefined): string | undefined =>
 		columns.find((c) => c.title === boardTitle)?.id || columns[0]?.id;
@@ -159,6 +180,11 @@ export function useTaskModal() {
 				return;
 			}
 
+			const extras = updates as Partial<GridTask> & {
+				statusOverriddenAt?: string;
+				previousBoardId?: string | null;
+			};
+
 			const result = await updateTaskAction(selectedTaskId, projectId, {
 				name: updates.name,
 				status: updates.status,
@@ -166,9 +192,11 @@ export function useTaskModal() {
 				category: updates.category,
 				notes: updates.notes,
 				boardId: updates.board ? resolveBoardId(updates.board) : undefined,
+				previousBoardId: extras.previousBoardId,
 				startDate: toApiDateInput(updates.startDate),
 				dueDate: toApiDateInput(updates.dueDate),
 				isCompleted: updates.isCompleted,
+				statusOverriddenAt: extras.statusOverriddenAt,
 			});
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
@@ -259,26 +287,62 @@ export function useTaskModal() {
 	// and is simply flagged complete.
 	const buildCompletionUpdates = (
 		current: Partial<GridTask>,
-	): Partial<GridTask> => {
+	): Partial<GridTask> & { previousBoardId?: string | null } => {
 		const nextCompleted = !current.isCompleted;
+
 		if (!nextCompleted) {
-			return { isCompleted: false };
+			// Un-completing returns the task to wherever it was moved from, as
+			// long as that column still exists.
+			const previousBoard = current.previousBoardId
+				? columns.find((col) => col.id === current.previousBoardId)
+				: undefined;
+
+			return {
+				isCompleted: false,
+				status: TASK_STATUS_IN_PROGRESS,
+				previousBoardId: null,
+				...(previousBoard ? { board: previousBoard.title } : {}),
+			};
 		}
 
 		const completionColumn = columns.find((col) => col.isCompletionBoard);
-		if (!completionColumn) {
-			return { isCompleted: true };
+		const currentBoardId = columns.find(
+			(col) => col.title === current.board,
+		)?.id;
+
+		if (!completionColumn || completionColumn.id === currentBoardId) {
+			return { isCompleted: true, status: TASK_STATUS_COMPLETED };
 		}
 
 		return {
 			isCompleted: true,
+			status: TASK_STATUS_COMPLETED,
 			board: completionColumn.title,
-			status: completionColumn.title,
+			// Remembered so un-completing can undo the move.
+			previousBoardId: currentBoardId ?? null,
 		};
 	};
 
 	const toggleTaskCompletion = () => {
+		statusOverriddenAtRef.current = new Date();
 		handleChange(buildCompletionUpdates(taskData));
+	};
+
+	/**
+	 * A hand-picked status. Stamping the override time is what stops an already
+	 * lapsed due date from immediately forcing the badge back to "Overdue" -
+	 * while leaving the past-due notice visible until the date itself is moved.
+	 */
+	const handleStatusChange = (nextStatus: string) => {
+		const overriddenAt = new Date();
+		statusOverriddenAtRef.current = overriddenAt;
+
+		handleChange({
+			status: nextStatus,
+			storedStatus: nextStatus,
+			isCompleted: nextStatus === TASK_STATUS_COMPLETED,
+			statusOverriddenAt: overriddenAt.toISOString(),
+		} as Partial<GridTask>);
 	};
 
 	const handleDuplicate = async () => {
@@ -421,6 +485,9 @@ export function useTaskModal() {
 		if (isTaskModalOpen && !isInitializedRef.current) {
 			isInitializedRef.current = true;
 			setScheduleError(null);
+			// Start from "no override this session"; the derived status then
+			// reflects whatever the server already decided.
+			statusOverriddenAtRef.current = null;
 			if (isEditMode && existingTask) {
 				setTaskData(existingTask);
 			} else {
@@ -444,7 +511,7 @@ export function useTaskModal() {
 				setTaskData({
 					...DEFAULT_TASK_DATA,
 					board: initialBoard,
-					status: initialBoard,
+					status: TASK_STATUS_NOT_STARTED,
 					startDate: prefillDate,
 					dueDate: prefillDate,
 					assignees: [],
@@ -474,6 +541,8 @@ export function useTaskModal() {
 		closeTaskModal,
 		isEditMode,
 		isOverdue,
+		displayStatus,
+		handleStatusChange,
 		taskData,
 		setTaskData,
 		handleChange,

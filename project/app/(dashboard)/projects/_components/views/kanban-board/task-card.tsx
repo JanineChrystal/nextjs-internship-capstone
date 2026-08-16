@@ -2,6 +2,7 @@
 
 import { Calendar, CheckSquare, Paperclip } from "lucide-react";
 import { PriorityBadge } from "@/app/(dashboard)/_components/ui/badges/priority-badge";
+import { StatusBadge } from "@/app/(dashboard)/_components/ui/badges/status-badge";
 import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { GridTask } from "@/types/task";
@@ -91,6 +92,14 @@ export function TaskCard({ task }: TaskCardProps) {
 			>
 				{task.name}
 			</button>
+
+			{/* Status is shown on the card because the column no longer implies it -
+			    a completed task can sit in any column, or in none in particular. */}
+			{task.status && (
+				<div className="flex">
+					<StatusBadge status={task.status} className="text-[10px] py-0" />
+				</div>
+			)}
 
 			{tasksTotal > 0 && (
 				<div className="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">

@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Circle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskStatus } from "@/types/task";
 import {
@@ -12,16 +12,20 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-	const config = STATUS_CONFIG[status];
-	if (!config) return null;
+	if (!status) return null;
 
-	const { color, icon } = config;
+	// Unknown values still render with neutral styling rather than vanishing -
+	// statuses are user-facing text and must never silently disappear.
+	const { color, icon } = STATUS_CONFIG[status] ?? {
+		color: "text-secondary bg-surface-container-high border-outline-variant/30",
+		icon: "circle" as IconName,
+	};
 
 	const IconMap: Record<IconName, React.ElementType> = {
 		clock: Clock,
 		"check-circle": CheckCircle2,
 		circle: Circle,
-		"alert-triangle": Clock,
+		"alert-triangle": AlertTriangle,
 		"chevrons-up": Clock,
 		"chevron-up": Clock,
 		"chevron-down": Clock,
