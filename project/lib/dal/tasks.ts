@@ -1,6 +1,7 @@
 import "server-only";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
+import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { db } from "@/lib/db";
 import { boards, projects, tasks } from "@/lib/db/schema";
 import { type TaskOutputDTO, toTaskDTO } from "@/lib/dtos/task-dto";
@@ -156,6 +157,13 @@ export async function getTasksByProjectId(
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
+	// This is the real security boundary for at least one caller (getTasksAction
+	// performs no permission check of its own), so denial must throw rather than
+	// return an empty list - silently returning [] would disguise the refusal as
+	// "this project has no tasks".
+	const role = await getEffectiveProjectRoleDAL(projectId);
+	if (!role) throw new Error("Unauthorized");
+
 	try {
 		const results = await db
 			.select({
@@ -166,7 +174,6 @@ export async function getTasksByProjectId(
 			.where(
 				and(
 					eq(tasks.projectId, projectId),
-					eq(projects.ownerId, user.id),
 					isNull(tasks.deletedAt),
 					isNull(projects.deletedAt),
 				),

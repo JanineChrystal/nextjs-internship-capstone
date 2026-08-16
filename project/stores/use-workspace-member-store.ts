@@ -1,5 +1,8 @@
 import { create } from "zustand";
-import { removeWorkspaceMembersAction } from "@/lib/actions/workspace-member-actions";
+import {
+	getWorkspaceDirectoryAction,
+	removeWorkspaceMembersAction,
+} from "@/lib/actions/workspace-member-actions";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
 
 interface WorkspaceMemberState {
@@ -7,7 +10,9 @@ interface WorkspaceMemberState {
 	error: string | null;
 
 	setMembers: (members: WorkspaceMemberOutputDTO[]) => void;
+	setError: (error: string | null) => void;
 	clearError: () => void;
+	refreshMembers: () => Promise<void>;
 	removeMembers: (userIds: Set<string>) => Promise<boolean>;
 }
 
@@ -19,7 +24,20 @@ export const useWorkspaceMemberStore = create<WorkspaceMemberState>(
 		// Hydrated from the server component's initial fetch.
 		setMembers: (members) => set({ members }),
 
+		setError: (error) => set({ error }),
+
 		clearError: () => set({ error: null }),
+
+		// Re-pulls the directory after a mutation the store did not perform
+		// itself, such as an invite sent from the add-member modal. The page's
+		// initial hydration is ref-guarded, so new server data would otherwise
+		// never reach the client.
+		refreshMembers: async () => {
+			const result = await getWorkspaceDirectoryAction();
+			if (result.success && result.data) {
+				set({ members: result.data });
+			}
+		},
 
 		removeMembers: async (userIds) => {
 			if (userIds.size === 0) return false;

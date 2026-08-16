@@ -1,6 +1,7 @@
 import "server-only";
 import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
+import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { db } from "@/lib/db";
 import {
 	boards,
@@ -85,17 +86,18 @@ export async function getProjectById(
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
+	// Access is resolved centrally so direct members and team members reach the
+	// project too - an ownerId filter here would 404 anyone but the owner.
+	// Returning null rather than throwing keeps notFound() behaving the same
+	// whether the project is missing or merely invisible to this user.
+	const role = await getEffectiveProjectRoleDAL(projectId);
+	if (!role) return null;
+
 	try {
 		const [project] = await db
 			.select()
 			.from(projects)
-			.where(
-				and(
-					eq(projects.id, projectId),
-					eq(projects.ownerId, user.id),
-					isNull(projects.deletedAt),
-				),
-			);
+			.where(and(eq(projects.id, projectId), isNull(projects.deletedAt)));
 
 		if (!project) return null;
 
@@ -196,15 +198,25 @@ export interface ProjectStats {
 }
 
 /**
- * Aggregated per-project counts for every project the user owns.
+ * Aggregated per-project counts for every project the user can reach.
  *
- * Two grouped queries rather than per-project lookups, so adding these counts
- * to the projects list costs a constant number of round-trips regardless of
- * how many projects exist.
+ * Scoped to the same three access routes as getAllUserProjectsDAL rather than
+ * ownership alone - otherwise a project appears in the list but its card shows
+ * zero tasks and zero members, because the stats lookup simply missed it.
+ *
+ * Grouped queries rather than per-project lookups, so the cost stays constant
+ * regardless of how many projects exist.
  */
 export async function getProjectStatsDAL(): Promise<Map<string, ProjectStats>> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
+
+	// Resolve the accessible project ids first; aggregating per project would be
+	// an N+1 across the whole list.
+	const accessibleProjects = await getAllUserProjectsDAL();
+	const projectIds = accessibleProjects.map((project) => project.id);
+
+	if (projectIds.length === 0) return new Map<string, ProjectStats>();
 
 	try {
 		const [taskRows, memberRows] = await Promise.all([
@@ -218,7 +230,7 @@ export async function getProjectStatsDAL(): Promise<Map<string, ProjectStats>> {
 				.innerJoin(projects, eq(tasks.projectId, projects.id))
 				.where(
 					and(
-						eq(projects.ownerId, user.id),
+						inArray(tasks.projectId, projectIds),
 						isNull(tasks.deletedAt),
 						isNull(projects.deletedAt),
 					),
@@ -231,7 +243,13 @@ export async function getProjectStatsDAL(): Promise<Map<string, ProjectStats>> {
 				})
 				.from(projectMembers)
 				.innerJoin(projects, eq(projectMembers.projectId, projects.id))
-				.where(and(eq(projects.ownerId, user.id), isNull(projects.deletedAt)))
+				.where(
+					and(
+						inArray(projectMembers.projectId, projectIds),
+						isNull(projectMembers.deletedAt),
+						isNull(projects.deletedAt),
+					),
+				)
 				.groupBy(projectMembers.projectId),
 		]);
 
@@ -274,16 +292,14 @@ export async function updateProjectInDB(
 	if (!user) throw new Error("Unauthorized");
 
 	try {
+		// Scoped by id only: the action layer already gated this through
+		// verifyProjectPermissionDAL, which resolves all three access routes. An
+		// ownerId filter here would silently override that decision and make a
+		// permitted co-owner's update match zero rows.
 		const result = await db
 			.update(projects)
 			.set({ ...data, updatedAt: new Date() })
-			.where(
-				and(
-					eq(projects.id, projectId),
-					eq(projects.ownerId, user.id),
-					isNull(projects.deletedAt),
-				),
-			)
+			.where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
 			.returning();
 
 		if (result.length === 0) throw new Error("Project not found");
@@ -299,16 +315,11 @@ export async function deleteProjectInDB(projectId: string): Promise<void> {
 	if (!user) throw new Error("Unauthorized");
 
 	try {
+		// Gated by the action layer's permission check; see updateProjectInDB.
 		await db
 			.update(projects)
 			.set({ deletedAt: new Date(), updatedAt: new Date() })
-			.where(
-				and(
-					eq(projects.id, projectId),
-					eq(projects.ownerId, user.id),
-					isNull(projects.deletedAt),
-				),
-			);
+			.where(and(eq(projects.id, projectId), isNull(projects.deletedAt)));
 	} catch (error) {
 		throw new Error("Failed to delete project in database", { cause: error });
 	}
@@ -325,13 +336,7 @@ export async function bulkDeleteProjectsInDB(
 		await db
 			.update(projects)
 			.set({ deletedAt: new Date(), updatedAt: new Date() })
-			.where(
-				and(
-					inArray(projects.id, projectIds),
-					eq(projects.ownerId, user.id),
-					isNull(projects.deletedAt),
-				),
-			);
+			.where(and(inArray(projects.id, projectIds), isNull(projects.deletedAt)));
 	} catch (error) {
 		throw new Error("Failed to bulk delete projects in database", {
 			cause: error,
@@ -350,13 +355,7 @@ export async function bulkArchiveProjectsInDB(
 		await db
 			.update(projects)
 			.set({ status: "archived", updatedAt: new Date() })
-			.where(
-				and(
-					inArray(projects.id, projectIds),
-					eq(projects.ownerId, user.id),
-					isNull(projects.deletedAt),
-				),
-			);
+			.where(and(inArray(projects.id, projectIds), isNull(projects.deletedAt)));
 	} catch (error) {
 		throw new Error("Failed to bulk archive projects in database", {
 			cause: error,
@@ -375,13 +374,7 @@ export async function bulkCompleteProjectsInDB(
 		await db
 			.update(projects)
 			.set({ status: "completed", updatedAt: new Date() })
-			.where(
-				and(
-					inArray(projects.id, projectIds),
-					eq(projects.ownerId, user.id),
-					isNull(projects.deletedAt),
-				),
-			);
+			.where(and(inArray(projects.id, projectIds), isNull(projects.deletedAt)));
 	} catch (error) {
 		throw new Error("Failed to bulk complete projects in database", {
 			cause: error,
@@ -414,6 +407,11 @@ export async function inviteUserToProjectInDB(
 
 			if (!project) throw new Error("Project not found");
 
+			// Resurrects a soft-deleted directory row rather than doing nothing.
+			// With onConflictDoNothing, re-inviting someone previously removed from
+			// the directory hit the unique (workspaceId, userId) constraint and left
+			// deletedAt set, so they never reappeared. Matches the resurrect pattern
+			// the projectMembers insert below already uses.
 			await tx
 				.insert(workspaceMembers)
 				.values({
@@ -421,7 +419,14 @@ export async function inviteUserToProjectInDB(
 					userId: targetUser.id,
 					status: "active",
 				})
-				.onConflictDoNothing();
+				.onConflictDoUpdate({
+					target: [workspaceMembers.workspaceId, workspaceMembers.userId],
+					set: {
+						deletedAt: null,
+						status: "active",
+						updatedAt: new Date(),
+					},
+				});
 
 			await tx
 				.insert(projectMembers)

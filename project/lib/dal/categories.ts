@@ -1,6 +1,7 @@
 import "server-only";
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
+import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { db } from "@/lib/db";
 import { categories, projects, tasks, workspaces } from "@/lib/db/schema";
 
@@ -32,6 +33,11 @@ export async function getUniqueTaskCategoriesDAL(
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
+	// Access resolved centrally rather than by owner, so members of the project
+	// see the categories in use on it.
+	const role = await getEffectiveProjectRoleDAL(projectId);
+	if (!role) throw new Error("Unauthorized");
+
 	try {
 		const results = await db
 			.selectDistinct({ category: tasks.category })
@@ -40,7 +46,6 @@ export async function getUniqueTaskCategoriesDAL(
 			.where(
 				and(
 					eq(tasks.projectId, projectId),
-					eq(projects.ownerId, user.id),
 					isNull(tasks.deletedAt),
 					isNull(projects.deletedAt),
 					isNotNull(tasks.category),

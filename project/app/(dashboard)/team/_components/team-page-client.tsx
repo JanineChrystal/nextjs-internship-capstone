@@ -34,6 +34,7 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 		requestRemoveSelected,
 		closeRemoval,
 		confirmRemoval,
+		handleInvitesSettled,
 	} = useWorkspaceDirectory(initialMembers);
 
 	const {
@@ -91,6 +92,7 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 					onViewChange={setActiveView}
 					onToggleSort={() => handleSort("name")}
 					availableRoles={availableRoles}
+					onInvitesSettled={handleInvitesSettled}
 				/>
 
 				{activeView === "Grid" ? (

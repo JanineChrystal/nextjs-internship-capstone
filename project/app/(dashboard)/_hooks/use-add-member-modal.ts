@@ -8,6 +8,10 @@ import type { RoleAccess } from "@/types/member";
 
 export type AddInviteFormValues = z.infer<typeof AddInviteItemSchema>;
 
+/**
+ * `targetId` is the project id for project-scoped invites. Workspace-scoped
+ * invites resolve the caller's own workspace server-side, so no id is passed.
+ */
 export function useAddMemberModal(
 	targetId: string,
 	scope: "project" | "workspace",

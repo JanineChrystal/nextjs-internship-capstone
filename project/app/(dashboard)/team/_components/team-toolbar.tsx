@@ -29,6 +29,9 @@ interface TeamToolbarProps {
 	onViewChange?: (view: TeamViewType) => void;
 	onToggleSort?: () => void;
 	availableRoles?: string[];
+	// Fired when the add-member modal closes, so the directory can pull in any
+	// invites that were sent.
+	onInvitesSettled?: () => void;
 }
 
 export const TeamToolbar = ({
@@ -36,6 +39,7 @@ export const TeamToolbar = ({
 	onViewChange = () => {},
 	onToggleSort,
 	availableRoles = [],
+	onInvitesSettled,
 }: TeamToolbarProps) => {
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 	const [sortAsc, setSortAsc] = useState(true);
@@ -117,11 +121,15 @@ export const TeamToolbar = ({
 				}
 			/>
 
+			{/* No targetId: workspace invites resolve the caller's own workspace
+			    server-side, replacing the placeholder id that never existed. */}
 			<AddMemberModal
 				open={isAddModalOpen}
-				onOpenChange={setIsAddModalOpen}
+				onOpenChange={(open) => {
+					setIsAddModalOpen(open);
+					if (!open) onInvitesSettled?.();
+				}}
 				scope="workspace"
-				targetId="ws_1"
 			/>
 		</div>
 	);

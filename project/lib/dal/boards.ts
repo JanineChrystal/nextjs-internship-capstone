@@ -1,12 +1,19 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
+import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { db } from "@/lib/db";
 import { boards, projects, tasks } from "@/lib/db/schema";
 
 export async function getProjectBoardsDAL(projectId: string) {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
+
+	// Access resolved centrally, so direct and team members see the board columns
+	// too. Throws rather than returning [] so a refusal is never mistaken for an
+	// empty board.
+	const role = await getEffectiveProjectRoleDAL(projectId);
+	if (!role) throw new Error("Unauthorized");
 
 	try {
 		const results = await db
@@ -16,7 +23,6 @@ export async function getProjectBoardsDAL(projectId: string) {
 			.where(
 				and(
 					eq(boards.projectId, projectId),
-					eq(projects.ownerId, user.id),
 					isNull(boards.deletedAt),
 					isNull(projects.deletedAt),
 				),

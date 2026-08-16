@@ -17,14 +17,16 @@ interface AddMemberModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	scope: "project" | "workspace";
-	targetId: string; // projectId or workspaceId
+	// Project id for project-scoped invites. Omitted for workspace scope, which
+	// resolves the caller's own workspace on the server.
+	targetId?: string;
 }
 
 export function AddMemberModal({
 	open,
 	onOpenChange,
 	scope,
-	targetId,
+	targetId = "",
 }: AddMemberModalProps) {
 	const {
 		pendingInvites,

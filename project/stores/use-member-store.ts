@@ -6,6 +6,7 @@ import {
 	updateMemberJobRoleAction,
 	updateMemberRoleAction,
 } from "@/lib/actions/project-actions";
+import { inviteToWorkspaceAction } from "@/lib/actions/workspace-member-actions";
 import type {
 	FlaggedCommentItem,
 	PendingInviteItem,
@@ -35,6 +36,8 @@ interface MemberState {
 	// State
 	projectMembers: Record<string, ProjectMember[]>;
 	pendingInvites: PendingInviteItem[];
+	// Surfaced after a bulk invite so failures are visible rather than logged.
+	inviteError: string | null;
 	shareLinks: Record<string, ShareLinkConfig>;
 	flaggedComments: Record<string, FlaggedCommentItem[]>;
 	isProjectPublic: Record<string, boolean>;
@@ -77,6 +80,7 @@ interface MemberState {
 export const useMemberStore = create<MemberState>((set, get) => ({
 	projectMembers: INITIAL_MEMBERS,
 	pendingInvites: [],
+	inviteError: null,
 	shareLinks: {
 		"prj-1": {
 			projectId: "prj-1",
@@ -114,13 +118,28 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 	},
 
 	sendBulkInvites: async (scope, targetId) => {
-		if (scope !== "project") {
-			set({ pendingInvites: [] });
+		const invites = get().pendingInvites;
+		set({ pendingInvites: [] });
+
+		// Workspace-scoped invites add people to the directory only, with no
+		// project attached. This branch previously cleared the staged list and
+		// returned without ever calling the server, so the team page's "Add
+		// Member" silently did nothing.
+		if (scope === "workspace") {
+			const failures: string[] = [];
+
+			for (const invite of invites) {
+				const result = await inviteToWorkspaceAction(invite.recipient);
+				if (!result.success) {
+					failures.push(`${invite.recipient}: ${result.error}`);
+				}
+			}
+
+			set({ inviteError: failures.length > 0 ? failures.join("\n") : null });
 			return;
 		}
 
-		const invites = get().pendingInvites;
-		set({ pendingInvites: [] });
+		if (scope !== "project") return;
 
 		for (const invite of invites) {
 			const result = await inviteUserToProjectAction(

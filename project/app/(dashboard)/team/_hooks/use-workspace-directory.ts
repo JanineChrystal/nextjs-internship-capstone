@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
+import { useMemberStore } from "@/stores/use-member-store";
 import { useWorkspaceMemberStore } from "@/stores/use-workspace-member-store";
 
 interface RemovalTarget {
@@ -20,7 +21,11 @@ export function useWorkspaceDirectory(
 	const members = useWorkspaceMemberStore((state) => state.members);
 	const error = useWorkspaceMemberStore((state) => state.error);
 	const setMembers = useWorkspaceMemberStore((state) => state.setMembers);
+	const setError = useWorkspaceMemberStore((state) => state.setError);
 	const clearError = useWorkspaceMemberStore((state) => state.clearError);
+	const refreshMembers = useWorkspaceMemberStore(
+		(state) => state.refreshMembers,
+	);
 	const removeMembers = useWorkspaceMemberStore((state) => state.removeMembers);
 
 	const [removal, setRemoval] = useState<RemovalTarget>(CLOSED_REMOVAL);
@@ -54,6 +59,16 @@ export function useWorkspaceDirectory(
 		[removal.userIds, removeMembers],
 	);
 
+	// Called when the add-member modal closes. Invites are sent by the member
+	// store, so this hook has to pull the resulting directory changes in, and
+	// surface any invite failures through the same banner as removals.
+	const handleInvitesSettled = useCallback(async () => {
+		const inviteError = useMemberStore.getState().inviteError;
+		setError(inviteError);
+		useMemberStore.setState({ inviteError: null });
+		await refreshMembers();
+	}, [refreshMembers, setError]);
+
 	return {
 		members,
 		error,
@@ -63,5 +78,6 @@ export function useWorkspaceDirectory(
 		requestRemoveSelected,
 		closeRemoval,
 		confirmRemoval,
+		handleInvitesSettled,
 	};
 }

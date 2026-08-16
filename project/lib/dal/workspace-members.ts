@@ -36,7 +36,7 @@ export async function getWorkspaceDirectoryDAL(
 	const workspace = await resolveActiveWorkspaceDAL(workspaceId);
 
 	try {
-		const [memberRows, directRows, teamRows] = await Promise.all([
+		const [memberRows, directRows, teamRows, ownedRows] = await Promise.all([
 			db
 				.select({ membership: workspaceMembers, user: users })
 				.from(workspaceMembers)
@@ -81,6 +81,22 @@ export async function getWorkspaceDirectoryDAL(
 						isNull(projects.deletedAt),
 					),
 				),
+
+			// The third access route. Owning a project grants access to it without
+			// producing a ProjectMembers row, so counting only the other two routes
+			// reported zero projects for the owner.
+			db
+				.select({
+					userId: projects.ownerId,
+					projectId: projects.id,
+				})
+				.from(projects)
+				.where(
+					and(
+						eq(projects.workspaceId, workspace.id),
+						isNull(projects.deletedAt),
+					),
+				),
 		]);
 
 		// Sets rather than arrays so the two access routes de-duplicate for free.
@@ -106,16 +122,92 @@ export async function getWorkspaceDirectoryDAL(
 			addProject(row.userId, row.projectId);
 		}
 
-		return memberRows.map((row) =>
-			toWorkspaceMemberDTO(
-				row.membership,
-				row.user,
-				Array.from(projectIdsByUser.get(row.user.id) ?? []),
-				Array.from(jobRolesByUser.get(row.user.id) ?? []),
-			),
+		for (const row of ownedRows) {
+			addProject(row.userId, row.projectId);
+		}
+
+		return (
+			memberRows
+				// The directory lists people you collaborate with. Your own row adds
+				// nothing - your profile is reachable from the top bar, and its remove
+				// button is misleading since self-removal is rejected server-side.
+				.filter((row) => row.user.id !== user.id)
+				.map((row) =>
+					toWorkspaceMemberDTO(
+						row.membership,
+						row.user,
+						Array.from(projectIdsByUser.get(row.user.id) ?? []),
+						Array.from(jobRolesByUser.get(row.user.id) ?? []),
+					),
+				)
 		);
 	} catch (error) {
 		throw new Error("Failed to fetch workspace directory", { cause: error });
+	}
+}
+
+/**
+ * Adds someone to the caller's directory without granting any project or team
+ * access - the standalone "Add Member" path on the team page.
+ *
+ * Deliberately has no project side effect: this is a contact-list addition, and
+ * project access is granted separately from within a project.
+ *
+ * Unregistered emails are rejected with a clear message rather than silently
+ * doing nothing. Pending invites for people who have not signed up are Phase 4.
+ */
+export async function inviteToWorkspaceInDB(
+	email: string,
+	workspaceId?: string,
+): Promise<WorkspaceMemberOutputDTO> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	const workspace = await resolveActiveWorkspaceDAL(workspaceId);
+
+	if (workspace.ownerId !== user.id) {
+		throw new Error("Only the workspace owner can invite members");
+	}
+
+	const normalizedEmail = email.trim().toLowerCase();
+
+	try {
+		const [targetUser] = await db
+			.select()
+			.from(users)
+			.where(and(eq(users.email, normalizedEmail), isNull(users.deletedAt)));
+
+		if (!targetUser) throw new Error("USER_NOT_REGISTERED");
+
+		if (targetUser.id === user.id) {
+			throw new Error("You are already a member of this workspace");
+		}
+
+		// Same resurrect semantics as the project invite path, so re-adding a
+		// previously removed member restores their row instead of no-opping.
+		const [membership] = await db
+			.insert(workspaceMembers)
+			.values({
+				workspaceId: workspace.id,
+				userId: targetUser.id,
+				status: "active",
+			})
+			.onConflictDoUpdate({
+				target: [workspaceMembers.workspaceId, workspaceMembers.userId],
+				set: { deletedAt: null, status: "active", updatedAt: new Date() },
+			})
+			.returning();
+
+		return toWorkspaceMemberDTO(membership, targetUser, [], []);
+	} catch (error) {
+		if (
+			error instanceof Error &&
+			(error.message === "USER_NOT_REGISTERED" ||
+				error.message === "You are already a member of this workspace")
+		) {
+			throw error;
+		}
+		throw new Error("Failed to invite member to workspace", { cause: error });
 	}
 }
 
