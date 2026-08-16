@@ -9,12 +9,16 @@ export interface CreateProjectModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	initialData?: Project;
+	// Prefills start/due date when opened from a calendar date click - only
+	// applies in create mode.
+	prefillDate?: Date | null;
 }
 
 export function ProjectModal({
 	isOpen,
 	onClose,
 	initialData,
+	prefillDate,
 }: CreateProjectModalProps) {
 	const isEditMode = !!initialData;
 
@@ -28,7 +32,7 @@ export function ProjectModal({
 			{isEditMode ? (
 				<EditProjectModal onClose={onClose} initialData={initialData} />
 			) : (
-				<CreateProjectModal onClose={onClose} />
+				<CreateProjectModal onClose={onClose} prefillDate={prefillDate} />
 			)}
 		</BaseModal>
 	);

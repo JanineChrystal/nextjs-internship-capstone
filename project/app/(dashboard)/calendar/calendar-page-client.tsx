@@ -63,10 +63,12 @@ export function CalendarPageClient({
 		isChoiceModalOpen,
 		selectedEventId,
 		selectedDate,
+		pendingCreationDate,
 		editProjectData,
 		calendarEvents,
 		upcomingDeadlines,
 		setIsProjectModalOpen,
+		closeProjectModal,
 		setIsChoiceModalOpen,
 		setEditProjectData,
 		handleSingleClick,
@@ -131,8 +133,9 @@ export function CalendarPageClient({
 
 			<ProjectModal
 				isOpen={isProjectModalOpen}
-				onClose={() => setIsProjectModalOpen(false)}
+				onClose={closeProjectModal}
 				initialData={editProjectData}
+				prefillDate={editProjectData ? undefined : pendingCreationDate}
 			/>
 			<CreationChoiceModal
 				isOpen={isChoiceModalOpen}

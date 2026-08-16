@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 import { getCurrentUser } from "@/lib/dal/auth";
+import { upsertWorkspaceCategoryDAL } from "@/lib/dal/categories";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import {
 	bulkCompleteTasksInDB,
@@ -82,6 +83,10 @@ export async function createTaskAction(
 			return { success: false, error: "Unauthorized" };
 		}
 
+		// Category is optional for the user - fall back to "Uncategorized"
+		// rather than storing an empty string.
+		const categoryValue = inputData.category?.trim() || "Uncategorized";
+
 		// Parse payload
 		const rawData = {
 			projectId,
@@ -89,7 +94,7 @@ export async function createTaskAction(
 			name: inputData.name,
 			status: inputData.status,
 			priority: inputData.priority,
-			category: inputData.category,
+			category: categoryValue,
 			notes: inputData.notes,
 			startDate: inputData.startDate
 				? new Date(inputData.startDate)
@@ -104,6 +109,10 @@ export async function createTaskAction(
 		}
 
 		const validatedData = validationResult.data;
+
+		// Register the category in the shared Categories table so it becomes a
+		// reusable, styled option - mirrors what createProjectAction does.
+		await upsertWorkspaceCategoryDAL("default", categoryValue, "task");
 
 		// DAL Call
 		const newTask = await createTaskInDB(validatedData);
@@ -138,6 +147,14 @@ export async function updateTaskAction(
 			return { success: false, error: "Invalid task data" };
 		}
 
+		if (validationResult.data.category?.trim()) {
+			await upsertWorkspaceCategoryDAL(
+				"default",
+				validationResult.data.category.trim(),
+				"task",
+			);
+		}
+
 		const updatePayload: Partial<NewDbTask> = {
 			name: validationResult.data.name,
 			status: validationResult.data.status,
@@ -145,6 +162,9 @@ export async function updateTaskAction(
 			category: validationResult.data.category,
 			notes: validationResult.data.notes,
 			boardId: validationResult.data.boardId,
+			// Authoritative completion flag - previously validated then dropped,
+			// which left completion state unsaved on single-task toggles.
+			isCompleted: validationResult.data.isCompleted,
 			startDate: validationResult.data.startDate
 				? new Date(validationResult.data.startDate)
 				: undefined,

@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/dal/auth";
 import {
 	createCommentInDB,
 	deleteCommentInDB,
+	getCommentParentId,
 	getCommentsByTaskId,
 	updateCommentInDB,
 } from "@/lib/dal/comments";
@@ -60,6 +61,15 @@ export async function createCommentAction(
 		const validationResult = CreateCommentSchema.safeParse({ body, parentId });
 		if (!validationResult.success) {
 			return { success: false, error: "Invalid comment" };
+		}
+
+		if (validationResult.data.parentId) {
+			const grandparentId = await getCommentParentId(
+				validationResult.data.parentId,
+			);
+			if (grandparentId) {
+				return { success: false, error: "Cannot reply to a reply" };
+			}
 		}
 
 		const comment = await createCommentInDB(

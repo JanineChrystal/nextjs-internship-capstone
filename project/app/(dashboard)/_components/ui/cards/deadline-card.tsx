@@ -23,9 +23,14 @@ export function DeadlineCard({
 	const isProject = item.type === "project";
 	const dateValue = isProject ? item.dueDate : item.date;
 
-	const formattedDate = dateValue
-		? format(new Date(dateValue), "MMM do, yyyy")
-		: "No Due Date";
+	// Tasks with no due date carry the "--" placeholder, and stored values can
+	// be malformed - format() throws on either, so parse defensively.
+	const parsedDate =
+		dateValue && dateValue !== "--" ? new Date(dateValue) : null;
+	const formattedDate =
+		parsedDate && !Number.isNaN(parsedDate.getTime())
+			? format(parsedDate, "MMM do, yyyy")
+			: "No Due Date";
 
 	const topHeaderLeft = (
 		<div className="text-xs font-semibold text-primary">{formattedDate}</div>

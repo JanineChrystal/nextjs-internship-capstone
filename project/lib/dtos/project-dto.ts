@@ -38,9 +38,16 @@ function toDatetimeInputValue(utcDate: Date): string {
 	return utcDate.toISOString().slice(0, 16);
 }
 
+export interface ProjectUIStats {
+	taskCount: number;
+	completedTaskCount: number;
+	memberCount: number;
+}
+
 export function toProjectUI(
 	dto: ProjectOutputDTO,
 	currentUserId?: string,
+	stats?: ProjectUIStats,
 ): Project {
 	const validStatuses: Array<"active" | "completed" | "overdue" | "archived"> =
 		["active", "completed", "overdue", "archived"];
@@ -70,6 +77,9 @@ export function toProjectUI(
 			)
 		: 0;
 
+	const taskCount = stats?.taskCount ?? 0;
+	const completedTaskCount = stats?.completedTaskCount ?? 0;
+
 	return {
 		id: dto.id,
 		title: dto.name,
@@ -80,9 +90,12 @@ export function toProjectUI(
 		status: normalizedStatus,
 		priority: normalizedPriority,
 		daysLeft,
-		membersCount: 1,
-		tasksCount: 0,
-		progress: 0,
+		// The owner is always a member, but is not stored as a projectMembers row.
+		membersCount: (stats?.memberCount ?? 0) + 1,
+		tasksCount: taskCount,
+		tasksCompleted: completedTaskCount,
+		progress:
+			taskCount > 0 ? Math.round((completedTaskCount / taskCount) * 100) : 0,
 		isOwned: currentUserId ? dto.ownerId === currentUserId : true,
 		isAssigned: false,
 	};

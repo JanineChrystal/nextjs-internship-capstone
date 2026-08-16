@@ -8,8 +8,14 @@ import { projectFormFields } from "../../../../projects/_constants/create-projec
 import { useCreateProject } from "../../../../projects/_hooks/use-create-project";
 import { ProjectTeamSection } from "./project-team-section";
 
-export function CreateProjectModal({ onClose }: { onClose: () => void }) {
-	const { form, onSubmit } = useCreateProject({ onClose });
+export function CreateProjectModal({
+	onClose,
+	prefillDate,
+}: {
+	onClose: () => void;
+	prefillDate?: Date | null;
+}) {
+	const { form, onSubmit } = useCreateProject({ onClose, prefillDate });
 	const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
 	const { categories, fetchCategories } = useCategoryStore();

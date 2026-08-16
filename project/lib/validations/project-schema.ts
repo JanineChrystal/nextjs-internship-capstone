@@ -1,16 +1,13 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import { projects } from "@/lib/db/schema";
+import { addScheduleRules } from "./date-rules";
 
 // DATABASE SCHEMA VALIDATION
 export const insertProjectDbSchema = createInsertSchema(projects);
 export const selectProjectDbSchema = createSelectSchema(projects);
 
-export const ProjectCategorySchema = z
-	.string()
-	.min(1, "Category cannot be empty")
-	.trim()
-	.optional();
+export const ProjectCategorySchema = z.string().trim().optional();
 
 // UI VALIDATION SCHEMAS
 export const projectSchema = z.object({
@@ -23,6 +20,7 @@ export const projectSchema = z.object({
 	daysLeft: z.number().int().nonnegative().optional(),
 	membersCount: z.number().int().nonnegative().optional(),
 	tasksCount: z.number().int().nonnegative().optional(),
+	tasksCompleted: z.number().int().nonnegative().optional(),
 	progress: z.number().min(0).max(100).optional(),
 	status: z
 		.enum(["active", "completed", "overdue", "archived"])
@@ -38,7 +36,7 @@ export const projectSchema = z.object({
 
 export type Project = z.infer<typeof projectSchema>;
 
-export const createProjectSchema = projectSchema.pick({
+const createProjectFields = projectSchema.pick({
 	title: true,
 	category: true,
 	startDate: true,
@@ -48,9 +46,13 @@ export const createProjectSchema = projectSchema.pick({
 	priority: true,
 });
 
-export type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
+export const createProjectSchema = createProjectFields.superRefine(
+	(data, ctx) => addScheduleRules(data, ctx, { enforceNotPast: true }),
+);
 
-export const editProjectSchema = projectSchema
+export type CreateProjectFormValues = z.infer<typeof createProjectFields>;
+
+const editProjectFields = projectSchema
 	.pick({
 		title: true,
 		description: true,
@@ -62,4 +64,10 @@ export const editProjectSchema = projectSchema
 	})
 	.partial();
 
-export type EditProjectFormValues = z.infer<typeof editProjectSchema>;
+// Editing skips the not-in-the-past rule so an already-running project stays
+// editable, but the due-after-start rule still applies.
+export const editProjectSchema = editProjectFields.superRefine((data, ctx) =>
+	addScheduleRules(data, ctx, { enforceNotPast: false }),
+);
+
+export type EditProjectFormValues = z.infer<typeof editProjectFields>;

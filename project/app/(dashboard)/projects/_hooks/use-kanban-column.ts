@@ -9,6 +9,7 @@ export function useKanbanColumn(id: string, title: string) {
 
 	const {
 		renameBoard,
+		setCompletionBoard,
 		initiateDeleteBoard,
 		deleteWarning,
 		confirmDeleteBoard,
@@ -45,6 +46,7 @@ export function useKanbanColumn(id: string, title: string) {
 	};
 
 	const deleteColumn = () => initiateDeleteBoard(id, title);
+	const markAsCompletionColumn = () => setCompletionBoard(id);
 
 	return {
 		isEditingTitle,
@@ -55,6 +57,7 @@ export function useKanbanColumn(id: string, title: string) {
 		handleRenameSubmit,
 		handleKeyDown,
 		deleteColumn,
+		markAsCompletionColumn,
 		deleteWarning,
 		confirmDeleteBoard,
 		closeDeleteWarning,

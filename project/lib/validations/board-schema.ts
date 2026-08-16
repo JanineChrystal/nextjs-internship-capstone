@@ -12,4 +12,7 @@ export const BoardColumnSchema = z.object({
 	title: z.string().min(1, "Column title is required"),
 	dotColor: z.string(),
 	order: z.number().int(),
+	// Marks the column completed tasks are moved into. Optional because the
+	// project may not have designated one.
+	isCompletionBoard: z.boolean().optional(),
 });

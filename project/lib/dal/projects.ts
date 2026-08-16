@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import {
@@ -7,6 +7,7 @@ import {
 	projectMembers,
 	projects,
 	projectTeams,
+	tasks,
 	users,
 	workspaceMembers,
 	workspaces,
@@ -139,6 +140,83 @@ export async function getAllUserProjectsDAL(): Promise<ProjectOutputDTO[]> {
 		return results.map(toProjectDTO);
 	} catch (error) {
 		throw new Error("Failed to fetch user projects from database", {
+			cause: error,
+		});
+	}
+}
+
+export interface ProjectStats {
+	taskCount: number;
+	completedTaskCount: number;
+	memberCount: number;
+}
+
+/**
+ * Aggregated per-project counts for every project the user owns.
+ *
+ * Two grouped queries rather than per-project lookups, so adding these counts
+ * to the projects list costs a constant number of round-trips regardless of
+ * how many projects exist.
+ */
+export async function getProjectStatsDAL(): Promise<Map<string, ProjectStats>> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		const [taskRows, memberRows] = await Promise.all([
+			db
+				.select({
+					projectId: tasks.projectId,
+					total: count(),
+					completed: sql<number>`count(*) filter (where ${tasks.isCompleted})`,
+				})
+				.from(tasks)
+				.innerJoin(projects, eq(tasks.projectId, projects.id))
+				.where(
+					and(
+						eq(projects.ownerId, user.id),
+						isNull(tasks.deletedAt),
+						isNull(projects.deletedAt),
+					),
+				)
+				.groupBy(tasks.projectId),
+			db
+				.select({
+					projectId: projectMembers.projectId,
+					total: count(),
+				})
+				.from(projectMembers)
+				.innerJoin(projects, eq(projectMembers.projectId, projects.id))
+				.where(and(eq(projects.ownerId, user.id), isNull(projects.deletedAt)))
+				.groupBy(projectMembers.projectId),
+		]);
+
+		const stats = new Map<string, ProjectStats>();
+
+		for (const row of taskRows) {
+			stats.set(row.projectId, {
+				taskCount: Number(row.total),
+				completedTaskCount: Number(row.completed),
+				memberCount: 0,
+			});
+		}
+
+		for (const row of memberRows) {
+			const existing = stats.get(row.projectId);
+			if (existing) {
+				existing.memberCount = Number(row.total);
+			} else {
+				stats.set(row.projectId, {
+					taskCount: 0,
+					completedTaskCount: 0,
+					memberCount: Number(row.total),
+				});
+			}
+		}
+
+		return stats;
+	} catch (error) {
+		throw new Error("Failed to fetch project stats from database", {
 			cause: error,
 		});
 	}

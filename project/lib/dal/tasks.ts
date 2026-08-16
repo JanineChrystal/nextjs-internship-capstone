@@ -266,22 +266,31 @@ export async function bulkCompleteTasksInDB(
 	if (!user) throw new Error("Unauthorized");
 
 	try {
-		// Need to get the "Completed" board
-		const [completedBoard] = await db
-			.select()
+		// The completion column is identified by its flag, not its name, and is
+		// scoped to this project - the previous name lookup searched every
+		// project's boards and could move tasks into an unrelated project.
+		const [completionBoard] = await db
+			.select({ id: boards.id, name: boards.name })
 			.from(boards)
-			.where(eq(boards.name, "Completed"));
+			.where(
+				and(
+					eq(boards.projectId, projectId),
+					eq(boards.isCompletionBoard, true),
+					isNull(boards.deletedAt),
+				),
+			);
 
-		// If there is a completed board, we set boardId to it, otherwise just status.
-		// Usually the status is literally "Completed"
-
+		// isCompleted is authoritative and always set. Moving the task into a
+		// completion column is a best-effort convenience: if no column is
+		// designated, the task simply stays where it is.
 		const updateData: Partial<NewDbTask> = {
-			status: "Completed",
+			isCompleted: true,
 			updatedAt: new Date(),
 		};
 
-		if (completedBoard) {
-			updateData.boardId = completedBoard.id;
+		if (completionBoard) {
+			updateData.boardId = completionBoard.id;
+			updateData.status = completionBoard.name;
 		}
 
 		await db

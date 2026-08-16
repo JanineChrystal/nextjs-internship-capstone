@@ -1,10 +1,10 @@
 "use client";
 
-import { MessageSquare, Reply, Send, Trash2, X } from "lucide-react";
-import Image from "next/image";
+import { MessageSquare, Send, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/buttons/button";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
 import { useTaskComments } from "../../../../projects/_hooks/use-task-comments";
+import { MemberAvatarChip } from "../../avatars/member-avatar-chip";
 
 interface TaskCommentsProps {
 	taskId: string | undefined;
@@ -23,53 +23,51 @@ function CommentRow({
 	onDelete: (id: string) => void;
 }) {
 	return (
-		<div className={`flex gap-3 group ${isReply ? "ml-10 mt-3" : ""}`}>
-			<Image
-				src={comment.authorAvatarUrl || "/placeholder.svg"}
-				alt={comment.authorName}
-				width={isReply ? 24 : 32}
-				height={isReply ? 24 : 32}
-				className="rounded-full bg-surface-variant shrink-0"
+		<div className="flex gap-3 group">
+			<MemberAvatarChip
+				name={comment.authorName}
+				avatarUrl={comment.authorAvatarUrl}
+				size={isReply ? "sm" : "md"}
 			/>
-			<div className="flex-1 space-y-1">
-				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium text-foreground">
+			<div className="flex-1 min-w-0">
+				<div className="rounded-lg bg-surface-container-high px-3 py-2 min-w-0">
+					<p className="text-sm font-medium text-foreground truncate">
 						{comment.authorName}
-					</span>
-					<span className="text-xs text-secondary">
-						{new Date(comment.createdAt).toLocaleString()}
-					</span>
-					{!comment.isDeleted && (
-						<div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100">
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								className="h-5 w-5 text-secondary hover:text-primary"
-								onClick={() => onReply(comment)}
-								aria-label="Reply"
-							>
-								<Reply className="h-3 w-3" />
-							</Button>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								className="h-5 w-5 text-secondary hover:text-error hover:bg-error/10"
-								onClick={() => onDelete(comment.id)}
-								aria-label="Delete comment"
-							>
-								<Trash2 className="h-3 w-3" />
-							</Button>
-						</div>
+					</p>
+					{comment.isDeleted ? (
+						<p className="text-sm text-secondary italic">
+							{comment.authorName} deleted a comment
+						</p>
+					) : (
+						// overflow-wrap:anywhere (rather than break-word) so a single
+						// very long unbroken string also shrinks this flex item's
+						// min-content width instead of widening the whole panel.
+						<p className="text-sm text-on-surface whitespace-pre-wrap wrap-anywhere">
+							{comment.body}
+						</p>
 					)}
 				</div>
-				{comment.isDeleted ? (
-					<p className="text-sm text-secondary italic">
-						{comment.authorName} deleted a comment
-					</p>
-				) : (
-					<p className="text-sm text-on-surface">{comment.body}</p>
+				{!comment.isDeleted && (
+					<div className="flex items-center gap-3 mt-1 px-1 text-xs text-secondary">
+						{!isReply && (
+							<button
+								type="button"
+								className="font-medium hover:text-primary"
+								onClick={() => onReply(comment)}
+							>
+								Reply
+							</button>
+						)}
+						<span>{new Date(comment.createdAt).toLocaleString()}</span>
+						<button
+							type="button"
+							className="ml-auto opacity-0 group-hover:opacity-100 hover:text-error transition-opacity"
+							onClick={() => onDelete(comment.id)}
+							aria-label="Delete comment"
+						>
+							<Trash2 className="h-3 w-3" />
+						</button>
+					</div>
 				)}
 			</div>
 		</div>
@@ -131,25 +129,34 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 				{!isLoading && comments.length === 0 && (
 					<p className="text-sm text-secondary text-center">No comments yet.</p>
 				)}
-				{rootComments.map((comment) => (
-					<div key={comment.id}>
-						<CommentRow
-							comment={comment}
-							isReply={false}
-							onReply={handleReply}
-							onDelete={handleDeleteComment}
-						/>
-						{(repliesByParent.get(comment.id) ?? []).map((reply) => (
+				{rootComments.map((comment) => {
+					const replies = repliesByParent.get(comment.id) ?? [];
+					return (
+						<div key={comment.id}>
 							<CommentRow
-								key={reply.id}
-								comment={reply}
-								isReply
+								comment={comment}
+								isReply={false}
 								onReply={handleReply}
 								onDelete={handleDeleteComment}
 							/>
-						))}
-					</div>
-				))}
+							{replies.length > 0 && (
+								<div className="relative ml-4.5 pl-8 mt-3 space-y-3 border-l border-outline-variant">
+									{replies.map((reply) => (
+										<div key={reply.id} className="relative">
+											<div className="absolute -left-8 top-3.5 w-8 border-t border-outline-variant" />
+											<CommentRow
+												comment={reply}
+												isReply
+												onReply={handleReply}
+												onDelete={handleDeleteComment}
+											/>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					);
+				})}
 			</div>
 
 			<div className="p-4 border-t border-outline-variant mt-auto shrink-0">

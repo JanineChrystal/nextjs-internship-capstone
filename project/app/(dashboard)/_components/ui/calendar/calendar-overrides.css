@@ -87,12 +87,3 @@
 	padding-left: 0.25rem;
 	padding-right: 0.25rem;
 }
-
-/* Hide the all-day row completely in Week and Day views */
-.rbc-time-view .rbc-allday-cell {
-	display: none;
-}
-
-.rbc-time-view .rbc-time-header-content > .rbc-row:nth-child(2) {
-	display: none;
-}

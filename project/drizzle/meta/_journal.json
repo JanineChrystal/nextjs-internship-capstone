@@ -64,6 +64,13 @@
       "when": 1786779510990,
       "tag": "0008_dear_abomination",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786812988042,
+      "tag": "0009_mean_leader",
+      "breakpoints": true
     }
   ]
 }

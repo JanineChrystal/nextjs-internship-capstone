@@ -7,6 +7,7 @@ import {
 	deleteBoardDAL,
 	renameBoardDAL,
 	reorderBoardsDAL,
+	setCompletionBoardDAL,
 } from "@/lib/dal/boards";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 
@@ -98,6 +99,28 @@ export async function getBoardTaskCountAction(
 		return { success: true, count };
 	} catch (error) {
 		console.error("getBoardTaskCountAction error:", error);
+		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+export async function setCompletionBoardAction(
+	boardId: string,
+	projectId: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const hasPermission = await verifyProjectPermissionDAL(
+			projectId,
+			"manage_boards",
+		);
+		if (!hasPermission) {
+			return { success: false, error: "Unauthorized" };
+		}
+
+		await setCompletionBoardDAL(boardId, projectId);
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true };
+	} catch (error) {
+		console.error("setCompletionBoardAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };
 	}
 }

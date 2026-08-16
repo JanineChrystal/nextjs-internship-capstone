@@ -30,6 +30,7 @@ export function TaskModal() {
 		setTaskData,
 		handleChange,
 		handleCreate,
+		scheduleError,
 		addChecklistItem,
 		updateChecklistItem,
 		commitChecklistItem,
@@ -73,7 +74,7 @@ export function TaskModal() {
 				/>
 
 				{/* Left Pane - Details */}
-				<div className="flex-1 flex flex-col overflow-y-auto border-r border-outline-variant">
+				<div className="flex-1 min-w-0 flex flex-col overflow-y-auto border-r border-outline-variant">
 					<DialogHeader className="px-6 py-4 border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-10">
 						<DialogTitle className="flex items-center gap-3">
 							<button
@@ -113,6 +114,7 @@ export function TaskModal() {
 							isCommentsOpen={isCommentsOpen}
 							taskData={taskData}
 							handleChange={handleChange}
+							scheduleError={scheduleError}
 						/>
 
 						<TaskAssignees taskData={taskData} handleChange={handleChange} />
@@ -168,13 +170,13 @@ export function TaskModal() {
 				{/* Right Pane - Comments */}
 				{isEditMode && (
 					<div
-						className={`w-full h-auto md:h-full border-t md:border-t-0 md:border-l border-outline-variant bg-surface-container-lowest flex flex-col md:transition-all md:duration-300 md:ease-in-out md:overflow-hidden ${
+						className={`w-full min-w-0 h-auto md:h-full md:shrink-0 border-t md:border-t-0 md:border-l border-outline-variant bg-surface-container-lowest flex flex-col md:transition-all md:duration-300 md:ease-in-out md:overflow-hidden ${
 							isCommentsOpen
 								? "md:w-80 md:opacity-100"
 								: "md:w-0 md:opacity-0 md:border-none"
 						}`}
 					>
-						<div className="w-full md:w-80 h-full flex flex-col">
+						<div className="w-full md:w-80 min-w-0 h-full flex flex-col">
 							<TaskComments
 								taskId={selectedTaskId ?? undefined}
 								isOpen={isCommentsOpen}

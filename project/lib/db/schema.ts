@@ -246,6 +246,9 @@ export const boards = pgTable("Boards", {
 		.notNull(),
 	name: text("name").notNull(),
 	position: integer("position").default(0).notNull(),
+	// Marks the column that completed tasks are moved into. Identified by this
+	// flag rather than by name, so the board stays renameable.
+	isCompletionBoard: boolean("isCompletionBoard").default(false).notNull(),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
 	updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 	deletedAt: timestamp("deletedAt"),
@@ -263,6 +266,10 @@ export const tasks = pgTable("Tasks", {
 	position: integer("position").default(0).notNull(),
 	name: text("name").notNull(),
 	category: text("category"),
+	// Authoritative completion state. Deliberately independent of `status` and
+	// of which board the task sits in, so renaming or deleting a board can
+	// never lose it.
+	isCompleted: boolean("isCompleted").default(false).notNull(),
 	status: text("status").default("Not Started").notNull(),
 	priority: taskPriorityEnum("priority").notNull(),
 	startDate: timestamp("startDate"),

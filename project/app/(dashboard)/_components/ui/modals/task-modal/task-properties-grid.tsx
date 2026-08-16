@@ -34,20 +34,39 @@ interface TaskPropertiesGridProps {
 	isCommentsOpen: boolean;
 	taskData: Partial<GridTask>;
 	handleChange: (updates: Partial<GridTask>) => void;
+	scheduleError?: string | null;
 }
 
 export function TaskPropertiesGrid({
 	isCommentsOpen,
 	taskData,
 	handleChange,
+	scheduleError,
 }: TaskPropertiesGridProps) {
 	const boardColumns = useBoardStore((state) => state.columns);
-	const { categories, fetchCategories } = useCategoryStore();
+	const { categories, fetchCategories, addCategory } = useCategoryStore();
 	const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
 	useEffect(() => {
 		fetchCategories("default", "task");
 	}, [fetchCategories]);
+
+	// Registering the name in the shared Categories table is what makes it a
+	// reusable, styled option in this dropdown next time - saving it onto the
+	// task row alone would not bring it back as a selectable choice.
+	const handleCategoryChange = async (value: string) => {
+		handleChange({ category: value });
+
+		const trimmed = value.trim();
+		if (!trimmed) return;
+
+		const alreadyKnown = categories.some(
+			(c) => c.name.toLowerCase() === trimmed.toLowerCase(),
+		);
+		if (!alreadyKnown) {
+			await addCategory("default", trimmed, "task");
+		}
+	};
 
 	const dynamicStatuses = useMemo(
 		() => boardColumns.map((col) => col.title),
@@ -73,6 +92,12 @@ export function TaskPropertiesGrid({
 				return null;
 		}
 	};
+
+	const startOfToday = useMemo(() => {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		return today;
+	}, []);
 
 	const formatDateTime = (value: string | undefined) => {
 		if (!value || value === "--") return "--";
@@ -135,7 +160,7 @@ export function TaskPropertiesGrid({
 						color: c.color,
 					}))}
 					value={taskData.category}
-					onChange={(val) => handleChange({ category: val })}
+					onChange={handleCategoryChange}
 					placeholder="Select or create..."
 					onManageClick={() => setIsManageCategoriesOpen(true)}
 				/>
@@ -196,6 +221,7 @@ export function TaskPropertiesGrid({
 										: undefined
 								}
 								onSelect={(date) => handleDateSelect(datePicker.id, date)}
+								disabled={{ before: startOfToday }}
 								initialFocus
 							/>
 							<div className="p-3 border-t border-outline-variant">
@@ -219,6 +245,12 @@ export function TaskPropertiesGrid({
 					</Popover>
 				</div>
 			))}
+
+			{scheduleError && (
+				<p className="col-span-full text-sm text-error" role="alert">
+					{scheduleError}
+				</p>
+			)}
 
 			<ManageCategoriesModal
 				isOpen={isManageCategoriesOpen}

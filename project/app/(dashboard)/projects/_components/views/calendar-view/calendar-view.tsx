@@ -12,11 +12,13 @@ interface CalendarViewProps {
 export function CalendarView({ projectId }: CalendarViewProps) {
 	const {
 		selectedEventId,
+		selectedDate,
 		calendarEvents,
 		sidePanelItems,
 		handleSingleClick,
 		handleDoubleClick,
 		handleDateClick,
+		handleDateCellClick,
 	} = useCalendarView(projectId);
 
 	return (
@@ -32,9 +34,11 @@ export function CalendarView({ projectId }: CalendarViewProps) {
 					<BigCalendar
 						events={calendarEvents}
 						selectedEventId={selectedEventId}
+						selectedDate={selectedDate}
 						onEventSingleClick={handleSingleClick}
 						onEventDoubleClick={handleDoubleClick}
 						onDateClick={handleDateClick}
+						onDateCellClick={handleDateCellClick}
 					/>
 				</div>
 

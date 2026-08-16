@@ -13,6 +13,7 @@ export interface TaskOutputDTO {
 	position: number;
 	name: string;
 	category: string | null;
+	isCompleted: boolean;
 	status: string;
 	priority: string;
 	startDate: Date | null;
@@ -36,6 +37,7 @@ export function toTaskDTO(task: DbTask): TaskOutputDTO {
 		position: task.position,
 		name: sanitizeText(task.name),
 		category: sanitizeText(task.category),
+		isCompleted: task.isCompleted,
 		status: task.status,
 		priority: task.priority,
 		startDate: task.startDate,
@@ -67,9 +69,12 @@ export function toTaskUI(
 		startDate: toTaskDateInputValue(dto.startDate),
 		dueDate: toTaskDateInputValue(dto.dueDate),
 		board: boardTitle,
-		status: dto.status,
+		// Status mirrors the board the task currently sits in, resolved on every
+		// read - so renaming a board can never leave a stale status behind.
+		status: boardTitle || dto.status,
 		priority: dto.priority as GridTask["priority"],
-		isCompleted: dto.status === "Completed",
+		// Read straight off the task: never inferred from a board or status name.
+		isCompleted: dto.isCompleted,
 		checklist: checklist.map((item) => ({
 			id: item.id,
 			title: item.title,

@@ -121,6 +121,50 @@ export async function deleteBoardDAL(boardId: string, projectId: string) {
 	}
 }
 
+/**
+ * Designates a board as the project's completion column.
+ *
+ * Exactly one board per project may hold the flag, so any previous holder is
+ * cleared in the same transaction.
+ */
+export async function setCompletionBoardDAL(
+	boardId: string,
+	projectId: string,
+) {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	try {
+		await db.transaction(async (tx) => {
+			await tx
+				.update(boards)
+				.set({ isCompletionBoard: false, updatedAt: new Date() })
+				.where(
+					and(
+						eq(boards.projectId, projectId),
+						eq(boards.isCompletionBoard, true),
+					),
+				);
+
+			const result = await tx
+				.update(boards)
+				.set({ isCompletionBoard: true, updatedAt: new Date() })
+				.where(
+					and(
+						eq(boards.id, boardId),
+						eq(boards.projectId, projectId),
+						isNull(boards.deletedAt),
+					),
+				)
+				.returning();
+
+			if (result.length === 0) throw new Error("Board not found");
+		});
+	} catch (error) {
+		throw new Error("Failed to set completion board", { cause: error });
+	}
+}
+
 export async function countTasksInBoardDAL(
 	boardId: string,
 	projectId: string,

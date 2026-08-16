@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Edit2, Trash2 } from "lucide-react";
+import { CheckCircle2, Edit2, Trash2 } from "lucide-react";
 
 export const projectPriorityOptions = [
 	{ label: "Low", value: "low" },
@@ -9,7 +9,7 @@ export const projectPriorityOptions = [
 ];
 
 export interface ColumnActionConfig {
-	id: "rename" | "delete";
+	id: "rename" | "delete" | "set-completion";
 	label: string;
 	icon: LucideIcon;
 	variant?: "danger" | "default";
@@ -20,6 +20,13 @@ export const COLUMN_DROPDOWN_ACTIONS: ColumnActionConfig[] = [
 		id: "rename",
 		label: "Rename Board",
 		icon: Edit2,
+	},
+	{
+		// Designates where completed tasks are moved. Flag-based, so this board
+		// stays renameable without breaking completion.
+		id: "set-completion",
+		label: "Set as completion column",
+		icon: CheckCircle2,
 	},
 	{
 		id: "delete",

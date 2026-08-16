@@ -58,7 +58,12 @@ interface ProjectDetailClientProps {
 	project: ProjectOutputDTO;
 	projectUI: Project;
 	tasks: GridTask[];
-	boards: { id: string; name: string; position: number }[];
+	boards: {
+		id: string;
+		name: string;
+		position: number;
+		isCompletionBoard: boolean;
+	}[];
 }
 
 export function ProjectDetailClient({
@@ -86,8 +91,9 @@ export function ProjectDetailClient({
 			const formattedColumns = boards.map((b) => ({
 				id: b.id,
 				title: b.name,
-				dotColor: "bg-primary",
+				dotColor: b.isCompletionBoard ? "bg-success" : "bg-primary",
 				order: b.position,
+				isCompletionBoard: b.isCompletionBoard,
 			}));
 			setColumns(formattedColumns);
 

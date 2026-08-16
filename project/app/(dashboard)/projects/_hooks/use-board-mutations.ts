@@ -4,6 +4,7 @@ import {
 	deleteBoardAction,
 	getBoardTaskCountAction,
 	renameBoardAction,
+	setCompletionBoardAction,
 } from "@/lib/actions/board-actions";
 import { useBoardStore } from "@/stores/use-board-store";
 
@@ -56,6 +57,28 @@ export function useBoardMutations(projectId: string) {
 		}
 	};
 
+	// Only one column per project may be the completion target, so the flag is
+	// cleared everywhere else locally to mirror what the server does.
+	const setCompletionBoard = async (boardId: string) => {
+		const previousColumns = useBoardStore.getState().columns;
+
+		useBoardStore.getState().setColumns(
+			previousColumns.map((col) => ({
+				...col,
+				isCompletionBoard: col.id === boardId,
+				dotColor: col.id === boardId ? "bg-success" : "bg-primary",
+			})),
+		);
+
+		try {
+			const result = await setCompletionBoardAction(boardId, projectId);
+			if (!result.success) throw new Error(result.error);
+		} catch (error) {
+			useBoardStore.getState().setColumns(previousColumns);
+			console.error("Failed to set completion board:", error);
+		}
+	};
+
 	const executeDeleteBoard = async (boardId: string) => {
 		const previousColumns = useBoardStore.getState().columns;
 		deleteColumnLocal(boardId);
@@ -103,6 +126,7 @@ export function useBoardMutations(projectId: string) {
 	return {
 		createBoard,
 		renameBoard,
+		setCompletionBoard,
 		initiateDeleteBoard,
 		deleteWarning,
 		confirmDeleteBoard,

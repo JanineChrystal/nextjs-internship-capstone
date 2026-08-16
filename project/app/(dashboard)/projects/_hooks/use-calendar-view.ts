@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { CalendarEvent } from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
+import { isItemOnDate } from "@/lib/utils/calendar";
+import { toDueDateEventRange } from "@/lib/utils/calendar-event";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { CalendarDeadlineItem } from "@/types/calendar";
 
@@ -8,40 +10,41 @@ export function useCalendarView(projectId: string) {
 	const { openTaskModal } = useTaskStore();
 
 	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
 	const projectTasks = useMemo(() => {
-		return tasks.filter((t) => t.dueDate && t.projectId === projectId);
+		// "--" is the placeholder for "no due date" - it is truthy, so it has to
+		// be excluded explicitly or it reaches the calendar as an invalid date.
+		return tasks.filter(
+			(t) => t.dueDate && t.dueDate !== "--" && t.projectId === projectId,
+		);
 	}, [tasks, projectId]);
 
 	const calendarEvents: CalendarEvent[] = useMemo(() => {
 		return projectTasks.map((task) => {
-			// biome-ignore lint/style/noNonNullAssertion: Filtered above
-			const dueDate = new Date(task.dueDate!);
-			const startDate =
-				task.startDate && task.startDate !== "--"
-					? new Date(task.startDate)
-					: dueDate;
-			const hasExplicitTime =
-				dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0;
-
 			return {
 				id: task.id,
 				title: task.name,
-				start: startDate,
-				end: dueDate,
-				allDay: !hasExplicitTime,
-				extendedProps: { type: "task", priority: task.priority },
+				// biome-ignore lint/style/noNonNullAssertion: Filtered above
+				...toDueDateEventRange(new Date(task.dueDate!)),
+				extendedProps: {
+					type: "task",
+					priority: task.priority,
+					category: task.category,
+					status: task.status,
+				},
 			};
 		});
 	}, [projectTasks]);
 
 	const sidePanelItems: CalendarDeadlineItem[] = useMemo(() => {
-		return projectTasks.map(
+		const items = projectTasks.map(
 			(task) =>
 				({
 					id: task.id,
 					title: task.name,
 					date: task.dueDate,
+					startDate: task.startDate,
 					type: "task",
 					columnId: task.board,
 					priority: task.priority.toLowerCase() as "low" | "medium" | "high",
@@ -50,7 +53,11 @@ export function useCalendarView(projectId: string) {
 					attachments: task.attachments?.length ?? 0,
 				}) as CalendarDeadlineItem,
 		);
-	}, [projectTasks]);
+
+		if (!selectedDate) return items;
+
+		return items.filter((item) => isItemOnDate(item, selectedDate));
+	}, [projectTasks, selectedDate]);
 
 	const handleSingleClick = useCallback((item: { id: string }) => {
 		setSelectedEventId((prev) => (prev === item.id ? null : item.id));
@@ -67,19 +74,31 @@ export function useCalendarView(projectId: string) {
 		[openTaskModal],
 	);
 
+	// Fired only by the "+" icon - opens the create-task modal pre-filled
+	// with the clicked date.
 	const handleDateClick = useCallback(
-		(_date: Date) => {
-			openTaskModal();
+		(date: Date) => {
+			openTaskModal(undefined, { date });
 		},
 		[openTaskModal],
 	);
 
+	// Fired when a date cell's background is clicked (not the "+" icon, not
+	// an event) - just filters/highlights the side panel, no modal.
+	const handleDateCellClick = useCallback((date: Date) => {
+		setSelectedDate((prev) =>
+			prev && prev.toDateString() === date.toDateString() ? null : date,
+		);
+	}, []);
+
 	return {
 		selectedEventId,
+		selectedDate,
 		calendarEvents,
 		sidePanelItems,
 		handleSingleClick,
 		handleDoubleClick,
 		handleDateClick,
+		handleDateCellClick,
 	};
 }

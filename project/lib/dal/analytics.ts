@@ -52,17 +52,17 @@ export async function getDashboardOverviewDAL(
 		if (projectIds.length > 0) {
 			const tasksResult = await db
 				.select({
-					status: tasks.status,
+					isCompleted: tasks.isCompleted,
 					count: count(),
 				})
 				.from(tasks)
 				.where(
 					and(inArray(tasks.projectId, projectIds), isNull(tasks.deletedAt)),
 				)
-				.groupBy(tasks.status);
+				.groupBy(tasks.isCompleted);
 
 			for (const row of tasksResult) {
-				if (row.status === "Completed") {
+				if (row.isCompleted) {
 					completedTasks += row.count;
 				} else {
 					pendingTasks += row.count;
@@ -100,6 +100,7 @@ export async function getAnalyticsDashboardDAL(
 		let allTasks: {
 			id: string;
 			projectId: string;
+			isCompleted: boolean;
 			status: string;
 			createdAt: Date;
 			updatedAt: Date;
@@ -109,6 +110,9 @@ export async function getAnalyticsDashboardDAL(
 				.select({
 					id: tasks.id,
 					projectId: tasks.projectId,
+					isCompleted: tasks.isCompleted,
+					// Still selected for the status-breakdown chart, which groups by
+					// the board/status label rather than by completion.
 					status: tasks.status,
 					createdAt: tasks.createdAt,
 					updatedAt: tasks.updatedAt,
@@ -119,7 +123,7 @@ export async function getAnalyticsDashboardDAL(
 				);
 		}
 
-		const completedTasks = allTasks.filter((t) => t.status === "Completed");
+		const completedTasks = allTasks.filter((t) => t.isCompleted);
 		const projectVelocity = completedTasks.length;
 		const teamEfficiency =
 			allTasks.length > 0
@@ -142,9 +146,7 @@ export async function getAnalyticsDashboardDAL(
 
 		const projectProgress = activeProjects.map((proj) => {
 			const projTasks = allTasks.filter((t) => t.projectId === proj.id);
-			const projCompleted = projTasks.filter(
-				(t) => t.status === "Completed",
-			).length;
+			const projCompleted = projTasks.filter((t) => t.isCompleted).length;
 			const progress =
 				projTasks.length > 0
 					? Math.round((projCompleted / projTasks.length) * 100)

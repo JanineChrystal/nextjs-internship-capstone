@@ -13,6 +13,9 @@ import {
 	ComboboxSeparator,
 } from "@/components/ui/combobox";
 
+// Sentinel for the "Manage Categories" row - a command, never a real value.
+const MANAGE_ACTION_VALUE = "MANAGE_CATEGORIES_ACTION";
+
 export interface CreatableComboboxOption {
 	value: string;
 	label: string;
@@ -52,7 +55,7 @@ export function CreatableCombobox({
 		);
 
 	const handleValueChange = (val: string | null) => {
-		if (val === "MANAGE_CATEGORIES_ACTION") {
+		if (val === MANAGE_ACTION_VALUE) {
 			onManageClick?.();
 			// Keep previous inputValue
 			setInputValue(value || "");
@@ -61,6 +64,32 @@ export function CreatableCombobox({
 		if (val !== null) {
 			setInputValue(val);
 			onChange(val);
+		}
+	};
+
+	// Selecting an option/creating one via click already commits through
+	// handleValueChange above. This covers the case where the user types a
+	// new value and blurs the field (e.g. clicking Save) without explicitly
+	// selecting the "Create ..." row - otherwise that typed value was silently
+	// discarded and never reached onChange at all.
+	const handleInputBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+		if (containerRef.current?.contains(event.relatedTarget as Node)) return;
+
+		const trimmed = inputValue.trim();
+
+		// The "Manage Categories" row is a command, not a value. Highlighting it
+		// can leave its sentinel in the input, and committing that on blur would
+		// save it as a real category name.
+		if (trimmed === MANAGE_ACTION_VALUE) {
+			setInputValue(value || "");
+			return;
+		}
+
+		if (trimmed && trimmed !== (value || "")) {
+			setInputValue(trimmed);
+			onChange(trimmed);
+		} else if (!trimmed) {
+			setInputValue(value || "");
 		}
 	};
 
@@ -73,7 +102,12 @@ export function CreatableCombobox({
 				inputValue={inputValue}
 				onInputValueChange={setInputValue}
 			>
-				<ComboboxInput placeholder={placeholder} className="w-full" showClear />
+				<ComboboxInput
+					placeholder={placeholder}
+					className="w-full"
+					showClear
+					onBlur={handleInputBlur}
+				/>
 				<ComboboxContent container={containerRef} className="w-full p-0">
 					<ComboboxList>
 						{options.map((option) => (
@@ -111,7 +145,7 @@ export function CreatableCombobox({
 								<ComboboxSeparator />
 								<ComboboxGroup>
 									<ComboboxItem
-										value="MANAGE_CATEGORIES_ACTION"
+										value={MANAGE_ACTION_VALUE}
 										className="cursor-pointer font-medium text-muted-foreground hover:text-foreground"
 									>
 										<Settings2Icon className="mr-2 h-4 w-4" />

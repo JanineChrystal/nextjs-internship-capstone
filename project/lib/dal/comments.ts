@@ -68,6 +68,18 @@ export async function getCommentsByTaskId(
 	}
 }
 
+// Used to enforce a 2-level (root + direct reply) thread limit before insert -
+// a reply's parent must itself be a root comment (parentId === null).
+export async function getCommentParentId(
+	commentId: string,
+): Promise<string | null> {
+	const [row] = await db
+		.select({ parentId: comments.parentId })
+		.from(comments)
+		.where(eq(comments.id, commentId));
+	return row?.parentId ?? null;
+}
+
 export async function createCommentInDB(
 	taskId: string,
 	projectId: string,

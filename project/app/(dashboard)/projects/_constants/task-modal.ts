@@ -15,7 +15,7 @@ export const DEFAULT_TASK_DATA: Partial<GridTask> = {
 	isCompleted: false,
 	status: "Backlog",
 	priority: "medium",
-	category: "Design",
+	category: "",
 	board: "Backlog",
 	startDate: "--",
 	dueDate: "--",

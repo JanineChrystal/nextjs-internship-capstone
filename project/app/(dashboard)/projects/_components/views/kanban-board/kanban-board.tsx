@@ -77,6 +77,7 @@ export function KanbanBoard({
 								id={col.id}
 								title={col.title}
 								dotColor={col.dotColor}
+								isCompletionBoard={col.isCompletionBoard}
 								tasks={tasks.filter((t) => t.board === col.title)}
 							/>
 						))}

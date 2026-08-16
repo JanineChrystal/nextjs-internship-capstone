@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { CalendarEvent } from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
+import { isItemOnDate } from "@/lib/utils/calendar";
+import { toDueDateEventRange } from "@/lib/utils/calendar-event";
 import type { Project } from "@/lib/validations/project-schema";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useTaskStore } from "@/stores/use-task-store";
@@ -28,30 +30,28 @@ export function useCalendarPage() {
 				id: p.id,
 				title: p.title,
 				// biome-ignore lint/style/noNonNullAssertion: Filtered above
-				start: new Date(p.dueDate!),
-				// biome-ignore lint/style/noNonNullAssertion: Filtered above
-				end: new Date(p.dueDate!),
-				allDay: true,
-				extendedProps: { type: "project", priority: p.priority },
+				...toDueDateEventRange(new Date(p.dueDate!)),
+				extendedProps: {
+					type: "project",
+					priority: p.priority,
+					category: p.category,
+					status: p.status,
+				},
 			}));
 
 		const taskEvents: CalendarEvent[] = tasks
 			.filter((t) => t.dueDate && t.dueDate !== "--")
-			.map((t) => {
-				const dueDate = new Date(t.dueDate);
-				const startDate =
-					t.startDate && t.startDate !== "--" ? new Date(t.startDate) : dueDate;
-				const hasExplicitTime =
-					dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0;
-				return {
-					id: t.id,
-					title: t.name,
-					start: startDate,
-					end: dueDate,
-					allDay: !hasExplicitTime,
-					extendedProps: { type: "task", priority: t.priority },
-				};
-			});
+			.map((t) => ({
+				id: t.id,
+				title: t.name,
+				...toDueDateEventRange(new Date(t.dueDate)),
+				extendedProps: {
+					type: "task",
+					priority: t.priority,
+					category: t.category,
+					status: t.status,
+				},
+			}));
 
 		return [...projectEvents, ...taskEvents];
 	}, [projects, tasks]);
@@ -65,6 +65,7 @@ export function useCalendarPage() {
 						id: p.id,
 						title: p.title,
 						dueDate: p.dueDate,
+						startDate: p.startDate,
 						type: "project",
 						category: p.category,
 						priority: p.priority,
@@ -79,6 +80,7 @@ export function useCalendarPage() {
 						id: t.id,
 						title: t.name,
 						date: t.dueDate,
+						startDate: t.startDate,
 						type: "task",
 						columnId: t.board,
 						priority: t.priority.toLowerCase() as "low" | "medium" | "high",
@@ -91,11 +93,7 @@ export function useCalendarPage() {
 		const items = [...projectItems, ...taskItems];
 		if (!selectedDate) return items;
 
-		return items.filter((item) => {
-			const dateValue = item.type === "project" ? item.dueDate : item.date;
-			if (!dateValue) return false;
-			return new Date(dateValue).toDateString() === selectedDate.toDateString();
-		});
+		return items.filter((item) => isItemOnDate(item, selectedDate));
 	}, [projects, tasks, selectedDate]);
 
 	const handleSingleClick = useCallback((item: { id: string }) => {
@@ -143,13 +141,20 @@ export function useCalendarPage() {
 			if (choice === "project") {
 				setEditProjectData(undefined);
 				setIsProjectModalOpen(true);
+				// pendingCreationDate stays set - ProjectModal reads it as
+				// prefillDate and it's cleared when that modal closes.
 			} else {
-				openTaskModal();
+				openTaskModal(undefined, { date: pendingCreationDate ?? undefined });
+				setPendingCreationDate(null);
 			}
-			setPendingCreationDate(null);
 		},
-		[openTaskModal],
+		[openTaskModal, pendingCreationDate],
 	);
+
+	const closeProjectModal = useCallback(() => {
+		setIsProjectModalOpen(false);
+		setPendingCreationDate(null);
+	}, []);
 
 	return {
 		isProjectModalOpen,
@@ -161,6 +166,7 @@ export function useCalendarPage() {
 		calendarEvents,
 		upcomingDeadlines,
 		setIsProjectModalOpen,
+		closeProjectModal,
 		setIsChoiceModalOpen,
 		setEditProjectData,
 		handleSingleClick,

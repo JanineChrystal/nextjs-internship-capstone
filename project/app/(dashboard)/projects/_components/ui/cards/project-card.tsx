@@ -111,7 +111,9 @@ export function ProjectCard({
 				<div className="mt-auto pt-4 flex flex-col gap-3">
 					<div className="flex justify-between text-xs text-card-foreground/80 font-medium">
 						<span>{project.membersCount} members</span>
-						<span>{project.tasksCount} tasks</span>
+						<span>
+							{project.tasksCompleted ?? 0}/{project.tasksCount ?? 0} tasks
+						</span>
 					</div>
 					<Progress
 						value={project.progress}

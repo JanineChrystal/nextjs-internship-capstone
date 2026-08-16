@@ -39,9 +39,18 @@ export interface CalendarEvent {
 	extendedProps?: {
 		priority?: string;
 		type?: "project" | "task";
+		category?: string;
+		status?: string;
 		[key: string]: unknown;
 	};
 }
+
+const PRIORITY_DOT_CLASSES: Record<string, string> = {
+	low: "bg-emerald-500",
+	medium: "bg-amber-500",
+	high: "bg-orange-500",
+	urgent: "bg-red-500",
+};
 
 interface GenericCalendarProps {
 	events: CalendarEvent[];
@@ -161,6 +170,46 @@ function CustomEvent({ event }: { event: CalendarEvent }) {
 	);
 }
 
+// Week/Day views give each event a real block of space, so show the full
+// detail set there instead of the single-line pill used in Month view.
+function CustomDetailedEvent({ event }: { event: CalendarEvent }) {
+	const { priority, type, category, status } = event.extendedProps ?? {};
+
+	return (
+		<div className="flex flex-col gap-0.5 h-full w-full overflow-hidden px-1.5 py-1 text-left">
+			<div className="flex items-center gap-1.5 min-w-0">
+				<span
+					className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+						PRIORITY_DOT_CLASSES[priority ?? ""] ?? "bg-primary"
+					}`}
+				/>
+				<span className="text-[11px] font-semibold text-foreground truncate">
+					{event.title}
+				</span>
+			</div>
+
+			<div className="flex flex-wrap items-center gap-1 min-w-0">
+				{category && (
+					<span className="px-1 py-px rounded bg-primary/10 text-primary text-[9px] font-medium uppercase tracking-wide truncate max-w-full">
+						{category}
+					</span>
+				)}
+				{status && (
+					<span className="px-1 py-px rounded bg-surface-variant text-secondary text-[9px] font-medium truncate max-w-full">
+						{status}
+					</span>
+				)}
+			</div>
+
+			{priority && (
+				<span className="text-[9px] text-secondary capitalize truncate">
+					{priority} priority{type ? ` · ${type}` : ""}
+				</span>
+			)}
+		</div>
+	);
+}
+
 export function BigCalendar({
 	events,
 	defaultView = "month",
@@ -208,12 +257,12 @@ export function BigCalendar({
 	const components = useMemo(
 		() => ({
 			toolbar: CustomToolbar,
-			event: CustomEvent,
+			event: view === "month" ? CustomEvent : CustomDetailedEvent,
 			month: {
 				dateHeader: CustomMonthDateHeader,
 			},
 		}),
-		[CustomMonthDateHeader],
+		[CustomMonthDateHeader, view],
 	);
 
 	const eventPropGetter = useCallback(
@@ -228,10 +277,13 @@ export function BigCalendar({
 				style: {
 					borderRadius: "4px",
 					outline: "none",
+					// The detailed renderer needs room to show its extra rows;
+					// short events would otherwise clip them entirely.
+					...(view === "month" ? {} : { minHeight: "58px" }),
 				},
 			};
 		},
-		[selectedEventId],
+		[selectedEventId, view],
 	);
 
 	const dayPropGetter = useCallback(

@@ -33,7 +33,13 @@ export default async function ProjectPage({
 		notFound();
 	}
 
-	const projectUI = toProjectUI(project, user.id);
+	// Derived from the tasks already fetched above rather than a second
+	// aggregate query, so the detail page's counts match the projects list.
+	const projectUI = toProjectUI(project, user.id, {
+		taskCount: tasks.length,
+		completedTaskCount: tasks.filter((t) => t.isCompleted).length,
+		memberCount: 0,
+	});
 
 	const taskIds = tasks.map((task) => task.id);
 	const [assigneesByTask, checklistByTask, attachmentsByTask] =

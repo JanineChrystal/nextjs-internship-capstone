@@ -25,6 +25,9 @@ export function useEditProject(
 
 	const form = useForm<EditProjectFormValues>({
 		resolver: zodResolver(editProjectSchema),
+		// Surface schedule errors as soon as a date is picked, matching how the
+		// task modal validates, rather than only on submit.
+		mode: "onChange",
 		defaultValues: initialData,
 	});
 

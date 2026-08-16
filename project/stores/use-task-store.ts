@@ -8,7 +8,11 @@ interface TaskState {
 	selectedTaskId: string | null;
 	selectedTaskIds: Set<string>;
 	createBoardTitle: string | null;
-	openTaskModal: (taskId?: string, options?: { board?: string }) => void;
+	createDate: Date | null;
+	openTaskModal: (
+		taskId?: string,
+		options?: { board?: string; date?: Date },
+	) => void;
 	closeTaskModal: () => void;
 	createTask: (task: GridTask) => void;
 	updateTask: (id: string, updates: Partial<GridTask>) => void;
@@ -30,18 +34,21 @@ export const useTaskStore = create<TaskState>((set) => ({
 	selectedTaskId: null,
 	selectedTaskIds: new Set<string>(),
 	createBoardTitle: null,
+	createDate: null,
 
 	openTaskModal: (taskId, options) =>
 		set({
 			isTaskModalOpen: true,
 			selectedTaskId: taskId || null,
 			createBoardTitle: options?.board || null,
+			createDate: options?.date || null,
 		}),
 	closeTaskModal: () =>
 		set({
 			isTaskModalOpen: false,
 			selectedTaskId: null,
 			createBoardTitle: null,
+			createDate: null,
 		}),
 
 	createTask: (task) => set((state) => ({ tasks: [task, ...state.tasks] })),
@@ -118,19 +125,31 @@ export const useTaskStore = create<TaskState>((set) => ({
 		})),
 
 	bulkCompleteTasks: (ids) =>
-		set((state) => ({
-			tasks: state.tasks.map((task) =>
-				ids.has(task.id)
-					? {
-							...task,
-							isCompleted: true,
-							status: "Completed",
-							board: "Completed",
-						}
-					: task,
-			),
-			selectedTaskIds: new Set(),
-		})),
+		set((state) => {
+			// Move into the designated completion column if the project has one;
+			// otherwise tasks stay put and are simply flagged complete.
+			const completionColumn = useBoardStore
+				.getState()
+				.columns.find((col) => col.isCompletionBoard);
+
+			return {
+				tasks: state.tasks.map((task) =>
+					ids.has(task.id)
+						? {
+								...task,
+								isCompleted: true,
+								...(completionColumn
+									? {
+											board: completionColumn.title,
+											status: completionColumn.title,
+										}
+									: {}),
+							}
+						: task,
+				),
+				selectedTaskIds: new Set(),
+			};
+		}),
 
 	setTasks: (tasks) => set({ tasks }),
 

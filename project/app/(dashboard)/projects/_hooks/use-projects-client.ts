@@ -200,9 +200,7 @@ export function useProjectsClient(initialProjects: Project[]) {
 
 	// Effects
 	useEffect(() => {
-		if (initialProjects && initialProjects.length > 0) {
-			setProjects(initialProjects);
-		}
+		setProjects(initialProjects ?? []);
 	}, [initialProjects, setProjects]);
 
 	return {

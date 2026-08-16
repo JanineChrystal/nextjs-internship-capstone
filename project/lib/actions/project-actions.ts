@@ -56,16 +56,15 @@ export async function createProjectAction(
 
 		const statusValue = data.status || "active";
 
-		if (data.category) {
-			await upsertWorkspaceCategoryDAL(workspaceId, data.category, "project");
-		}
+		const categoryValue = data.category || "Uncategorized";
+		await upsertWorkspaceCategoryDAL(workspaceId, categoryValue, "project");
 
 		const newProject = await createProjectInDB({
 			workspaceId,
 			ownerId: user.id,
 			name: data.title,
 			description: data.description || null,
-			category: data.category || null,
+			category: categoryValue,
 			startDate: data.startDate ? new Date(`${data.startDate}:00.000Z`) : null,
 			dueDate: data.dueDate ? new Date(`${data.dueDate}:00.000Z`) : null,
 			status: statusValue,

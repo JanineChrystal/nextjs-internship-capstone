@@ -6,7 +6,7 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { CheckCircle2, MoreHorizontal, Plus } from "lucide-react";
 import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { Button } from "@/components/ui/buttons/button";
 import {
@@ -25,9 +25,16 @@ interface ColumnProps {
 	title: string;
 	dotColor: string;
 	tasks: GridTask[];
+	isCompletionBoard?: boolean;
 }
 
-export function Column({ id, title, dotColor, tasks }: ColumnProps) {
+export function Column({
+	id,
+	title,
+	dotColor,
+	tasks,
+	isCompletionBoard,
+}: ColumnProps) {
 	const {
 		attributes,
 		listeners,
@@ -54,6 +61,7 @@ export function Column({ id, title, dotColor, tasks }: ColumnProps) {
 		handleRenameSubmit,
 		handleKeyDown,
 		deleteColumn,
+		markAsCompletionColumn,
 		deleteWarning,
 		confirmDeleteBoard,
 		closeDeleteWarning,
@@ -64,6 +72,9 @@ export function Column({ id, title, dotColor, tasks }: ColumnProps) {
 		switch (actionId) {
 			case "rename":
 				setIsEditingTitle(true);
+				break;
+			case "set-completion":
+				markAsCompletionColumn();
 				break;
 			case "delete":
 				deleteColumn();
@@ -100,6 +111,14 @@ export function Column({ id, title, dotColor, tasks }: ColumnProps) {
 						<h3 className="flex items-center gap-2">
 							{title}{" "}
 							<span className="text-secondary ml-1">{tasks.length}</span>
+							{isCompletionBoard && (
+								<span
+									className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-success/10 text-success border border-success/20"
+									title="Completed tasks are moved into this column"
+								>
+									<CheckCircle2 className="w-2.5 h-2.5" /> Done
+								</span>
+							)}
 						</h3>
 					)}
 				</div>

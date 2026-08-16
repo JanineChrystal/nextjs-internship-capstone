@@ -18,6 +18,50 @@ function toApiDateInput(value: string | undefined): string | undefined {
 	return value && value !== "--" ? value : undefined;
 }
 
+function parseTaskDate(value: string | undefined): Date | null {
+	if (!value || value === "--") return null;
+	const parsed = new Date(value);
+	return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
+ * Task dates are saved field-by-field, so each edit has to be validated
+ * against the merged result rather than the single changed field.
+ * Returns an error message, or null when the schedule is valid.
+ */
+function validateSchedule(
+	merged: Partial<GridTask>,
+	changed: Partial<GridTask>,
+): string | null {
+	const start = parseTaskDate(merged.startDate);
+	const due = parseTaskDate(merged.dueDate);
+
+	if (start && due && due.getTime() < start.getTime()) {
+		return "Due date must be on or after the start date.";
+	}
+
+	// Only the date the user just picked is held to the not-in-the-past rule,
+	// so an existing task that already started remains editable.
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+
+	if (changed.startDate !== undefined) {
+		const changedStart = parseTaskDate(changed.startDate);
+		if (changedStart && changedStart.getTime() < today.getTime()) {
+			return "Start date cannot be earlier than today.";
+		}
+	}
+
+	if (changed.dueDate !== undefined) {
+		const changedDue = parseTaskDate(changed.dueDate);
+		if (changedDue && changedDue.getTime() < today.getTime()) {
+			return "Due date cannot be earlier than today.";
+		}
+	}
+
+	return null;
+}
+
 export function useTaskModal() {
 	const params = useParams();
 	const projectId = params?.id as string;
@@ -28,6 +72,7 @@ export function useTaskModal() {
 		isTaskModalOpen,
 		selectedTaskId,
 		createBoardTitle,
+		createDate,
 		closeTaskModal,
 		createTask,
 		updateTask,
@@ -41,6 +86,7 @@ export function useTaskModal() {
 	const [taskData, setTaskData] =
 		React.useState<Partial<GridTask>>(DEFAULT_TASK_DATA);
 	const [isCommentsOpen, setIsCommentsOpen] = React.useState(true);
+	const [scheduleError, setScheduleError] = React.useState<string | null>(null);
 	const [deleteWarning, setDeleteWarning] = React.useState<{
 		isOpen: boolean;
 		taskName: string;
@@ -81,6 +127,17 @@ export function useTaskModal() {
 	// Action Handlers
 	const handleChange = async (updates: Partial<GridTask>) => {
 		const newData = { ...taskData, ...updates };
+
+		const touchesSchedule =
+			updates.startDate !== undefined || updates.dueDate !== undefined;
+		if (touchesSchedule) {
+			const error = validateSchedule(newData, updates);
+			setScheduleError(error);
+			// Reject the change outright so an invalid range is never shown
+			// as accepted, let alone persisted.
+			if (error) return;
+		}
+
 		setTaskData(newData);
 		if (!isEditMode || !selectedTaskId || !projectId) return;
 
@@ -121,6 +178,15 @@ export function useTaskModal() {
 	};
 
 	const handleCreate = async () => {
+		const blockingError = validateSchedule(taskData, {
+			startDate: taskData.startDate,
+			dueDate: taskData.dueDate,
+		});
+		if (blockingError) {
+			setScheduleError(blockingError);
+			return;
+		}
+
 		const finalData = { ...taskData };
 		if (!finalData.name?.trim()) {
 			finalData.name = "Untitled Task";
@@ -187,12 +253,32 @@ export function useTaskModal() {
 		}
 	};
 
+	// Completion is recorded on the task itself. Moving it into the designated
+	// completion column is a best-effort extra: when the project has not
+	// designated one (or it was deleted), the task stays in its current column
+	// and is simply flagged complete.
+	const buildCompletionUpdates = (
+		current: Partial<GridTask>,
+	): Partial<GridTask> => {
+		const nextCompleted = !current.isCompleted;
+		if (!nextCompleted) {
+			return { isCompleted: false };
+		}
+
+		const completionColumn = columns.find((col) => col.isCompletionBoard);
+		if (!completionColumn) {
+			return { isCompleted: true };
+		}
+
+		return {
+			isCompleted: true,
+			board: completionColumn.title,
+			status: completionColumn.title,
+		};
+	};
+
 	const toggleTaskCompletion = () => {
-		handleChange({
-			isCompleted: !taskData.isCompleted,
-			status: !taskData.isCompleted ? "Completed" : "In Progress",
-			board: !taskData.isCompleted ? "Completed" : taskData.board,
-		});
+		handleChange(buildCompletionUpdates(taskData));
 	};
 
 	const handleDuplicate = async () => {
@@ -253,17 +339,13 @@ export function useTaskModal() {
 		const targetTask = tasks.find((t) => t.id === targetTaskId);
 		if (!targetTask) return;
 		const previousTasks = useTaskStore.getState().tasks;
-		const updates = {
-			isCompleted: !targetTask.isCompleted,
-			status: !targetTask.isCompleted ? "Completed" : "In Progress",
-			board: !targetTask.isCompleted ? "Completed" : targetTask.board,
-		};
+		const updates = buildCompletionUpdates(targetTask);
 		updateTask(targetTaskId, updates);
 		try {
 			const result = await updateTaskAction(targetTaskId, projectId, {
 				status: updates.status,
 				isCompleted: updates.isCompleted,
-				boardId: resolveBoardId(updates.board),
+				boardId: updates.board ? resolveBoardId(updates.board) : undefined,
 			});
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
@@ -338,6 +420,7 @@ export function useTaskModal() {
 	React.useEffect(() => {
 		if (isTaskModalOpen && !isInitializedRef.current) {
 			isInitializedRef.current = true;
+			setScheduleError(null);
 			if (isEditMode && existingTask) {
 				setTaskData(existingTask);
 			} else {
@@ -346,10 +429,24 @@ export function useTaskModal() {
 				// the project's first real board rather than a hardcoded
 				// default that may not exist for this project.
 				const initialBoard = createBoardTitle || columns[0]?.title || "";
+
+				// If opened from a calendar date click, prefill both dates with
+				// the clicked day merged with the current time-of-day, rather
+				// than leaving them unset.
+				let prefillDate = DEFAULT_TASK_DATA.dueDate;
+				if (createDate) {
+					const now = new Date();
+					const merged = new Date(createDate);
+					merged.setHours(now.getHours(), now.getMinutes(), 0, 0);
+					prefillDate = merged.toISOString();
+				}
+
 				setTaskData({
 					...DEFAULT_TASK_DATA,
 					board: initialBoard,
 					status: initialBoard,
+					startDate: prefillDate,
+					dueDate: prefillDate,
 					assignees: [],
 					checklist: [],
 					attachments: [],
@@ -361,7 +458,14 @@ export function useTaskModal() {
 		if (!isTaskModalOpen) {
 			isInitializedRef.current = false;
 		}
-	}, [isTaskModalOpen, isEditMode, existingTask, createBoardTitle, columns]);
+	}, [
+		isTaskModalOpen,
+		isEditMode,
+		existingTask,
+		createBoardTitle,
+		createDate,
+		columns,
+	]);
 
 	return {
 		projectId,
@@ -374,6 +478,7 @@ export function useTaskModal() {
 		setTaskData,
 		handleChange,
 		handleCreate,
+		scheduleError,
 		...checklist,
 		toggleTaskCompletion,
 		...attachments,
