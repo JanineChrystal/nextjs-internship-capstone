@@ -21,13 +21,8 @@ export type BulkInvitePayload = z.infer<typeof BulkInvitePayloadSchema>;
 export type ShareLinkConfig = z.infer<typeof ShareLinkConfigSchema>;
 export type FlaggedCommentItem = z.infer<typeof FlaggedCommentSchema>;
 
-export interface WorkspaceUser {
-	id: string;
-	name: string;
-	email: string;
-	avatarUrl?: string;
-	roles: string[];
-	projectIds: string[];
-	projectCount: number;
-	status: "active" | "inactive";
-}
+// The workspace directory row type now lives with its mapper as
+// WorkspaceMemberOutputDTO in lib/dtos/workspace-member-dto.ts. The old
+// WorkspaceUser interface was removed: it duplicated that shape and typed
+// status as "active" | "inactive", which the WorkspaceStatus enum
+// ("pending" | "active") cannot produce.

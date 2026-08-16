@@ -1,9 +1,9 @@
 import { UserCard } from "@/app/(dashboard)/_components/ui/cards/user-card";
-import type { WorkspaceUser } from "@/types/member";
+import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
 
 interface BoardViewProps {
-	users: WorkspaceUser[];
-	selectedIds: string[];
+	users: WorkspaceMemberOutputDTO[];
+	selectedIds: Set<string>;
 	onToggleSelect: (userId: string) => void;
 	onRemove: (userId: string) => void;
 }
@@ -20,7 +20,7 @@ export function BoardView({
 				<UserCard
 					key={user.id}
 					user={user}
-					isSelected={selectedIds.includes(user.id)}
+					isSelected={selectedIds.has(user.id)}
 					onToggleSelect={onToggleSelect}
 					onRemove={onRemove}
 				/>

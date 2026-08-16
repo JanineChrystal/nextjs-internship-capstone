@@ -4,10 +4,10 @@ import Link from "next/link";
 import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
 import { Button } from "@/components/ui/buttons/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { WorkspaceUser } from "@/types/member";
+import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
 
 interface UserCardProps {
-	user: WorkspaceUser;
+	user: WorkspaceMemberOutputDTO;
 	isSelected: boolean;
 	onToggleSelect: (userId: string) => void;
 	onRemove: (userId: string) => void;
@@ -76,7 +76,7 @@ export const UserCard = ({
 
 				{/* Roles */}
 				<div className="flex flex-wrap justify-center gap-2 mb-4 h-14 overflow-hidden">
-					{user.roles.map((role) => (
+					{user.jobRoles.map((role) => (
 						<TagBadge key={role} tag={role} />
 					))}
 				</div>

@@ -8,12 +8,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/buttons/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { GridTable } from "@/components/views/grid-table/grid-table";
+import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
 import type { ColumnDef } from "@/types/grid-table";
-import type { WorkspaceUser } from "@/types/member";
 
 interface GridViewProps {
-	users: WorkspaceUser[];
-	selectedIds: string[];
+	users: WorkspaceMemberOutputDTO[];
+	selectedIds: Set<string>;
 	onToggleSelect: (userId: string) => void;
 	onSelectAll: (checked: boolean) => void;
 	onRemove: (userId: string) => void;
@@ -31,7 +31,7 @@ export function GridView({
 	onSort,
 }: GridViewProps) {
 	const [isSelectionModeActive, setIsSelectionModeActive] = useState(false);
-	const isSelectionActive = isSelectionModeActive || selectedIds.length > 0;
+	const isSelectionActive = isSelectionModeActive || selectedIds.size > 0;
 
 	const columns: ColumnDef[] = [
 		{
@@ -66,7 +66,7 @@ export function GridView({
 			className: "flex-2",
 		},
 		{
-			key: "roles",
+			key: "jobRoles",
 			title: "Roles",
 			sortable: false,
 			className: "flex-2",
@@ -94,7 +94,7 @@ export function GridView({
 				onSort={onSort}
 				keyExtractor={(user) => user.id}
 				renderRow={(user) => {
-					const isSelected = selectedIds.includes(user.id);
+					const isSelected = selectedIds.has(user.id);
 					return (
 						<>
 							<div className="w-12 flex-none">
@@ -125,7 +125,7 @@ export function GridView({
 								</div>
 
 								<div className="flex-2 flex items-center gap-2 flex-wrap">
-									{Array.from(new Set(user.roles)).map((role) => (
+									{user.jobRoles.map((role) => (
 										<TagBadge key={role} tag={role} />
 									))}
 								</div>
