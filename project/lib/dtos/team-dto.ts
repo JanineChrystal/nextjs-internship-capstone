@@ -1,7 +1,4 @@
-import type { InferSelectModel } from "drizzle-orm";
-import type { teams } from "@/lib/db/schema";
-
-export type DbTeam = InferSelectModel<typeof teams>;
+import type { DbTeam } from "@/lib/types/team";
 
 export interface TeamOutputDTO {
 	id: string;
@@ -9,14 +6,22 @@ export interface TeamOutputDTO {
 	name: string;
 	description: string | null;
 	createdAt: string;
+	updatedAt: string;
+}
+
+// Strips characters that would let stored text inject markup when rendered.
+function sanitizeText<T extends string | null>(value: T): T {
+	if (value === null) return value;
+	return value.replace(/[<>]/g, "") as T;
 }
 
 export function toTeamDTO(team: DbTeam): TeamOutputDTO {
 	return {
 		id: team.id,
 		workspaceId: team.workspaceId,
-		name: team.name,
-		description: team.description,
+		name: sanitizeText(team.name),
+		description: sanitizeText(team.description),
 		createdAt: team.createdAt.toISOString(),
+		updatedAt: team.updatedAt.toISOString(),
 	};
 }

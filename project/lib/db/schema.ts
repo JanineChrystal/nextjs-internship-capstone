@@ -1,6 +1,7 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
 	boolean,
+	index,
 	integer,
 	pgEnum,
 	pgTable,
@@ -8,6 +9,7 @@ import {
 	text,
 	timestamp,
 	unique,
+	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
 
@@ -114,18 +116,37 @@ export const workspaceMembers = pgTable(
 	},
 	(table) => ({
 		workspaceUserUnique: unique().on(table.workspaceId, table.userId),
+		// Directory and membership lookups filter by user across workspaces.
+		userIdx: index("WorkspaceMembers_userId_idx").on(table.userId),
 	}),
 );
 
-export const teams = pgTable("Teams", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	workspaceId: uuid("workspaceId")
-		.references(() => workspaces.id, { onDelete: "cascade" })
-		.notNull(),
-	name: text("name").notNull(),
-	description: text("description"),
-	createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const teams = pgTable(
+	"Teams",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		workspaceId: uuid("workspaceId")
+			.references(() => workspaces.id, { onDelete: "cascade" })
+			.notNull(),
+		name: text("name").notNull(),
+		description: text("description"),
+		createdAt: timestamp("createdAt").defaultNow().notNull(),
+		updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+		deletedAt: timestamp("deletedAt"),
+	},
+	(table) => ({
+		// Team names double as their identity in pickers, so duplicates inside a
+		// single workspace would be indistinguishable to the user.
+		//
+		// Scoped to live rows only. Teams soft-delete, and a full constraint would
+		// permanently burn a name once deleted. It also must NOT use the resurrect
+		// pattern that workspaceMembers/projectMembers use: recreating a deleted
+		// "Design" team should be a fresh team, not a revival of its old roster.
+		workspaceTeamNameUnique: uniqueIndex("Teams_workspaceId_name_live_unique")
+			.on(table.workspaceId, table.name)
+			.where(sql`"deletedAt" is null`),
+	}),
+);
 
 export const teamMembers = pgTable(
 	"TeamMembers",
@@ -140,6 +161,9 @@ export const teamMembers = pgTable(
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.teamId, table.userId] }),
+		// The PK is (teamId, userId), so "which teams is this user in?" - the
+		// direction every permission check runs - has no usable index without this.
+		userIdx: index("TeamMembers_userId_idx").on(table.userId),
 	}),
 );
 
@@ -214,9 +238,13 @@ export const projectTeams = pgTable(
 			.references(() => teams.id, { onDelete: "cascade" })
 			.notNull(),
 		accessLevel: accessLevelEnum("accessLevel").default("member").notNull(),
+		createdAt: timestamp("createdAt").defaultNow().notNull(),
+		updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.projectId, table.teamId] }),
+		// Reverse of the PK order: "which projects does this team grant access to?"
+		teamIdx: index("ProjectTeams_teamId_idx").on(table.teamId),
 	}),
 );
 
