@@ -1,6 +1,10 @@
 import "server-only";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
+import {
+	createPendingInviteInDB,
+	normalizeInviteEmail,
+} from "@/lib/dal/pending-invites";
 import { resolveActiveWorkspaceDAL } from "@/lib/dal/workspaces";
 import { db } from "@/lib/db";
 import {
@@ -17,6 +21,7 @@ import {
 	toWorkspaceMemberDTO,
 	type WorkspaceMemberOutputDTO,
 } from "@/lib/dtos/workspace-member-dto";
+import type { InviteOutcome } from "@/lib/types/pending-invite";
 
 /**
  * Everyone in the caller's workspace directory, with the projects they can
@@ -153,13 +158,13 @@ export async function getWorkspaceDirectoryDAL(
  * Deliberately has no project side effect: this is a contact-list addition, and
  * project access is granted separately from within a project.
  *
- * Unregistered emails are rejected with a clear message rather than silently
- * doing nothing. Pending invites for people who have not signed up are Phase 4.
+ * An address with no account yet is recorded as a pending invite rather than
+ * refused, and claimed automatically when that person signs up.
  */
 export async function inviteToWorkspaceInDB(
 	email: string,
 	workspaceId?: string,
-): Promise<WorkspaceMemberOutputDTO> {
+): Promise<{ outcome: InviteOutcome; member?: WorkspaceMemberOutputDTO }> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
@@ -169,7 +174,7 @@ export async function inviteToWorkspaceInDB(
 		throw new Error("Only the workspace owner can invite members");
 	}
 
-	const normalizedEmail = email.trim().toLowerCase();
+	const normalizedEmail = normalizeInviteEmail(email);
 
 	try {
 		const [targetUser] = await db
@@ -177,7 +182,18 @@ export async function inviteToWorkspaceInDB(
 			.from(users)
 			.where(and(eq(users.email, normalizedEmail), isNull(users.deletedAt)));
 
-		if (!targetUser) throw new Error("USER_NOT_REGISTERED");
+		// No account yet: store the invitation so signing up grants directory
+		// membership automatically, instead of asking the inviter to remember to
+		// come back and do it again.
+		if (!targetUser) {
+			await createPendingInviteInDB({
+				workspaceId: workspace.id,
+				projectId: null,
+				email: normalizedEmail,
+				invitedBy: user.id,
+			});
+			return { outcome: "pending" };
+		}
 
 		if (targetUser.id === user.id) {
 			throw new Error("You are already a member of this workspace");
@@ -198,12 +214,14 @@ export async function inviteToWorkspaceInDB(
 			})
 			.returning();
 
-		return toWorkspaceMemberDTO(membership, targetUser, [], []);
+		return {
+			outcome: "invited",
+			member: toWorkspaceMemberDTO(membership, targetUser, [], []),
+		};
 	} catch (error) {
 		if (
 			error instanceof Error &&
-			(error.message === "USER_NOT_REGISTERED" ||
-				error.message === "You are already a member of this workspace")
+			error.message === "You are already a member of this workspace"
 		) {
 			throw error;
 		}

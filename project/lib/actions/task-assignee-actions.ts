@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getSessionFailureReason } from "@/lib/dal/auth";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import {
 	getProjectMembersDAL,
@@ -19,7 +20,7 @@ export async function getProjectMembersAction(projectId: string): Promise<{
 			"view_project",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		const members = await getProjectMembersDAL(projectId);
@@ -41,7 +42,7 @@ export async function setTaskAssigneesAction(
 			"edit_task",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await setTaskAssigneesInDB(taskId, projectId, userIds);

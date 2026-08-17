@@ -1,6 +1,7 @@
 import type { WebhookEvent } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { Webhook } from "svix";
+import { claimPendingInvitesForUserDAL } from "@/lib/dal/pending-invites";
 import { deleteUserFromDB, upsertUserInDB } from "@/lib/dal/users";
 import type { NewDbUser } from "@/lib/types/user";
 
@@ -68,7 +69,28 @@ export async function POST(req: Request) {
 
 		try {
 			// sync the user data to neon database by passing the single object
-			await upsertUserInDB(userToSync);
+			const syncedUser = await upsertUserInDB(userToSync);
+
+			// Grant any access that was invited before this person had an account.
+			// Deliberately in its own try/catch and outside the user transaction: a
+			// failure to claim invites must never undo user creation, and Clerk
+			// retrying the whole webhook is safe because claiming is idempotent.
+			if (eventType === "user.created" && userToSync.email) {
+				try {
+					const { claimedCount } = await claimPendingInvitesForUserDAL(
+						userToSync.email,
+						syncedUser.id,
+					);
+					if (claimedCount > 0) {
+						console.log(
+							`Claimed ${claimedCount} pending invite(s) for ${userToSync.email}`,
+						);
+					}
+				} catch (claimError) {
+					console.error("Pending invite claim failed:", claimError);
+				}
+			}
+
 			return new Response("User synced successfully", { status: 200 });
 		} catch (err) {
 			console.error("Database sync failed:", err);

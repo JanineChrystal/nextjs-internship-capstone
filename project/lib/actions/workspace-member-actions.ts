@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/lib/dal/auth";
+import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	getWorkspaceDirectoryDAL,
 	inviteToWorkspaceInDB,
@@ -20,10 +20,8 @@ const USER_FACING_ERRORS = [
 	"You are already a member of this workspace",
 ];
 
-// Phase 4 replaces this with a stored pending invite that is claimed when the
-// person signs up; until then, saying so plainly beats a silent no-op.
-const UNREGISTERED_MESSAGE =
-	"That email is not registered yet. Ask them to sign up first, then invite them again.";
+const PENDING_MESSAGE =
+	"Invite saved. They will get access as soon as they sign up.";
 
 function toUserFacingError(error: unknown): string {
 	return error instanceof Error && USER_FACING_ERRORS.includes(error.message)
@@ -40,7 +38,8 @@ export async function getWorkspaceDirectoryAction(
 }> {
 	try {
 		const user = await getCurrentUser();
-		if (!user) return { success: false, error: "Unauthorized" };
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const members = await getWorkspaceDirectoryDAL(workspaceId);
 		return { success: true, data: members };
@@ -56,25 +55,30 @@ export async function inviteToWorkspaceAction(
 ): Promise<{
 	success: boolean;
 	data?: WorkspaceMemberOutputDTO;
+	// Set when the address had no account and the invitation was stored instead.
+	// A success, not a failure - the caller reports it rather than raising it.
+	notice?: string;
 	error?: string;
 }> {
 	try {
 		const user = await getCurrentUser();
-		if (!user) return { success: false, error: "Unauthorized" };
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
 
 		if (!email.trim()) {
 			return { success: false, error: "Email is required" };
 		}
 
-		const member = await inviteToWorkspaceInDB(email, workspaceId);
+		const result = await inviteToWorkspaceInDB(email, workspaceId);
 
 		revalidatePath("/team");
-		return { success: true, data: member };
-	} catch (error) {
-		if (error instanceof Error && error.message === "USER_NOT_REGISTERED") {
-			return { success: false, error: UNREGISTERED_MESSAGE };
+
+		if (result.outcome === "pending") {
+			return { success: true, notice: PENDING_MESSAGE };
 		}
 
+		return { success: true, data: result.member };
+	} catch (error) {
 		console.error("inviteToWorkspaceAction error:", error);
 		return { success: false, error: toUserFacingError(error) };
 	}
@@ -90,7 +94,8 @@ export async function removeWorkspaceMembersAction(
 ): Promise<{ success: boolean; removedCount?: number; error?: string }> {
 	try {
 		const user = await getCurrentUser();
-		if (!user) return { success: false, error: "Unauthorized" };
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
 
 		if (userIds.length === 0) {
 			return { success: false, error: "No members selected" };

@@ -35,28 +35,46 @@ export const ProjectMemberSchema = z.object({
 	joinedAt: z.string(),
 });
 
-export const AddInviteItemSchema = z.object({
-	recipient: z
-		.string()
-		.min(1, "Recipient is required")
-		.refine((val) => !val.includes("@") || val.endsWith("@gmail.com"), {
-			message: "Email addresses must end with @gmail.com",
-		}),
+const InviteRecipientSchema = z
+	.string()
+	.min(1, "Recipient is required")
+	.refine((val) => !val.includes("@") || val.endsWith("@gmail.com"), {
+		message: "Email addresses must end with @gmail.com",
+	});
+
+/**
+ * A project invite carries a position and an access level, because it grants
+ * access to a specific project.
+ */
+export const AddProjectInviteSchema = z.object({
+	recipient: InviteRecipientSchema,
 	jobRole: z.string().min(1, "Job role is required"),
 	roleAccess: z.enum(["co-owner", "member", "guest"], {
 		message: "Role access selection is required",
 	}),
 });
 
+/**
+ * A workspace invite only adds someone to the directory, so it asks for nothing
+ * but the address - and the form renders no position or access-level field for
+ * it.
+ *
+ * This must be a separate schema rather than the project one reused: requiring
+ * jobRole for a field the workspace form never renders made the resolver fail
+ * on an empty default, so submitting did nothing at all and the Add button
+ * looked broken.
+ */
+export const AddWorkspaceInviteSchema = z.object({
+	recipient: InviteRecipientSchema,
+	jobRole: z.string().optional(),
+	roleAccess: z.enum(["co-owner", "member", "guest"]).optional(),
+});
+
+export const AddInviteItemSchema = AddProjectInviteSchema;
+
 export const BulkInvitePayloadSchema = z.object({
 	projectId: z.string(),
 	invites: z.array(AddInviteItemSchema),
-});
-
-export const ShareLinkConfigSchema = z.object({
-	projectId: z.string(),
-	inviteToken: z.string(),
-	defaultRole: z.enum(["member", "guest"]),
 });
 
 export const FlaggedCommentSchema = z.object({

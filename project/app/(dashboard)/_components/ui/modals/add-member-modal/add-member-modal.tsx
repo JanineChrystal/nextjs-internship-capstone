@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { AddMemberForm } from "./add-member-form";
 import { PendingInvitesTable } from "./pending-invites-table";
-import { ShareableLinkSection } from "./shareable-link-section";
 
 interface AddMemberModalProps {
 	open: boolean;
@@ -32,14 +31,9 @@ export function AddMemberModal({
 		pendingInvites,
 		removePendingInvite,
 		form,
-		shareLinkConfig,
-		shareUrl,
 		handleAddStaged,
 		handleSendAll,
 		handleCancel,
-		handleCopyLink,
-		handleRegenerateToken,
-		handleUpdateDefaultShareRole,
 	} = useAddMemberModal(targetId, scope, onOpenChange);
 
 	return (
@@ -84,22 +78,6 @@ export function AddMemberModal({
 							Send All
 						</Button>
 					</div>
-
-					<div className="relative flex items-center py-2">
-						<div className="grow border-t border-outline-variant"></div>
-						<span className="shrink-0 mx-4 text-xs font-medium text-secondary uppercase">
-							OR
-						</span>
-						<div className="grow border-t border-outline-variant"></div>
-					</div>
-
-					<ShareableLinkSection
-						shareUrl={shareUrl}
-						shareLinkConfig={shareLinkConfig}
-						onCopyLink={handleCopyLink}
-						onRegenerateToken={handleRegenerateToken}
-						onUpdateDefaultRole={handleUpdateDefaultShareRole}
-					/>
 				</div>
 			</DialogContent>
 		</Dialog>

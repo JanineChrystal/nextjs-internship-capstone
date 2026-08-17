@@ -1,7 +1,9 @@
 "use client";
 
-import { Globe, Lock, Trash2, Users } from "lucide-react";
+import { Lock, Trash2, Users } from "lucide-react";
 import Image from "next/image";
+import { PendingInvitesList } from "@/app/(dashboard)/_components/ui/pending-invites/pending-invites-list";
+import { usePendingInvites } from "@/app/(dashboard)/_hooks/use-pending-invites";
 import { Button } from "@/components/ui/buttons/button";
 import { Input } from "@/components/ui/input";
 import { SectionTitle } from "@/components/ui/sections";
@@ -24,13 +26,14 @@ export function TeamAccessSection({
 }: TeamAccessSectionProps) {
 	const {
 		members,
-		isPublic,
 		canManageMembers,
 		handleRoleChange,
 		handleJobRoleChange,
-		handleToggleVisibility,
 		handleRemoveMember,
 	} = useTeamAccess(projectId, currentUserRole);
+
+	const { invites: pendingInvites, revoke: revokePendingInvite } =
+		usePendingInvites("project", projectId);
 
 	return (
 		<section className="bg-surface rounded-xl border border-outline-variant p-6 flex flex-col gap-6">
@@ -46,39 +49,17 @@ export function TeamAccessSection({
 				</div>
 			)}
 
-			<div className="flex items-center justify-between p-4 bg-surface-container-lowest border border-outline-variant rounded-lg">
-				<div className="flex items-center gap-3">
-					{isPublic ? (
-						<Globe className="text-primary" size={24} />
-					) : (
-						<Lock className="text-secondary" size={24} />
-					)}
-					<div>
-						<h3 className="font-semibold text-on-surface">
-							{isPublic ? "Public Access" : "Restricted Access"}
-						</h3>
-						<p className="text-xs text-secondary">
-							{isPublic
-								? "Anyone with the link can view this project as a guest."
-								: "Only invited members can access this project."}
-						</p>
-					</div>
+			{/* Projects are invite-only. The public/restricted toggle that used to
+			    sit here was never persisted - it lived in local state and reset on
+			    refresh - and public sharing was cut from the scope. */}
+			<div className="flex items-center gap-3 p-4 bg-surface-container-lowest border border-outline-variant rounded-lg">
+				<Lock className="text-secondary" size={24} />
+				<div>
+					<h3 className="font-semibold text-on-surface">Restricted Access</h3>
+					<p className="text-xs text-secondary">
+						Only invited members can access this project.
+					</p>
 				</div>
-				{canManageMembers && (
-					<button
-						type="button"
-						onClick={handleToggleVisibility}
-						className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-							isPublic ? "bg-primary" : "bg-surface-variant"
-						}`}
-					>
-						<span
-							className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-								isPublic ? "translate-x-6" : "translate-x-1"
-							}`}
-						/>
-					</button>
-				)}
 			</div>
 
 			<GridTable
@@ -191,6 +172,27 @@ export function TeamAccessSection({
 					);
 				}}
 			/>
+
+			{/* Invites addressed to people without an account yet. Shown even when
+			    empty for members who can manage, so it is discoverable rather than
+			    appearing out of nowhere the first time one is sent. */}
+			{canManageMembers && (
+				<div className="flex flex-col gap-3">
+					<div>
+						<h3 className="font-semibold text-on-surface">Pending invites</h3>
+						<p className="text-xs text-secondary">
+							These people have not signed up yet. They join this project
+							automatically when they create an account.
+						</p>
+					</div>
+
+					<PendingInvitesList
+						invites={pendingInvites}
+						onRevoke={revokePendingInvite}
+						emptyMessage="No pending invites for this project."
+					/>
+				</div>
+			)}
 		</section>
 	);
 }

@@ -1,6 +1,8 @@
 import { ArrowRight, CheckCircle, Kanban, Users } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SessionExpiredNotice } from "./_components/session-expired-notice";
 
 export default function HomePage() {
 	return (
@@ -42,6 +44,12 @@ export default function HomePage() {
 					</div>
 				</div>
 			</header>
+
+			{/* Suspense is required around a component reading search params, and it
+			    is what lets this page stay prerendered. */}
+			<Suspense fallback={null}>
+				<SessionExpiredNotice />
+			</Suspense>
 
 			{/* Hero Section */}
 			<section className="py-20 px-4 sm:px-6 lg:px-8">

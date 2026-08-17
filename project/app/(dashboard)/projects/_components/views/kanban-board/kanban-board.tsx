@@ -22,9 +22,14 @@ import { Column } from "./column";
 export function KanbanBoard({
 	projectId,
 	externalFilters,
+	canManageBoards = true,
 }: {
 	projectId: string;
 	externalFilters?: Record<string, string[]>;
+	// manage_boards belongs to owner and co-owner only, so a member clicking
+	// "Add Board" was always going to be refused by the server. Hiding it is the
+	// same treatment the Settings tab gets - the server remains the gate.
+	canManageBoards?: boolean;
 }) {
 	const {
 		currentProject,
@@ -84,15 +89,17 @@ export function KanbanBoard({
 					</SortableContext>
 
 					{/* Add Column Button */}
-					<div className="shrink-0 w-80 flex flex-col h-full">
-						<Button
-							variant="outline"
-							onClick={() => addColumn(`New Column ${columns.length + 1}`)}
-							className="w-full py-4 flex items-center justify-center gap-2 text-foreground hover:bg-surface-variant rounded-xl transition-colors font-label-md text-label-md border-2 border-dashed border-outline-variant bg-transparent"
-						>
-							<Plus className="w-5 h-5" /> Add Board
-						</Button>
-					</div>
+					{canManageBoards && (
+						<div className="shrink-0 w-80 flex flex-col h-full">
+							<Button
+								variant="outline"
+								onClick={() => addColumn(`New Column ${columns.length + 1}`)}
+								className="w-full py-4 flex items-center justify-center gap-2 text-foreground hover:bg-surface-variant rounded-xl transition-colors font-label-md text-label-md border-2 border-dashed border-outline-variant bg-transparent"
+							>
+								<Plus className="w-5 h-5" /> Add Board
+							</Button>
+						</div>
+					)}
 				</div>
 			</DndContext>
 

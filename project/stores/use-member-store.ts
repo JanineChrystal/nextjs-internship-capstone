@@ -7,13 +7,12 @@ import {
 	updateMemberRoleAction,
 } from "@/lib/actions/project-actions";
 import { inviteToWorkspaceAction } from "@/lib/actions/workspace-member-actions";
-import { reportActionError } from "@/lib/utils/toast";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import type {
 	FlaggedCommentItem,
 	PendingInviteItem,
 	ProjectMember,
 	RoleAccess,
-	ShareLinkConfig,
 } from "@/types/member";
 
 const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {};
@@ -39,9 +38,7 @@ interface MemberState {
 	pendingInvites: PendingInviteItem[];
 	// Surfaced after a bulk invite so failures are visible rather than logged.
 	inviteError: string | null;
-	shareLinks: Record<string, ShareLinkConfig>;
 	flaggedComments: Record<string, FlaggedCommentItem[]>;
-	isProjectPublic: Record<string, boolean>;
 
 	// Real, server-backed actions
 	fetchProjectMembers: (projectId: string) => Promise<void>;
@@ -66,33 +63,18 @@ interface MemberState {
 	removePendingInvite: (recipient: string) => void;
 	clearPendingInvites: () => void;
 
-	regenerateShareToken: (projectId: string) => void;
-	updateDefaultShareRole: (projectId: string, role: "member" | "guest") => void;
-
 	resolveFlaggedComment: (
 		projectId: string,
 		commentId: string,
 		action: "accept" | "reject",
 	) => void;
-
-	toggleProjectVisibility: (projectId: string, isPublic: boolean) => void;
 }
 
 export const useMemberStore = create<MemberState>((set, get) => ({
 	projectMembers: INITIAL_MEMBERS,
 	pendingInvites: [],
 	inviteError: null,
-	shareLinks: {
-		"prj-1": {
-			projectId: "prj-1",
-			inviteToken: "inv_random123",
-			defaultRole: "member",
-		},
-	},
 	flaggedComments: INITIAL_FLAGGED_COMMENTS,
-	isProjectPublic: {
-		"prj-1": false,
-	},
 
 	addPendingInvite: (invite) =>
 		set((state) => ({
@@ -133,6 +115,10 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 				const result = await inviteToWorkspaceAction(invite.recipient);
 				if (!result.success) {
 					failures.push(`${invite.recipient}: ${result.error}`);
+				} else if (result.notice) {
+					// Storing an invite for someone without an account is a success,
+					// so it is reported as one rather than pushed onto failures.
+					reportActionSuccess(result.notice);
 				}
 			}
 
@@ -151,6 +137,8 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 			);
 			if (!result.success) {
 				reportActionError(`Could not invite ${invite.recipient}`, result.error);
+			} else if (result.notice) {
+				reportActionSuccess(result.notice);
 			}
 		}
 
@@ -225,42 +213,6 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 		}
 	},
 
-	regenerateShareToken: (projectId) =>
-		set((state) => {
-			const config = state.shareLinks[projectId] || {
-				projectId,
-				inviteToken: "",
-				defaultRole: "member",
-			};
-			return {
-				shareLinks: {
-					...state.shareLinks,
-					[projectId]: {
-						...config,
-						inviteToken: `inv_${Math.random().toString(36).substring(2, 10)}`,
-					},
-				},
-			};
-		}),
-
-	updateDefaultShareRole: (projectId, role) =>
-		set((state) => {
-			const config = state.shareLinks[projectId] || {
-				projectId,
-				inviteToken: "",
-				defaultRole: "member",
-			};
-			return {
-				shareLinks: {
-					...state.shareLinks,
-					[projectId]: {
-						...config,
-						defaultRole: role,
-					},
-				},
-			};
-		}),
-
 	resolveFlaggedComment: (projectId, commentId, action) =>
 		set((state) => {
 			// Log action for debugging / backend readiness (accept = dismiss flag, reject = delete comment)
@@ -275,12 +227,4 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 				},
 			};
 		}),
-
-	toggleProjectVisibility: (projectId, isPublic) =>
-		set((state) => ({
-			isProjectPublic: {
-				...state.isProjectPublic,
-				[projectId]: isPublic,
-			},
-		})),
 }));

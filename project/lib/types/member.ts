@@ -6,7 +6,6 @@ import type {
 	FlaggedCommentSchema,
 	ProjectMemberSchema,
 	RoleAccessEnum,
-	ShareLinkConfigSchema,
 } from "@/lib/validations/member-schema";
 
 export type DbProjectMember = typeof projectMembers.$inferSelect;
@@ -18,7 +17,6 @@ export type RoleAccess = z.infer<typeof RoleAccessEnum>;
 export type ProjectMember = z.infer<typeof ProjectMemberSchema>;
 export type PendingInviteItem = z.infer<typeof AddInviteItemSchema>;
 export type BulkInvitePayload = z.infer<typeof BulkInvitePayloadSchema>;
-export type ShareLinkConfig = z.infer<typeof ShareLinkConfigSchema>;
 export type FlaggedCommentItem = z.infer<typeof FlaggedCommentSchema>;
 
 // The workspace directory row type now lives with its mapper as

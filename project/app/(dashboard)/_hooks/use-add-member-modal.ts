@@ -1,12 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCallback, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useCallback } from "react";
+import { type Resolver, useForm } from "react-hook-form";
 import type { z } from "zod";
-import { AddInviteItemSchema } from "@/lib/validations/member-schema";
+import {
+	AddProjectInviteSchema,
+	AddWorkspaceInviteSchema,
+} from "@/lib/validations/member-schema";
 import { useMemberStore } from "@/stores/use-member-store";
 import type { RoleAccess } from "@/types/member";
 
-export type AddInviteFormValues = z.infer<typeof AddInviteItemSchema>;
+export type AddInviteFormValues = z.infer<typeof AddProjectInviteSchema>;
 
 /**
  * `targetId` is the project id for project-scoped invites. Workspace-scoped
@@ -23,32 +26,20 @@ export function useAddMemberModal(
 		removePendingInvite,
 		clearPendingInvites,
 		sendBulkInvites,
-		shareLinks,
-		regenerateShareToken,
-		updateDefaultShareRole,
 	} = useMemberStore();
 
+	// The workspace form renders neither a position nor an access-level field, so
+	// it must not be validated against the project schema that requires them.
 	const form = useForm<AddInviteFormValues>({
-		resolver: zodResolver(AddInviteItemSchema),
+		resolver: zodResolver(
+			scope === "project" ? AddProjectInviteSchema : AddWorkspaceInviteSchema,
+		) as Resolver<AddInviteFormValues>,
 		defaultValues: {
 			recipient: "",
 			jobRole: "",
 			roleAccess: "member",
 		},
 	});
-
-	const shareLinkConfig = useMemo(
-		() => shareLinks[targetId],
-		[shareLinks, targetId],
-	);
-
-	const shareUrl = useMemo(
-		() =>
-			shareLinkConfig
-				? `https://app.takdaph.com/invite/${shareLinkConfig.inviteToken}`
-				: "",
-		[shareLinkConfig],
-	);
 
 	const handleAddStaged = useCallback(
 		(values: AddInviteFormValues) => {
@@ -58,7 +49,12 @@ export function useAddMemberModal(
 			addPendingInvite({
 				recipient: values.recipient.trim(),
 				jobRole: values.jobRole?.trim() || "Member",
-				roleAccess: values.roleAccess as Exclude<RoleAccess, "owner">,
+				// Workspace invites render no access-level field, so the value is
+				// absent rather than empty and needs a default of its own.
+				roleAccess: (values.roleAccess ?? "member") as Exclude<
+					RoleAccess,
+					"owner"
+				>,
 			});
 
 			form.reset();
@@ -76,33 +72,12 @@ export function useAddMemberModal(
 		onOpenChange(false);
 	}, [clearPendingInvites, onOpenChange]);
 
-	const handleCopyLink = useCallback(() => {
-		navigator.clipboard.writeText(shareUrl);
-		// Trigger a toast here later on
-	}, [shareUrl]);
-
-	const handleRegenerateToken = useCallback(() => {
-		regenerateShareToken(targetId);
-	}, [regenerateShareToken, targetId]);
-
-	const handleUpdateDefaultShareRole = useCallback(
-		(role: "member" | "guest") => {
-			updateDefaultShareRole(targetId, role);
-		},
-		[updateDefaultShareRole, targetId],
-	);
-
 	return {
 		pendingInvites,
 		removePendingInvite,
 		form,
-		shareLinkConfig,
-		shareUrl,
 		handleAddStaged,
 		handleSendAll,
 		handleCancel,
-		handleCopyLink,
-		handleRegenerateToken,
-		handleUpdateDefaultShareRole,
 	};
 }

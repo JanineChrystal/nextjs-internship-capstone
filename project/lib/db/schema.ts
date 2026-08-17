@@ -264,6 +264,68 @@ export const projectInvites = pgTable("ProjectInvites", {
 	deletedAt: timestamp("deletedAt"),
 });
 
+/**
+ * Invitations addressed to people who have not signed up yet.
+ *
+ * Keyed by email rather than userId, because there is no Users row to reference
+ * at the time the invite is made - that is the whole point. When the person
+ * signs up, the Clerk webhook converts every live row for their address into
+ * real WorkspaceMembers and ProjectMembers rows.
+ */
+export const pendingInvites = pgTable(
+	"PendingInvites",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		workspaceId: uuid("workspaceId")
+			.references(() => workspaces.id, { onDelete: "cascade" })
+			.notNull(),
+		// Null means a directory-only invite, made from the team page with no
+		// project attached.
+		projectId: uuid("projectId").references(() => projects.id, {
+			onDelete: "cascade",
+		}),
+		// Stored lower-cased so lookups on signup match regardless of how the
+		// address was typed.
+		email: text("email").notNull(),
+		invitedBy: uuid("invitedBy")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull(),
+		position: text("position").default("Contributor").notNull(),
+		accessLevel: accessLevelEnum("accessLevel").default("member").notNull(),
+		// Set when the invite is converted into real membership rows, which keeps
+		// an audit trail that a plain delete would lose.
+		claimedAt: timestamp("claimedAt"),
+		createdAt: timestamp("createdAt").defaultNow().notNull(),
+		updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+		deletedAt: timestamp("deletedAt"),
+	},
+	(table) => ({
+		// Two partial indexes rather than one, because Postgres treats NULLs as
+		// distinct: a single unique on (workspaceId, email, projectId) would let
+		// the same address be invited to the directory any number of times.
+		//
+		// Both are scoped to rows that are still outstanding - not merely
+		// undeleted. A claimed invite is history, and leaving it in the unique
+		// scope meant a claimed row permanently blocked any future invite to the
+		// same address and project, which bites as soon as someone is invited,
+		// leaves, and is invited back.
+		projectInviteUnique: uniqueIndex("PendingInvites_project_email_live_unique")
+			.on(table.workspaceId, table.email, table.projectId)
+			.where(
+				sql`"deletedAt" is null and "claimedAt" is null and "projectId" is not null`,
+			),
+		workspaceInviteUnique: uniqueIndex(
+			"PendingInvites_workspace_email_live_unique",
+		)
+			.on(table.workspaceId, table.email)
+			.where(
+				sql`"deletedAt" is null and "claimedAt" is null and "projectId" is null`,
+			),
+		// The claim path looks these up by address alone, across every workspace.
+		emailIdx: index("PendingInvites_email_idx").on(table.email),
+	}),
+);
+
 export const boards = pgTable("Boards", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	projectId: uuid("projectId")

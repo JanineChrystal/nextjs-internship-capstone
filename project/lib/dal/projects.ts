@@ -2,6 +2,10 @@ import "server-only";
 import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
 import { cache } from "react";
 import { getCurrentUser } from "@/lib/dal/auth";
+import {
+	createPendingInviteInDB,
+	normalizeInviteEmail,
+} from "@/lib/dal/pending-invites";
 import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { db } from "@/lib/db";
 import {
@@ -17,6 +21,7 @@ import {
 	workspaces,
 } from "@/lib/db/schema";
 import { type ProjectOutputDTO, toProjectDTO } from "@/lib/dtos/project-dto";
+import type { InviteOutcome } from "@/lib/types/pending-invite";
 import type { NewDbProject } from "@/lib/types/project";
 
 export async function createProjectInDB(
@@ -396,25 +401,42 @@ export async function inviteUserToProjectInDB(
 	email: string,
 	jobRole = "Contributor",
 	accessLevel: "co-owner" | "member" | "guest" = "member",
-): Promise<void> {
+): Promise<InviteOutcome> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
+	const normalizedEmail = normalizeInviteEmail(email);
+
 	try {
+		const [existingProject] = await db
+			.select()
+			.from(projects)
+			.where(eq(projects.id, projectId));
+
+		if (!existingProject) throw new Error("Project not found");
+
+		const [knownUser] = await db
+			.select()
+			.from(users)
+			.where(and(eq(users.email, normalizedEmail), isNull(users.deletedAt)));
+
+		// Nobody by that address yet. Store the invitation instead of refusing it;
+		// the Clerk webhook converts it into real membership on signup.
+		if (!knownUser) {
+			await createPendingInviteInDB({
+				workspaceId: existingProject.workspaceId,
+				projectId,
+				email: normalizedEmail,
+				invitedBy: user.id,
+				position: jobRole,
+				accessLevel,
+			});
+			return "pending";
+		}
+
 		await db.transaction(async (tx) => {
-			const [targetUser] = await tx
-				.select()
-				.from(users)
-				.where(eq(users.email, email));
-
-			if (!targetUser) throw new Error("User not found");
-
-			const [project] = await tx
-				.select()
-				.from(projects)
-				.where(eq(projects.id, projectId));
-
-			if (!project) throw new Error("Project not found");
+			const targetUser = knownUser;
+			const project = existingProject;
 
 			// Resurrects a soft-deleted directory row rather than doing nothing.
 			// With onConflictDoNothing, re-inviting someone previously removed from
@@ -450,8 +472,10 @@ export async function inviteUserToProjectInDB(
 					set: { deletedAt: null, position: jobRole, accessLevel },
 				});
 		});
+
+		return "invited";
 	} catch (error) {
-		if (error instanceof Error && error.message === "User not found")
+		if (error instanceof Error && error.message === "Project not found")
 			throw error;
 		throw new Error("Failed to invite user to project", { cause: error });
 	}

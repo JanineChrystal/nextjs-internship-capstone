@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
-import { getCurrentUser } from "@/lib/dal/auth";
+import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import { upsertProjectCategoryDAL } from "@/lib/dal/categories";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import {
@@ -31,7 +31,8 @@ export async function getTasksAction(
 ): Promise<{ success: boolean; data?: TaskOutputDTO[]; error?: string }> {
 	try {
 		const user = await getCurrentUser();
-		if (!user) return { success: false, error: "Unauthorized" };
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const tasks = await getTasksByProjectId(projectId);
 		return { success: true, data: tasks };
@@ -48,7 +49,8 @@ export async function getAllUserTasksAction(): Promise<{
 }> {
 	try {
 		const user = await getCurrentUser();
-		if (!user) return { success: false, error: "Unauthorized" };
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const tasks = await getAllUserTasksDAL();
 		return { success: true, data: tasks };
@@ -80,7 +82,7 @@ export async function createTaskAction(
 			"create_task",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		// Category is optional for the user - fall back to "Uncategorized"
@@ -141,7 +143,7 @@ export async function updateTaskAction(
 			"edit_task",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		const validationResult = updateTaskSchema.safeParse(inputData);
@@ -199,7 +201,7 @@ export async function deleteTaskAction(
 			"delete_task",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await deleteTaskInDB(taskId, projectId);
@@ -221,7 +223,7 @@ export async function bulkDeleteTasksAction(
 			"delete_task",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await bulkDeleteTasksInDB(taskIds, projectId);
@@ -243,7 +245,7 @@ export async function bulkCompleteTasksAction(
 			"edit_task",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		const validationResult = bulkUpdateTaskStatusSchema.safeParse({
@@ -274,7 +276,7 @@ export async function moveTaskAction(
 			"edit_task",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		const validationResult = moveTaskSchema.safeParse({ taskId, newBoardId });
@@ -302,7 +304,7 @@ export async function reorderTasksAction(
 			"edit_task",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await reorderTasksInDB(projectId, boardId, taskIds);

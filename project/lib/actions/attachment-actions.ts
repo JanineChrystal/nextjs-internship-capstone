@@ -5,6 +5,7 @@ import {
 	createAttachmentInDB,
 	deleteAttachmentInDB,
 } from "@/lib/dal/attachments";
+import { getSessionFailureReason } from "@/lib/dal/auth";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import type { AttachmentOutputDTO } from "@/lib/dtos/task-dto";
 import { CreateAttachmentSchema } from "@/lib/validations/attachment-schema";
@@ -19,7 +20,8 @@ export async function createAttachmentAction(
 			projectId,
 			"edit_task",
 		);
-		if (!hasPermission) return { success: false, error: "Unauthorized" };
+		if (!hasPermission)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const validationResult = CreateAttachmentSchema.safeParse(inputData);
 		if (!validationResult.success) {
@@ -48,7 +50,8 @@ export async function deleteAttachmentAction(
 			projectId,
 			"edit_task",
 		);
-		if (!hasPermission) return { success: false, error: "Unauthorized" };
+		if (!hasPermission)
+			return { success: false, error: await getSessionFailureReason() };
 
 		await deleteAttachmentInDB(attachmentId, projectId);
 		revalidatePath(`/projects/${projectId}`);

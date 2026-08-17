@@ -16,6 +16,11 @@ const DangerZoneSection = dynamic(
 	{ ssr: false },
 );
 
+const GroupsSection = dynamic(
+	() => import("./groups-section").then((m) => m.GroupsSection),
+	{ ssr: false },
+);
+
 interface SettingsViewProps {
 	projectId: string;
 	role: RoleAccess;
@@ -42,6 +47,11 @@ export function SettingsView({ projectId, role }: SettingsViewProps) {
 			/>
 
 			<TeamAccessSection projectId={projectId} currentUserRole={role} />
+
+			<GroupsSection
+				projectId={projectId}
+				canManage={role === "owner" || role === "co-owner"}
+			/>
 
 			<CommentModerationSection projectId={projectId} />
 

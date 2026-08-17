@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/lib/dal/auth";
+import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	upsertProjectCategoryDAL,
 	upsertWorkspaceCategoryDAL,
@@ -38,7 +38,7 @@ export async function createProjectAction(
 	try {
 		const user = await getCurrentUser();
 		if (!user) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		// Parse
@@ -104,7 +104,7 @@ export async function updateProjectAction(
 			"edit_project",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		const rawData: Record<string, unknown> = {};
@@ -184,7 +184,7 @@ export async function deleteProjectAction(
 			"delete_project",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await deleteProjectInDB(projectId);
@@ -280,24 +280,38 @@ export async function inviteUserToProjectAction(
 	email: string,
 	jobRole?: string,
 	accessLevel?: "co-owner" | "member" | "guest",
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; notice?: string; error?: string }> {
 	try {
 		const hasPermission = await verifyProjectPermissionDAL(
 			projectId,
 			"manage_members",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
-		await inviteUserToProjectInDB(projectId, email, jobRole, accessLevel);
+		const outcome = await inviteUserToProjectInDB(
+			projectId,
+			email,
+			jobRole,
+			accessLevel,
+		);
+
 		revalidatePath(`/projects/${projectId}`);
+
+		// An address with no account is no longer a failure: the invitation is
+		// stored and claimed on signup, so the caller is told what happened rather
+		// than shown an error.
+		if (outcome === "pending") {
+			return {
+				success: true,
+				notice: `${email} has not signed up yet. The invite is saved and will apply when they do.`,
+			};
+		}
+
 		return { success: true };
 	} catch (error) {
 		console.error("inviteUserToProjectAction error:", error);
-		if (error instanceof Error && error.message === "User not found") {
-			return { success: false, error: "User not found" };
-		}
 		return { success: false, error: "An unexpected error occurred" };
 	}
 }
@@ -315,7 +329,7 @@ export async function getProjectMembersDetailedAction(
 			"view_project",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		const members = await getProjectMembersDetailedDAL(projectId);
@@ -337,7 +351,7 @@ export async function updateMemberRoleAction(
 			"manage_members",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await updateMemberRoleInDB(projectId, userId, accessLevel);
@@ -360,7 +374,7 @@ export async function updateMemberJobRoleAction(
 			"manage_members",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await updateMemberJobRoleInDB(projectId, userId, jobRole);
@@ -382,7 +396,7 @@ export async function removeMemberAction(
 			"manage_members",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await removeMemberFromProjectDAL(projectId, userId);
@@ -405,7 +419,7 @@ export async function assignTeamToProjectAction(
 			"edit_project",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await assignTeamToProjectInDB(projectId, teamId, accessLevel);

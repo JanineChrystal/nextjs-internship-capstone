@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/lib/dal/auth";
+import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	createCommentInDB,
 	deleteCommentInDB,
@@ -32,7 +32,8 @@ export async function getCommentsAction(
 			projectId,
 			"view_project",
 		);
-		if (!hasPermission) return { success: false, error: "Unauthorized" };
+		if (!hasPermission)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const result = await getCommentsByTaskId(taskId, projectId, limit, offset);
 		return { success: true, data: result.comments, hasMore: result.hasMore };
@@ -50,13 +51,15 @@ export async function createCommentAction(
 ): Promise<{ success: boolean; data?: CommentOutputDTO; error?: string }> {
 	try {
 		const user = await getCurrentUser();
-		if (!user) return { success: false, error: "Unauthorized" };
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const hasPermission = await verifyProjectPermissionDAL(
 			projectId,
 			"comment_task",
 		);
-		if (!hasPermission) return { success: false, error: "Unauthorized" };
+		if (!hasPermission)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const validationResult = CreateCommentSchema.safeParse({ body, parentId });
 		if (!validationResult.success) {
@@ -94,7 +97,8 @@ export async function updateCommentAction(
 ): Promise<{ success: boolean; data?: CommentOutputDTO; error?: string }> {
 	try {
 		const user = await getCurrentUser();
-		if (!user) return { success: false, error: "Unauthorized" };
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const validationResult = UpdateCommentSchema.safeParse({ body });
 		if (!validationResult.success) {
@@ -120,7 +124,8 @@ export async function deleteCommentAction(
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		const user = await getCurrentUser();
-		if (!user) return { success: false, error: "Unauthorized" };
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const canModerate = await verifyProjectPermissionDAL(
 			projectId,

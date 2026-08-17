@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	createChecklistItemInDB,
 	deleteChecklistItemInDB,
@@ -23,7 +24,8 @@ export async function createChecklistItemAction(
 			projectId,
 			"edit_task",
 		);
-		if (!hasPermission) return { success: false, error: "Unauthorized" };
+		if (!hasPermission)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const validationResult = CreateChecklistItemSchema.safeParse({ title });
 		if (!validationResult.success) {
@@ -53,7 +55,8 @@ export async function updateChecklistItemAction(
 			projectId,
 			"edit_task",
 		);
-		if (!hasPermission) return { success: false, error: "Unauthorized" };
+		if (!hasPermission)
+			return { success: false, error: await getSessionFailureReason() };
 
 		const validationResult = UpdateChecklistItemSchema.safeParse(updates);
 		if (!validationResult.success) {
@@ -82,7 +85,8 @@ export async function deleteChecklistItemAction(
 			projectId,
 			"edit_task",
 		);
-		if (!hasPermission) return { success: false, error: "Unauthorized" };
+		if (!hasPermission)
+			return { success: false, error: await getSessionFailureReason() };
 
 		await deleteChecklistItemInDB(itemId, projectId);
 		revalidatePath(`/projects/${projectId}`);

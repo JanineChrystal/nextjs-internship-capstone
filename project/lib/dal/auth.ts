@@ -1,7 +1,7 @@
 import "server-only";
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
-import { unauthorized } from "next/navigation";
+import { redirect, unauthorized } from "next/navigation";
 import { cache } from "react";
 import { db } from "../db/index";
 import { users } from "../db/schema";
@@ -32,26 +32,46 @@ export const getCurrentUser = cache(async () => {
 });
 
 /**
+ * The message actions return when there is no Clerk session behind the request.
+ *
+ * Kept distinct from "Unauthorized" because the two look identical to a user but
+ * mean opposite things: one is "sign in again", the other is "you are not
+ * allowed". Reporting an expired session as a permissions refusal sent us
+ * hunting for a non-existent permissions bug when an owner's invite failed.
+ */
+export const SESSION_EXPIRED_ERROR =
+	"Your session expired. Refresh the page and sign in again.";
+
+/**
+ * Whether the failure to resolve a user is a missing session or a missing row.
+ *
+ * Actions call this only on the failure path, so the happy path still costs one
+ * cached lookup.
+ */
+export async function getSessionFailureReason(): Promise<string> {
+	const { userId } = await auth();
+	return userId ? "Unauthorized" : SESSION_EXPIRED_ERROR;
+}
+
+/**
  * Enforce authentication, distinguishing the two very different reasons
  * getCurrentUser can come back empty.
  *
- * No Clerk session at all is usually a token that could not be refreshed, which
- * happens on soft navigation because the dashboard layout's own redirect only
- * runs on a full page load. That is recoverable, so send the user through sign-in
- * and back to where they were - the previous behaviour showed a dead-end 401 page
- * on /projects and /team, the only two routes that call this.
+ * No Clerk session at all sends the user to the public landing page, matching
+ * what the middleware does at the edge so every path agrees on one destination.
+ * This is now a backstop rather than the main guard - proxy.ts turns these
+ * requests away before page code runs - but it is kept because the middleware is
+ * routing while this is the data layer's own authority.
  *
  * A valid session with no matching row is genuinely unauthorized: the Clerk
  * webhook has not synced this user yet. Redirecting there would loop, so the 401
  * page is the right answer for that case.
  */
 export const requireUser = cache(async () => {
-	const { userId, redirectToSignIn } = await auth();
+	const { userId } = await auth();
 
 	if (!userId) {
-		// Clerk's own helper rather than a hand-built URL: it knows the configured
-		// sign-in route and carries the return-back URL for us.
-		redirectToSignIn();
+		redirect("/");
 	}
 
 	const user = await getCurrentUser();

@@ -7,6 +7,7 @@ import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-act
 import { TeamToolbar } from "@/app/(dashboard)/team/_components/team-toolbar";
 import { BoardView } from "@/app/(dashboard)/team/_components/views/board-view";
 import { GridView } from "@/app/(dashboard)/team/_components/views/grid-view";
+import { PendingView } from "@/app/(dashboard)/team/_components/views/pending-view";
 import { Button } from "@/components/ui/buttons/button";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
 import { useDirectorySelection } from "../_hooks/use-directory-selection";
@@ -30,6 +31,7 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 		error,
 		clearError,
 		removal,
+		pendingRefreshKey,
 		requestRemoveMember,
 		requestRemoveSelected,
 		closeRemoval,
@@ -95,7 +97,7 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 					onInvitesSettled={handleInvitesSettled}
 				/>
 
-				{activeView === "Grid" ? (
+				{activeView === "Grid" && (
 					<GridView
 						users={sortedMembers}
 						selectedIds={selectedIds}
@@ -105,7 +107,9 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 						sortConfig={sortConfig}
 						onSort={handleSort}
 					/>
-				) : (
+				)}
+
+				{activeView === "Board" && (
 					<BoardView
 						users={sortedMembers}
 						selectedIds={selectedIds}
@@ -113,14 +117,22 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 						onRemove={requestRemoveMember}
 					/>
 				)}
+
+				{/* Remounted when an invite is sent, so a newly stored invitation shows
+				    up without needing a tab switch. */}
+				{activeView === "Pending" && <PendingView key={pendingRefreshKey} />}
 			</div>
 
-			<BulkActionBar
-				selectedCount={selectedIds.size}
-				onClearSelection={clearSelection}
-				onDelete={requestRemoveSelected}
-				deleteLabel="Remove User(s)"
-			/>
+			{/* Selection belongs to the directory views; the Pending list has its own
+			    per-row revoke and nothing bulk to act on. */}
+			{activeView !== "Pending" && (
+				<BulkActionBar
+					selectedCount={selectedIds.size}
+					onClearSelection={clearSelection}
+					onDelete={requestRemoveSelected}
+					deleteLabel="Remove User(s)"
+				/>
+			)}
 
 			<WarningModal
 				isOpen={removal.isOpen}

@@ -115,6 +115,64 @@ export async function getWorkspaceCategoryStylesDAL(
 	});
 }
 
+/**
+ * The styled categories belonging to a project's workspace.
+ *
+ * The task modal used the workspace-scoped read with the "default" placeholder,
+ * which resolves the *viewer's* workspace - so a member opening a task in
+ * someone else's project saw an empty dropdown, and any category they typed was
+ * the only one they could then see or manage.
+ */
+export async function getProjectCategoryStylesDAL(
+	projectId: string,
+	type: CategoryType,
+) {
+	const workspaceId = await resolveProjectWorkspaceIdDAL(projectId);
+
+	return db.query.categories.findMany({
+		where: and(
+			eq(categories.workspaceId, workspaceId),
+			eq(categories.type, type),
+		),
+		orderBy: (categories, { asc }) => [asc(categories.name)],
+	});
+}
+
+/**
+ * Renames a category across the project's workspace, cascading to the rows that
+ * reference it by name. Mirrors updateWorkspaceCategoryDAL but authorised by
+ * project role.
+ */
+export async function updateProjectCategoryDAL(
+	projectId: string,
+	oldName: string,
+	newName: string,
+	newColor: string,
+	type: CategoryType,
+) {
+	const workspaceId = await resolveProjectWorkspaceIdDAL(projectId);
+	return updateCategoryInWorkspace(
+		workspaceId,
+		oldName,
+		newName,
+		newColor,
+		type,
+	);
+}
+
+/**
+ * Deletes a category from the project's workspace, falling the affected rows
+ * back to "Uncategorized". Authorised by project role.
+ */
+export async function deleteProjectCategoryDAL(
+	projectId: string,
+	categoryName: string,
+	type: CategoryType,
+) {
+	const workspaceId = await resolveProjectWorkspaceIdDAL(projectId);
+	return deleteCategoryInWorkspace(workspaceId, categoryName, type);
+}
+
 // Upsert Category (Auto-add)
 export async function upsertWorkspaceCategoryDAL(
 	workspaceId: string,
@@ -209,6 +267,27 @@ export async function updateWorkspaceCategoryDAL(
 
 	const resolvedWorkspaceId = await resolveWorkspaceId(workspaceId);
 
+	return updateCategoryInWorkspace(
+		resolvedWorkspaceId,
+		oldName,
+		newName,
+		newColor,
+		type,
+	);
+}
+
+/**
+ * The rename itself, once a workspace has been resolved and authorised. Shared
+ * by the workspace-scoped and project-scoped entry points so the cascade is
+ * written once.
+ */
+async function updateCategoryInWorkspace(
+	resolvedWorkspaceId: string,
+	oldName: string,
+	newName: string,
+	newColor: string,
+	type: CategoryType,
+) {
 	return await db.transaction(async (tx) => {
 		// Update the category record
 		const [updatedCategory] = await tx
@@ -285,6 +364,18 @@ export async function deleteWorkspaceCategoryDAL(
 
 	const resolvedWorkspaceId = await resolveWorkspaceId(workspaceId);
 
+	return deleteCategoryInWorkspace(resolvedWorkspaceId, categoryName, type);
+}
+
+/**
+ * The delete-and-fall-back itself, once a workspace has been resolved and
+ * authorised. Shared by both entry points.
+ */
+async function deleteCategoryInWorkspace(
+	resolvedWorkspaceId: string,
+	categoryName: string,
+	type: CategoryType,
+) {
 	return await db.transaction(async (tx) => {
 		// Update associated projects or tasks to "Uncategorized"
 		if (type === "project") {

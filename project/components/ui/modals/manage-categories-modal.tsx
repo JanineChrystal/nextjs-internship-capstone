@@ -18,6 +18,10 @@ interface ManageCategoriesModalProps {
 	onClose: () => void;
 	type: "project" | "task";
 	workspaceId: string;
+	// Present for task categories, which belong to the project's workspace rather
+	// than the viewer's. Without it a member could only manage the categories
+	// they had personally created.
+	projectId?: string;
 }
 
 export function ManageCategoriesModal({
@@ -25,9 +29,16 @@ export function ManageCategoriesModal({
 	onClose,
 	type,
 	workspaceId,
+	projectId,
 }: ManageCategoriesModalProps) {
-	const { categories, isLoading, updateCategory, deleteCategory } =
-		useCategoryStore();
+	const {
+		categories,
+		isLoading,
+		updateCategory,
+		deleteCategory,
+		updateProjectCategory,
+		deleteProjectCategory,
+	} = useCategoryStore();
 	const [editingCategory, setEditingCategory] = useState<string | null>(null);
 	const [editName, setEditName] = useState("");
 	const [editColor, setEditColor] = useState("");
@@ -45,13 +56,21 @@ export function ManageCategoriesModal({
 	const saveEditing = async (oldName: string) => {
 		if (!editName.trim()) return;
 		setIsPending(true);
-		const success = await updateCategory(
-			workspaceId,
-			oldName,
-			editName.trim(),
-			editColor,
-			type,
-		);
+		const success = projectId
+			? await updateProjectCategory(
+					projectId,
+					oldName,
+					editName.trim(),
+					editColor,
+					type,
+				)
+			: await updateCategory(
+					workspaceId,
+					oldName,
+					editName.trim(),
+					editColor,
+					type,
+				);
 		if (success) {
 			setEditingCategory(null);
 		}
@@ -61,11 +80,9 @@ export function ManageCategoriesModal({
 	const confirmDelete = async () => {
 		if (categoryToDelete) {
 			setIsPending(true);
-			const success = await deleteCategory(
-				workspaceId,
-				categoryToDelete.name,
-				type,
-			);
+			const success = projectId
+				? await deleteProjectCategory(projectId, categoryToDelete.name, type)
+				: await deleteCategory(workspaceId, categoryToDelete.name, type);
 			if (success) {
 				setCategoryToDelete(null);
 			}

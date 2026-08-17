@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	countTasksInBoardDAL,
 	createBoardDAL,
@@ -21,7 +22,7 @@ export async function reorderBoardsAction(
 			"edit_project",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await reorderBoardsDAL(projectId, boardIds);
@@ -47,7 +48,7 @@ export async function createBoardAction(
 			"manage_boards",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		const board = await createBoardDAL(projectId, name);
@@ -70,7 +71,7 @@ export async function renameBoardAction(
 			"manage_boards",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await renameBoardDAL(boardId, projectId, newName);
@@ -92,7 +93,7 @@ export async function getBoardTaskCountAction(
 			"view_project",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		const count = await countTasksInBoardDAL(boardId, projectId);
@@ -113,7 +114,7 @@ export async function setCompletionBoardAction(
 			"manage_boards",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await setCompletionBoardDAL(boardId, projectId);
@@ -135,7 +136,7 @@ export async function deleteBoardAction(
 			"manage_boards",
 		);
 		if (!hasPermission) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		await deleteBoardDAL(boardId, projectId);

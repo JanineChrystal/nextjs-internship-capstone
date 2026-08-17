@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import { FilterPopover } from "@/components/ui/filters/filter-popover";
-import type { RoleAccess } from "@/lib/config/permissions";
+import { hasPermission, type RoleAccess } from "@/lib/config/permissions";
 import type { ProjectOutputDTO } from "@/lib/dtos/project-dto";
 import type { GridTask } from "@/lib/types/task";
 import type { Project } from "@/lib/validations/project-schema";
@@ -120,6 +120,10 @@ export function ProjectDetailClient({
 	const effectiveView =
 		activeView === "settings" && !canOpenSettings ? "grid" : activeView;
 
+	// Board columns are owner/co-owner territory too - `manage_boards` is not
+	// granted to members, so offering the control only produced a refusal.
+	const canManageBoards = hasPermission(role, "manage_boards");
+
 	return (
 		<div className="flex flex-col gap-6 w-full max-w-7xl mx-auto pb-8">
 			<ProjectHeader projectId={projectId} project={projectUI} />
@@ -141,7 +145,11 @@ export function ProjectDetailClient({
 
 			<div className="w-full mt-4">
 				{effectiveView === "board" && (
-					<KanbanBoard projectId={projectId} externalFilters={filters} />
+					<KanbanBoard
+						projectId={projectId}
+						externalFilters={filters}
+						canManageBoards={canManageBoards}
+					/>
 				)}
 				{effectiveView === "grid" && (
 					<GridView projectId={projectId} externalFilters={filters} />

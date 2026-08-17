@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/buttons/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -45,12 +46,23 @@ export function TaskPropertiesGrid({
 	onStatusChange,
 }: TaskPropertiesGridProps) {
 	const boardColumns = useBoardStore((state) => state.columns);
-	const { categories, fetchCategories, addCategory } = useCategoryStore();
+	const { categories, fetchProjectCategories, addProjectCategory } =
+		useCategoryStore();
 	const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
+	// The task itself knows which project it belongs to; the route param is the
+	// fallback for surfaces that open this modal outside /projects/[id].
+	const routeParams = useParams();
+	const projectId =
+		taskData.projectId ?? (routeParams?.id as string | undefined);
+
+	// Scoped to the project's workspace, not the viewer's. Reading with the
+	// "default" placeholder resolved whoever was looking, so a member opening a
+	// task in a shared project got an empty list.
 	useEffect(() => {
-		fetchCategories("default", "task");
-	}, [fetchCategories]);
+		if (!projectId) return;
+		fetchProjectCategories(projectId, "task");
+	}, [fetchProjectCategories, projectId]);
 
 	// Registering the name in the shared Categories table is what makes it a
 	// reusable, styled option in this dropdown next time - saving it onto the
@@ -64,8 +76,8 @@ export function TaskPropertiesGrid({
 		const alreadyKnown = categories.some(
 			(c) => c.name.toLowerCase() === trimmed.toLowerCase(),
 		);
-		if (!alreadyKnown) {
-			await addCategory("default", trimmed, "task");
+		if (!alreadyKnown && projectId) {
+			await addProjectCategory(projectId, trimmed, "task");
 		}
 	};
 
@@ -279,6 +291,7 @@ export function TaskPropertiesGrid({
 				onClose={() => setIsManageCategoriesOpen(false)}
 				type="task"
 				workspaceId="default"
+				projectId={projectId}
 			/>
 		</div>
 	);

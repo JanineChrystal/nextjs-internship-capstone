@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/lib/dal/auth";
+import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import { createTeamInDB } from "@/lib/dal/teams";
 import type { TeamOutputDTO } from "@/lib/dtos/team-dto";
 import { CreateTeamSchema } from "@/lib/validations/team-schema";
@@ -14,7 +14,7 @@ export async function createTeamAction(
 	try {
 		const user = await getCurrentUser();
 		if (!user) {
-			return { success: false, error: "Unauthorized" };
+			return { success: false, error: await getSessionFailureReason() };
 		}
 
 		const validationResult = CreateTeamSchema.safeParse({

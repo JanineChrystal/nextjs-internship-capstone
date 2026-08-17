@@ -25,7 +25,10 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<ClerkProvider>
+		// afterSignOutUrl keeps sign-out inside the app. Without it Clerk falls
+		// back to the instance's hosted page (accounts.dev/sign-in/choose), so
+		// signing out dropped the user out of the product entirely.
+		<ClerkProvider afterSignOutUrl="/">
 			<html
 				lang="en"
 				suppressHydrationWarning

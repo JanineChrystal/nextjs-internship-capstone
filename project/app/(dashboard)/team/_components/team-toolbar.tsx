@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TEAM_VIEWS } from "../_constants/team-views";
 
-export type TeamViewType = "Grid" | "Board";
+export type TeamViewType = "Grid" | "Board" | "Pending";
 
 interface TeamToolbarProps {
 	activeView?: TeamViewType;

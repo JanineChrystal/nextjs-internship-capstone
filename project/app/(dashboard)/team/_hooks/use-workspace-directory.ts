@@ -29,6 +29,9 @@ export function useWorkspaceDirectory(
 	const removeMembers = useWorkspaceMemberStore((state) => state.removeMembers);
 
 	const [removal, setRemoval] = useState<RemovalTarget>(CLOSED_REMOVAL);
+	// Bumped after invites are sent so the Pending view can remount and pick up
+	// a newly stored invitation.
+	const [pendingRefreshKey, setPendingRefreshKey] = useState(0);
 	const isHydrated = useRef(false);
 
 	// Hydrate once from the server-fetched props. Guarded by a ref so client
@@ -66,6 +69,7 @@ export function useWorkspaceDirectory(
 		const inviteError = useMemberStore.getState().inviteError;
 		setError(inviteError);
 		useMemberStore.setState({ inviteError: null });
+		setPendingRefreshKey((key) => key + 1);
 		await refreshMembers();
 	}, [refreshMembers, setError]);
 
@@ -74,6 +78,7 @@ export function useWorkspaceDirectory(
 		error,
 		clearError,
 		removal,
+		pendingRefreshKey,
 		requestRemoveMember,
 		requestRemoveSelected,
 		closeRemoval,

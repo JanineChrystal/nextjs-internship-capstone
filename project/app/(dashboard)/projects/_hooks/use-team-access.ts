@@ -7,8 +7,6 @@ export function useTeamAccess(projectId: string, currentUserRole: RoleAccess) {
 	// Global hooks (Zustand)
 	const {
 		projectMembers,
-		isProjectPublic,
-		toggleProjectVisibility,
 		updateMemberRoleAccess,
 		updateMemberJobRole,
 		removeMember,
@@ -22,7 +20,6 @@ export function useTeamAccess(projectId: string, currentUserRole: RoleAccess) {
 
 	// Derived state (with stable reference fallback)
 	const members = projectMembers[projectId] ?? emptyMembers;
-	const isPublic = isProjectPublic[projectId] ?? false;
 
 	const canManageMembers =
 		currentUserRole === "owner" || currentUserRole === "co-owner";
@@ -42,10 +39,6 @@ export function useTeamAccess(projectId: string, currentUserRole: RoleAccess) {
 		[projectId, updateMemberJobRole],
 	);
 
-	const handleToggleVisibility = useCallback(() => {
-		toggleProjectVisibility(projectId, !isPublic);
-	}, [projectId, isPublic, toggleProjectVisibility]);
-
 	const handleRemoveMember = useCallback(
 		(userId: string) => {
 			removeMember(projectId, userId);
@@ -55,11 +48,9 @@ export function useTeamAccess(projectId: string, currentUserRole: RoleAccess) {
 
 	return {
 		members,
-		isPublic,
 		canManageMembers,
 		handleRoleChange,
 		handleJobRoleChange,
-		handleToggleVisibility,
 		handleRemoveMember,
 	};
 }

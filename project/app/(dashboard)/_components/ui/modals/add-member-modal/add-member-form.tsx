@@ -15,7 +15,7 @@ export function AddMemberForm({ form, onSubmit, scope }: AddMemberFormProps) {
 	const {
 		register,
 		handleSubmit,
-		formState: { isSubmitting },
+		formState: { isSubmitting, errors },
 		watch,
 	} = form;
 
@@ -30,7 +30,7 @@ export function AddMemberForm({ form, onSubmit, scope }: AddMemberFormProps) {
 	return (
 		<form
 			onSubmit={handleSubmit(onSubmit)}
-			className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full"
+			className="flex flex-col sm:flex-row gap-3 items-start sm:items-start w-full"
 		>
 			<div className="flex-1 w-full">
 				<label htmlFor="recipient" className="sr-only">
@@ -42,6 +42,11 @@ export function AddMemberForm({ form, onSubmit, scope }: AddMemberFormProps) {
 					{...register("recipient")}
 					className="bg-surface border-outline-variant text-on-surface focus-visible:ring-primary h-10 w-full"
 				/>
+				{/* Rendered because a rejected submit used to be completely silent -
+				    the button simply appeared not to work. */}
+				{errors.recipient && (
+					<p className="mt-1 text-xs text-error">{errors.recipient.message}</p>
+				)}
 			</div>
 
 			{scope === "project" && (
@@ -55,6 +60,9 @@ export function AddMemberForm({ form, onSubmit, scope }: AddMemberFormProps) {
 						{...register("jobRole")}
 						className="bg-surface border-outline-variant text-on-surface focus-visible:ring-primary h-10 w-full"
 					/>
+					{errors.jobRole && (
+						<p className="mt-1 text-xs text-error">{errors.jobRole.message}</p>
+					)}
 				</div>
 			)}
 
