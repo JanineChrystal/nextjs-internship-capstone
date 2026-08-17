@@ -4,6 +4,7 @@ import {
 	bulkDeleteTasksAction,
 } from "@/lib/actions/task-actions";
 import { hasIncompleteChecklist } from "@/lib/utils/task";
+import { reportActionError } from "@/lib/utils/toast";
 import { useTaskStore } from "@/stores/use-task-store";
 
 interface UseTaskBulkActionsParams {
@@ -47,7 +48,7 @@ export function useTaskBulkActions({
 			if (result && !result.success) throw new Error(result.error);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
-			console.error("Failed to bulk delete tasks:", error);
+			reportActionError("Could not delete the selected tasks", error);
 		}
 	};
 
@@ -64,7 +65,7 @@ export function useTaskBulkActions({
 			if (result && !result.success) throw new Error(result.error);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
-			console.error("Failed to bulk complete tasks:", error);
+			reportActionError("Could not complete the selected tasks", error);
 		}
 	};
 

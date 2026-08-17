@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { updateProjectAction } from "@/lib/actions/project-actions";
+import { reportActionError } from "@/lib/utils/toast";
 import { useProjectStore } from "@/stores/use-project-store";
 import type { RoleAccess } from "@/types/member";
 
@@ -45,7 +46,7 @@ export function useDangerZone(projectId: string, currentUserRole: RoleAccess) {
 		} catch (e) {
 			useProjectStore.getState().setProjects(previousProjects);
 			setIsArchiveActive((prev) => !prev);
-			console.error("Failed to archive project:", e);
+			reportActionError("Could not archive project", e);
 		}
 	}, [projectId, isArchiveActive, updateProject]);
 

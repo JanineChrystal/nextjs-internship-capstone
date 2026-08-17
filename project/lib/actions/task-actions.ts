@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 import { getCurrentUser } from "@/lib/dal/auth";
-import { upsertWorkspaceCategoryDAL } from "@/lib/dal/categories";
+import { upsertProjectCategoryDAL } from "@/lib/dal/categories";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import {
 	bulkCompleteTasksInDB,
@@ -111,8 +111,10 @@ export async function createTaskAction(
 		const validatedData = validationResult.data;
 
 		// Register the category in the shared Categories table so it becomes a
-		// reusable, styled option - mirrors what createProjectAction does.
-		await upsertWorkspaceCategoryDAL("default", categoryValue, "task");
+		// reusable, styled option. Scoped to the project's workspace, not the
+		// editor's, so a member styling a task in a shared project does not file
+		// the category away in their own workspace where the owner never sees it.
+		await upsertProjectCategoryDAL(projectId, categoryValue, "task");
 
 		// DAL Call
 		const newTask = await createTaskInDB(validatedData);
@@ -148,8 +150,8 @@ export async function updateTaskAction(
 		}
 
 		if (validationResult.data.category?.trim()) {
-			await upsertWorkspaceCategoryDAL(
-				"default",
+			await upsertProjectCategoryDAL(
+				projectId,
 				validationResult.data.category.trim(),
 				"task",
 			);

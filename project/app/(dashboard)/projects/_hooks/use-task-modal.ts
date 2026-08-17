@@ -13,6 +13,7 @@ import {
 	TASK_STATUS_IN_PROGRESS,
 	TASK_STATUS_NOT_STARTED,
 } from "@/lib/utils/task-status";
+import { reportActionError } from "@/lib/utils/toast";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask, TaskModalActionId } from "@/types/task";
@@ -201,7 +202,7 @@ export function useTaskModal() {
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
-			console.error("Failed to update task:", error);
+			reportActionError("Could not update task", error);
 		}
 	};
 
@@ -235,7 +236,10 @@ export function useTaskModal() {
 		const boardId = resolveBoardId(finalData.board);
 		if (!boardId) {
 			deleteTask(tempId);
-			console.error("Failed to create task: no board available");
+			reportActionError(
+				"Could not create task",
+				"This project has no board column to place it in.",
+			);
 			return;
 		}
 
@@ -255,7 +259,7 @@ export function useTaskModal() {
 			updateTask(tempId, { id: result.data.id });
 		} catch (error) {
 			deleteTask(tempId);
-			console.error("Failed to create task:", error);
+			reportActionError("Could not create task", error);
 		}
 	};
 
@@ -277,7 +281,7 @@ export function useTaskModal() {
 			updateTask(newTaskId, { id: result.data.id, name: payload.name });
 		} catch (error) {
 			deleteTask(newTaskId);
-			console.error("Failed to duplicate task:", error);
+			reportActionError("Could not duplicate task", error);
 		}
 	};
 
@@ -369,7 +373,7 @@ export function useTaskModal() {
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
-			console.error("Failed to delete task:", error);
+			reportActionError("Could not delete task", error);
 		}
 	};
 
@@ -414,7 +418,7 @@ export function useTaskModal() {
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
-			console.error("Failed to toggle task completion:", error);
+			reportActionError("Could not update task completion", error);
 		}
 	};
 
@@ -426,7 +430,7 @@ export function useTaskModal() {
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
-			console.error("Failed to delete task:", error);
+			reportActionError("Could not delete task", error);
 		}
 	};
 

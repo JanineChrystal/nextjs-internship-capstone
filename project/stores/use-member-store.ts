@@ -7,6 +7,7 @@ import {
 	updateMemberRoleAction,
 } from "@/lib/actions/project-actions";
 import { inviteToWorkspaceAction } from "@/lib/actions/workspace-member-actions";
+import { reportActionError } from "@/lib/utils/toast";
 import type {
 	FlaggedCommentItem,
 	PendingInviteItem,
@@ -149,11 +150,7 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 				invite.roleAccess,
 			);
 			if (!result.success) {
-				console.error(
-					"Failed to invite member:",
-					invite.recipient,
-					result.error,
-				);
+				reportActionError(`Could not invite ${invite.recipient}`, result.error);
 			}
 		}
 
@@ -180,7 +177,7 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 					[projectId]: previousMembers,
 				},
 			}));
-			console.error("Failed to update member role:", result.error);
+			reportActionError("Could not change access level", result.error);
 		}
 	},
 
@@ -203,7 +200,7 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 					[projectId]: previousMembers,
 				},
 			}));
-			console.error("Failed to update member job role:", result.error);
+			reportActionError("Could not change position", result.error);
 		}
 	},
 
@@ -224,7 +221,7 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 					[projectId]: previousMembers,
 				},
 			}));
-			console.error("Failed to remove member:", result.error);
+			reportActionError("Could not remove member", result.error);
 		}
 	},
 

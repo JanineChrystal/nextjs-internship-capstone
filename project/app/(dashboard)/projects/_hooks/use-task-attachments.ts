@@ -3,6 +3,7 @@ import {
 	createAttachmentAction,
 	deleteAttachmentAction,
 } from "@/lib/actions/attachment-actions";
+import { reportActionError } from "@/lib/utils/toast";
 import type { GridTask } from "@/types/task";
 
 interface UseTaskAttachmentsParams {
@@ -97,7 +98,7 @@ export function useTaskAttachments({
 		const result = await deleteAttachmentAction(id, projectId);
 		if (!result.success) {
 			setTaskData((prev) => ({ ...prev, links: previousLinks }));
-			console.error("Failed to delete link:", result.error);
+			reportActionError("Could not delete link", result.error);
 		}
 	};
 

@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { updateTaskAction } from "@/lib/actions/task-actions";
 import { setTaskAssigneesAction } from "@/lib/actions/task-assignee-actions";
 import { cn } from "@/lib/utils";
+import { reportActionError } from "@/lib/utils/toast";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { GridTask, TaskPriority, TaskStatus } from "@/types/task";
@@ -66,7 +67,7 @@ export function GridRow({
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
-			console.error("Failed to update task:", error);
+			reportActionError("Could not update task", error);
 		}
 	};
 
@@ -84,7 +85,7 @@ export function GridRow({
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
-			console.error("Failed to update assignees:", error);
+			reportActionError("Could not update assignees", error);
 		}
 	};
 

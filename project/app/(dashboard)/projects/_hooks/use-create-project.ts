@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { createProjectAction } from "@/lib/actions/project-actions";
+import { reportActionError } from "@/lib/utils/toast";
 import {
 	type CreateProjectFormValues,
 	createProjectSchema,
@@ -99,12 +100,12 @@ export function useCreateProject({
 				} else {
 					const deleteProjects = useProjectStore.getState().deleteProjects;
 					deleteProjects(new Set([tempId]));
-					console.error("Failed to create project:", result.error);
+					reportActionError("Could not create project", result.error);
 				}
 			} catch (error) {
 				const deleteProjects = useProjectStore.getState().deleteProjects;
 				deleteProjects(new Set([tempId]));
-				console.error("Error creating project:", error);
+				reportActionError("Could not create project", error);
 			}
 		},
 	);

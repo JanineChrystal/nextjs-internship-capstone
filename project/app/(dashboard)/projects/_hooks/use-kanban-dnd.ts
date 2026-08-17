@@ -7,6 +7,7 @@ import type {
 import { useMemo, useState } from "react";
 import { reorderBoardsAction } from "@/lib/actions/board-actions";
 import { moveTaskAction, reorderTasksAction } from "@/lib/actions/task-actions";
+import { reportActionError } from "@/lib/utils/toast";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
 import type { Assignee } from "@/types/task";
@@ -73,7 +74,7 @@ export function useKanbanDnd(
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
-			console.error("Failed to move task:", error);
+			reportActionError("Could not move task", error);
 		}
 	};
 
@@ -179,7 +180,7 @@ export function useKanbanDnd(
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useBoardStore.getState().setColumns(previousColumns);
-			console.error("Failed to reorder columns:", error);
+			reportActionError("Could not reorder columns", error);
 		}
 	};
 
@@ -197,7 +198,7 @@ export function useKanbanDnd(
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
-			console.error("Failed to reorder tasks:", error);
+			reportActionError("Could not reorder tasks", error);
 		}
 	};
 

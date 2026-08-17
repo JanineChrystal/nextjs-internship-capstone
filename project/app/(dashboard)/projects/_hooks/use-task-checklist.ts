@@ -4,6 +4,7 @@ import {
 	deleteChecklistItemAction,
 	updateChecklistItemAction,
 } from "@/lib/actions/checklist-actions";
+import { reportActionError } from "@/lib/utils/toast";
 import type { GridTask } from "@/types/task";
 
 interface UseTaskChecklistParams {
@@ -59,7 +60,7 @@ export function useTaskChecklist({
 				}));
 				return realId;
 			}
-			console.error("Failed to create checklist item:", result.error);
+			reportActionError("Could not add checklist item", result.error);
 			return null;
 		})();
 
@@ -89,7 +90,7 @@ export function useTaskChecklist({
 			title,
 		});
 		if (!result.success) {
-			console.error("Failed to save checklist item:", result.error);
+			reportActionError("Could not save checklist item", result.error);
 		}
 	};
 
@@ -105,7 +106,7 @@ export function useTaskChecklist({
 		});
 		if (!result.success) {
 			updateChecklistItem(id, { completed: !completed });
-			console.error("Failed to toggle checklist item:", result.error);
+			reportActionError("Could not update checklist item", result.error);
 		}
 	};
 
@@ -123,7 +124,7 @@ export function useTaskChecklist({
 		const result = await deleteChecklistItemAction(realId, projectId);
 		if (!result.success) {
 			setTaskData((prev) => ({ ...prev, checklist: previousChecklist }));
-			console.error("Failed to delete checklist item:", result.error);
+			reportActionError("Could not delete checklist item", result.error);
 		}
 	};
 

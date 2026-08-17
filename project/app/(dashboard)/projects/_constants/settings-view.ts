@@ -2,9 +2,6 @@ import type { ColumnDef } from "@/types/grid-table";
 import type { FlaggedCommentItem, ProjectMember } from "@/types/member";
 import type { DangerZoneActionConfig } from "@/types/project";
 
-// This would be fetched from auth context later on
-export const mockCurrentUserRole = "owner";
-
 // Immutable static fallbacks to prevent Zustand getSnapshot reference loops
 export const emptyMembers: ProjectMember[] = [];
 export const emptyComments: FlaggedCommentItem[] = [];

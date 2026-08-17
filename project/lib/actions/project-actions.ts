@@ -2,8 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/dal/auth";
-import { upsertWorkspaceCategoryDAL } from "@/lib/dal/categories";
-import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
+import {
+	upsertProjectCategoryDAL,
+	upsertWorkspaceCategoryDAL,
+} from "@/lib/dal/categories";
+import {
+	getEffectiveProjectRoleDAL,
+	verifyProjectPermissionDAL,
+} from "@/lib/dal/permissions";
 import {
 	assignTeamToProjectInDB,
 	bulkArchiveProjectsInDB,
@@ -121,22 +127,24 @@ export async function updateProjectAction(
 
 		const data = validationResult.data;
 
-		// We need to fetch the workspace ID for the project in order to upsert the category.
-		if (data.category) {
-			const { db } = await import("@/lib/db");
-			const { projects } = await import("@/lib/db/schema");
-			const { eq } = await import("drizzle-orm");
-			const existingProject = await db.query.projects.findFirst({
-				where: eq(projects.id, projectId),
-				columns: { workspaceId: true },
-			});
-			if (existingProject?.workspaceId) {
-				await upsertWorkspaceCategoryDAL(
-					existingProject.workspaceId,
-					data.category,
-					"project",
-				);
+		// Archiving is a Danger Zone action and belongs to the owner alone, but it
+		// travels through this generic update, so edit_project would otherwise let
+		// a co-owner archive a project whose Danger Zone the UI hides from them.
+		if (data.status === "archived") {
+			const role = await getEffectiveProjectRoleDAL(projectId);
+			if (role !== "owner") {
+				return {
+					success: false,
+					error: "Only the project owner can archive this project",
+				};
 			}
+		}
+
+		// The category belongs to the workspace that owns this project, which the
+		// DAL now resolves itself - replacing the inline dynamic imports and the
+		// unverified workspace id that were doing that job here.
+		if (data.category) {
+			await upsertProjectCategoryDAL(projectId, data.category, "project");
 		}
 
 		const updatePayload: Record<string, unknown> = {};

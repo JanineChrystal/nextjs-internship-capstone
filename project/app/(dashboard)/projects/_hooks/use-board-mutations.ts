@@ -6,6 +6,7 @@ import {
 	renameBoardAction,
 	setCompletionBoardAction,
 } from "@/lib/actions/board-actions";
+import { reportActionError } from "@/lib/utils/toast";
 import { useBoardStore } from "@/stores/use-board-store";
 
 export function useBoardMutations(projectId: string) {
@@ -40,7 +41,7 @@ export function useBoardMutations(projectId: string) {
 			useBoardStore.getState().setColumns(newColumns);
 		} catch (error) {
 			useBoardStore.getState().setColumns(previousColumns);
-			console.error("Failed to create board:", error);
+			reportActionError("Could not create board column", error);
 		}
 	};
 
@@ -53,7 +54,7 @@ export function useBoardMutations(projectId: string) {
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useBoardStore.getState().setColumns(previousColumns);
-			console.error("Failed to rename board:", error);
+			reportActionError("Could not rename board column", error);
 		}
 	};
 
@@ -75,7 +76,7 @@ export function useBoardMutations(projectId: string) {
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useBoardStore.getState().setColumns(previousColumns);
-			console.error("Failed to set completion board:", error);
+			reportActionError("Could not set the completion column", error);
 		}
 	};
 
@@ -88,7 +89,7 @@ export function useBoardMutations(projectId: string) {
 			if (!result.success) throw new Error(result.error);
 		} catch (error) {
 			useBoardStore.getState().setColumns(previousColumns);
-			console.error("Failed to delete board:", error);
+			reportActionError("Could not delete board column", error);
 		}
 	};
 

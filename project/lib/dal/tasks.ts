@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
+import { getAllUserProjectsDAL } from "@/lib/dal/projects";
 import { db } from "@/lib/db";
 import { boards, projects, tasks } from "@/lib/db/schema";
 import { type TaskOutputDTO, toTaskDTO } from "@/lib/dtos/task-dto";
@@ -11,21 +12,22 @@ export async function createTaskInDB(data: NewDbTask): Promise<TaskOutputDTO> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
+	// Access is resolved centrally rather than by ownership: a direct member or
+	// a team member holds create_task, and the ownerId filter that used to sit
+	// here rejected them outright even though createTaskAction had already
+	// passed them through the permission check.
+	const role = await getEffectiveProjectRoleDAL(data.projectId);
+	if (!role) {
+		throw new Error("Unauthorized: No access to this project");
+	}
+
 	const [project] = await db
-		.select()
+		.select({ id: projects.id })
 		.from(projects)
-		.where(
-			and(
-				eq(projects.id, data.projectId),
-				eq(projects.ownerId, user.id),
-				isNull(projects.deletedAt),
-			),
-		);
+		.where(and(eq(projects.id, data.projectId), isNull(projects.deletedAt)));
 
 	if (!project) {
-		throw new Error(
-			"Unauthorized: Cannot create task for a project you do not own",
-		);
+		throw new Error("Project not found");
 	}
 
 	try {
@@ -46,35 +48,6 @@ export async function createTaskInDB(data: NewDbTask): Promise<TaskOutputDTO> {
 		return toTaskDTO(result[0]);
 	} catch (error) {
 		throw new Error("Failed to create task in database", { cause: error });
-	}
-}
-
-export async function getTasksByBoardId(
-	boardId: string,
-): Promise<TaskOutputDTO[]> {
-	const user = await getCurrentUser();
-	if (!user) throw new Error("Unauthorized");
-
-	try {
-		const results = await db
-			.select({
-				task: tasks,
-			})
-			.from(tasks)
-			.innerJoin(projects, eq(tasks.projectId, projects.id))
-			.where(
-				and(
-					eq(tasks.boardId, boardId),
-					eq(projects.ownerId, user.id),
-					isNull(tasks.deletedAt),
-					isNull(projects.deletedAt),
-				),
-			)
-			.orderBy(tasks.position);
-
-		return results.map((row) => toTaskDTO(row.task));
-	} catch (error) {
-		throw new Error("Failed to fetch tasks from database", { cause: error });
 	}
 }
 
@@ -119,11 +92,20 @@ export interface TaskWithBoardOutputDTO extends TaskOutputDTO {
 }
 
 // Cross-project task fetch for surfaces like the global calendar page, which
-// need every task the user owns rather than one project's tasks. Includes
+// need every task the user can reach rather than one project's tasks. Includes
 // the board title directly since callers span many projects at once.
 export async function getAllUserTasksDAL(): Promise<TaskWithBoardOutputDTO[]> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
+
+	// Scoped to the same three access routes as the project list rather than
+	// ownership alone. Filtering on projects.ownerId here left the global
+	// calendar showing a shared project with none of its tasks, because
+	// getAllUserProjectsDAL already resolves all three routes.
+	const accessibleProjects = await getAllUserProjectsDAL();
+	const projectIds = accessibleProjects.map((project) => project.id);
+
+	if (projectIds.length === 0) return [];
 
 	try {
 		const results = await db
@@ -133,7 +115,7 @@ export async function getAllUserTasksDAL(): Promise<TaskWithBoardOutputDTO[]> {
 			.innerJoin(boards, eq(tasks.boardId, boards.id))
 			.where(
 				and(
-					eq(projects.ownerId, user.id),
+					inArray(tasks.projectId, projectIds),
 					isNull(tasks.deletedAt),
 					isNull(projects.deletedAt),
 				),

@@ -23,6 +23,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "./_components/layouts/app-sidebar";
 import { TopBar } from "./_components/layouts/top-bar";
@@ -46,6 +47,9 @@ export default async function DashboardLayout({
 					<TopBar />
 					<main className="flex-1 overflow-y-auto p-4 md:p-8">{children}</main>
 				</SidebarInset>
+				{/* Mounted once here so every dashboard route can report a failed
+				    server action instead of silently rolling its UI back. */}
+				<Toaster />
 			</SidebarProvider>
 		</TooltipProvider>
 	);

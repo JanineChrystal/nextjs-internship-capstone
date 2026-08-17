@@ -3,6 +3,7 @@ import { getAttachmentsByTaskIds } from "@/lib/dal/attachments";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { getProjectBoardsDAL } from "@/lib/dal/boards";
 import { getChecklistItemsByTaskIds } from "@/lib/dal/checklists";
+import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { getProjectById } from "@/lib/dal/projects";
 import { getTaskAssigneesByTaskIds } from "@/lib/dal/task-assignees";
 import { getTasksByProjectId } from "@/lib/dal/tasks";
@@ -23,13 +24,17 @@ export default async function ProjectPage({
 		redirect("/sign-in");
 	}
 
-	const [project, tasks, boards] = await Promise.all([
+	const [project, tasks, boards, role] = await Promise.all([
 		getProjectById(resolvedParams.id),
 		getTasksByProjectId(resolvedParams.id),
 		getProjectBoardsDAL(resolvedParams.id),
+		// Costs nothing extra: it is request-cached and the three reads above
+		// already resolve it. Passed down so the client can hide surfaces the
+		// server would refuse anyway.
+		getEffectiveProjectRoleDAL(resolvedParams.id),
 	]);
 
-	if (!project) {
+	if (!project || !role) {
 		notFound();
 	}
 
@@ -67,6 +72,7 @@ export default async function ProjectPage({
 			projectUI={projectUI}
 			tasks={tasksUI}
 			boards={boards}
+			role={role}
 		/>
 	);
 }

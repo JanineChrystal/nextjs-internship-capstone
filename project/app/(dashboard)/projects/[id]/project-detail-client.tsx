@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import { FilterPopover } from "@/components/ui/filters/filter-popover";
+import type { RoleAccess } from "@/lib/config/permissions";
 import type { ProjectOutputDTO } from "@/lib/dtos/project-dto";
 import type { GridTask } from "@/lib/types/task";
 import type { Project } from "@/lib/validations/project-schema";
@@ -64,6 +65,7 @@ interface ProjectDetailClientProps {
 		position: number;
 		isCompletionBoard: boolean;
 	}[];
+	role: RoleAccess;
 }
 
 export function ProjectDetailClient({
@@ -72,6 +74,7 @@ export function ProjectDetailClient({
 	projectUI,
 	tasks,
 	boards,
+	role,
 }: ProjectDetailClientProps) {
 	const setTasks = useTaskStore((state) => state.setTasks);
 	const setColumns = useBoardStore((state) => state.setColumns);
@@ -110,14 +113,22 @@ export function ProjectDetailClient({
 		handleResetFilters,
 	} = useProjectPage();
 
+	// Settings is an owner/co-owner surface. Members and guests never see the tab,
+	// and this guard covers the ways they could still land on the view - a stale
+	// tab in state, or a deep link - by falling back to the default view.
+	const canOpenSettings = role === "owner" || role === "co-owner";
+	const effectiveView =
+		activeView === "settings" && !canOpenSettings ? "grid" : activeView;
+
 	return (
 		<div className="flex flex-col gap-6 w-full max-w-7xl mx-auto pb-8">
 			<ProjectHeader projectId={projectId} project={projectUI} />
 
 			<ProjectToolbar
 				projectId={projectId}
-				activeView={activeView}
+				activeView={effectiveView}
 				onViewChange={setActiveView}
+				canOpenSettings={canOpenSettings}
 				renderFilter={
 					<FilterPopover
 						fields={filterFields}
@@ -129,15 +140,17 @@ export function ProjectDetailClient({
 			/>
 
 			<div className="w-full mt-4">
-				{activeView === "board" && (
+				{effectiveView === "board" && (
 					<KanbanBoard projectId={projectId} externalFilters={filters} />
 				)}
-				{activeView === "grid" && (
+				{effectiveView === "grid" && (
 					<GridView projectId={projectId} externalFilters={filters} />
 				)}
-				{activeView === "calendar" && <CalendarView projectId={projectId} />}
-				{activeView === "charts" && <div>Charts View Draft</div>}
-				{activeView === "settings" && <SettingsView projectId={projectId} />}
+				{effectiveView === "calendar" && <CalendarView projectId={projectId} />}
+				{effectiveView === "charts" && <div>Charts View Draft</div>}
+				{effectiveView === "settings" && (
+					<SettingsView projectId={projectId} role={role} />
+				)}
 			</div>
 
 			<TaskModal />

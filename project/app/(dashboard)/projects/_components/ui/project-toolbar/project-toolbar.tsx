@@ -22,6 +22,7 @@ export interface ProjectToolbarProps {
 	activeView: ProjectViewType;
 	onViewChange: (view: ProjectViewType) => void;
 	renderFilter?: React.ReactNode;
+	canOpenSettings?: boolean;
 }
 
 export function ProjectToolbar({
@@ -29,6 +30,7 @@ export function ProjectToolbar({
 	activeView,
 	onViewChange,
 	renderFilter,
+	canOpenSettings = true,
 }: ProjectToolbarProps) {
 	const {
 		isAddMemberModalOpen,
@@ -46,6 +48,7 @@ export function ProjectToolbar({
 					<ProjectViewTabs
 						activeView={activeView}
 						onViewChange={onViewChange}
+						canOpenSettings={canOpenSettings}
 					/>
 				}
 				rightSection={

@@ -6,6 +6,7 @@ import {
 	bulkDeleteProjectsAction,
 	deleteProjectAction,
 } from "@/lib/actions/project-actions";
+import { reportActionError } from "@/lib/utils/toast";
 import type { Project } from "@/lib/validations/project-schema";
 import { useProjectStore } from "@/stores/use-project-store";
 
@@ -97,7 +98,7 @@ export function useProjectsClient(initialProjects: Project[]) {
 				if (!result?.success) throw new Error(result?.error || "Failed");
 			} catch (e) {
 				useProjectStore.getState().setProjects(previousProjects);
-				console.error("Failed to delete project:", e);
+				reportActionError("Could not delete project", e);
 			}
 			setProjectToDelete(null);
 		} else {
@@ -111,7 +112,7 @@ export function useProjectsClient(initialProjects: Project[]) {
 				if (!result?.success) throw new Error(result?.error || "Failed");
 			} catch (e) {
 				useProjectStore.getState().setProjects(previousProjects);
-				console.error("Failed to bulk delete projects:", e);
+				reportActionError("Could not delete the selected projects", e);
 			}
 			setSelectedProjectIds(new Set());
 			setIsSelectMode(false);
@@ -135,7 +136,7 @@ export function useProjectsClient(initialProjects: Project[]) {
 				if (!result?.success) throw new Error(result?.error || "Failed");
 			} catch (e) {
 				useProjectStore.getState().setProjects(previousProjects);
-				console.error("Failed to bulk archive projects:", e);
+				reportActionError("Could not archive the selected projects", e);
 			}
 		}
 	};
@@ -165,7 +166,7 @@ export function useProjectsClient(initialProjects: Project[]) {
 				if (!result?.success) throw new Error(result?.error || "Failed");
 			} catch (e) {
 				useProjectStore.getState().setProjects(previousProjects);
-				console.error("Failed to bulk complete projects:", e);
+				reportActionError("Could not complete the selected projects", e);
 			}
 		}
 	};

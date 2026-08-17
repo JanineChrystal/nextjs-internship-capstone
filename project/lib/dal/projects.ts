@@ -1,5 +1,6 @@
 import "server-only";
 import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
+import { cache } from "react";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { db } from "@/lib/db";
@@ -138,58 +139,66 @@ export async function getProjectsByWorkspaceId(
  * Previously filtered on ownerId alone, so anyone invited to a project simply
  * never saw it. The three routes mirror getEffectiveProjectRoleDAL exactly, so
  * a project can never be listed here yet deny access on open (or vice versa).
+ *
+ * Cached per request because it is now the scoping primitive for several other
+ * reads (getProjectStatsDAL, getAllUserTasksDAL). Without this, one /projects
+ * render issued the three-query fan-out twice.
  */
-export async function getAllUserProjectsDAL(): Promise<ProjectOutputDTO[]> {
-	const user = await getCurrentUser();
-	if (!user) throw new Error("Unauthorized");
+export const getAllUserProjectsDAL = cache(
+	async (): Promise<ProjectOutputDTO[]> => {
+		const user = await getCurrentUser();
+		if (!user) throw new Error("Unauthorized");
 
-	try {
-		const [owned, direct, viaTeams] = await Promise.all([
-			db
-				.select()
-				.from(projects)
-				.where(and(eq(projects.ownerId, user.id), isNull(projects.deletedAt))),
-
-			db
-				.select({ project: projects })
-				.from(projectMembers)
-				.innerJoin(projects, eq(projectMembers.projectId, projects.id))
-				.where(
-					and(
-						eq(projectMembers.userId, user.id),
-						isNull(projectMembers.deletedAt),
-						isNull(projects.deletedAt),
+		try {
+			const [owned, direct, viaTeams] = await Promise.all([
+				db
+					.select()
+					.from(projects)
+					.where(
+						and(eq(projects.ownerId, user.id), isNull(projects.deletedAt)),
 					),
-				),
 
-			db
-				.select({ project: projects })
-				.from(teamMembers)
-				.innerJoin(projectTeams, eq(teamMembers.teamId, projectTeams.teamId))
-				.innerJoin(teams, eq(teamMembers.teamId, teams.id))
-				.innerJoin(projects, eq(projectTeams.projectId, projects.id))
-				.where(
-					and(
-						eq(teamMembers.userId, user.id),
-						isNull(teams.deletedAt),
-						isNull(projects.deletedAt),
+				db
+					.select({ project: projects })
+					.from(projectMembers)
+					.innerJoin(projects, eq(projectMembers.projectId, projects.id))
+					.where(
+						and(
+							eq(projectMembers.userId, user.id),
+							isNull(projectMembers.deletedAt),
+							isNull(projects.deletedAt),
+						),
 					),
-				),
-		]);
 
-		// A user holding several routes to the same project must see it once.
-		const byId = new Map<string, (typeof owned)[number]>();
-		for (const project of owned) byId.set(project.id, project);
-		for (const row of direct) byId.set(row.project.id, row.project);
-		for (const row of viaTeams) byId.set(row.project.id, row.project);
+				db
+					.select({ project: projects })
+					.from(teamMembers)
+					.innerJoin(projectTeams, eq(teamMembers.teamId, projectTeams.teamId))
+					.innerJoin(teams, eq(teamMembers.teamId, teams.id))
+					.innerJoin(projects, eq(projectTeams.projectId, projects.id))
+					.where(
+						and(
+							eq(teamMembers.userId, user.id),
+							isNull(teams.deletedAt),
+							isNull(projects.deletedAt),
+						),
+					),
+			]);
 
-		return Array.from(byId.values()).map(toProjectDTO);
-	} catch (error) {
-		throw new Error("Failed to fetch user projects from database", {
-			cause: error,
-		});
-	}
-}
+			// A user holding several routes to the same project must see it once.
+			const byId = new Map<string, (typeof owned)[number]>();
+			for (const project of owned) byId.set(project.id, project);
+			for (const row of direct) byId.set(row.project.id, row.project);
+			for (const row of viaTeams) byId.set(row.project.id, row.project);
+
+			return Array.from(byId.values()).map(toProjectDTO);
+		} catch (error) {
+			throw new Error("Failed to fetch user projects from database", {
+				cause: error,
+			});
+		}
+	},
+);
 
 export interface ProjectStats {
 	taskCount: number;

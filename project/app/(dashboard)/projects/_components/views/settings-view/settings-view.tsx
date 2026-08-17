@@ -2,8 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
+import type { RoleAccess } from "@/lib/config/permissions";
 import { useProjectStore } from "@/stores/use-project-store";
-import { mockCurrentUserRole } from "../../../_constants/settings-view";
 import { CommentModerationSection } from "./comment-moderation-section";
 
 const TeamAccessSection = dynamic(
@@ -16,9 +16,19 @@ const DangerZoneSection = dynamic(
 	{ ssr: false },
 );
 
-export function SettingsView({ projectId }: { projectId: string }) {
+interface SettingsViewProps {
+	projectId: string;
+	role: RoleAccess;
+}
+
+export function SettingsView({ projectId, role }: SettingsViewProps) {
 	const projects = useProjectStore((state) => state.projects);
 	const currentProject = projects.find((p) => p.id === projectId);
+
+	// Archiving and deleting are the owner's alone, so a co-owner reaching
+	// Settings gets access management without the destructive section. The role
+	// is resolved on the server; this is presentation, not the gate.
+	const isOwner = role === "owner";
 
 	if (!currentProject) {
 		return <div className="p-4 text-error">Project not found</div>;
@@ -31,18 +41,17 @@ export function SettingsView({ projectId }: { projectId: string }) {
 				description={`Manage ${currentProject.title} access, moderation, and advanced settings.`}
 			/>
 
-			<TeamAccessSection
-				projectId={projectId}
-				currentUserRole={mockCurrentUserRole}
-			/>
+			<TeamAccessSection projectId={projectId} currentUserRole={role} />
 
 			<CommentModerationSection projectId={projectId} />
 
-			<DangerZoneSection
-				projectId={projectId}
-				projectName={currentProject.title}
-				currentUserRole={mockCurrentUserRole}
-			/>
+			{isOwner && (
+				<DangerZoneSection
+					projectId={projectId}
+					projectName={currentProject.title}
+					currentUserRole={role}
+				/>
+			)}
 		</div>
 	);
 }
