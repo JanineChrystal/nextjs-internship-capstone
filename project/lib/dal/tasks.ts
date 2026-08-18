@@ -309,8 +309,6 @@ export async function reorderTasksInDB(
 	if (!user) throw new Error("Unauthorized");
 
 	try {
-		// Drizzle doesn't support bulk update with different values easily in a single query for Postgres without raw SQL case statements,
-		// so we update them in a transaction.
 		await db.transaction(async (tx) => {
 			for (let i = 0; i < taskIds.length; i++) {
 				await tx
