@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare, Send, Trash2, X } from "lucide-react";
+import { Send, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/buttons/button";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
 import { useTaskComments } from "../../../../projects/_hooks/use-task-comments";
@@ -101,12 +101,7 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 	}
 
 	return (
-		<div className="flex flex-col h-full min-h-0 bg-surface-container-lowest">
-			<div className="px-4 py-4 pr-16 border-b border-outline-variant flex items-center justify-between shrink-0">
-				<h3 className="text-sm font-semibold text-foreground">Task Comments</h3>
-				<MessageSquare className="h-4 w-4 text-secondary" />
-			</div>
-
+		<div className="flex flex-col h-full min-h-0">
 			<div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
 				{hasMore && (
 					<div className="flex justify-center">

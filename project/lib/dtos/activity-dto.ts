@@ -59,3 +59,41 @@ export function toNotificationDTO(
 		updatedAt: notification.updatedAt,
 	};
 }
+
+/**
+ * One row in a history feed, ready to render.
+ *
+ * ActivityLogDTO carries actorId but no name, so a feed built from it could only
+ * ever show a uuid. This shape is what the UI actually needs: who did it, what
+ * they did, and when. The DAL joins Users once for the whole page rather than
+ * letting each row look its own actor up.
+ */
+export interface ActivityFeedItemDTO {
+	id: string;
+	actorName: string;
+	actorAvatarUrl: string | null;
+	actionType: string;
+	details: string | null;
+	projectId: string | null;
+	taskId: string | null;
+	createdAt: Date;
+}
+
+/**
+ * One row in the notifications list.
+ *
+ * `actorName` is nullable because the actor column is: a notification can in
+ * principle be raised by the system rather than a person, and the UI falls back
+ * to a neutral label instead of rendering "null did something".
+ */
+export interface NotificationFeedItemDTO {
+	id: string;
+	actorName: string | null;
+	actorAvatarUrl: string | null;
+	actionType: string;
+	message: string;
+	isRead: boolean;
+	projectId: string | null;
+	taskId: string | null;
+	createdAt: Date;
+}

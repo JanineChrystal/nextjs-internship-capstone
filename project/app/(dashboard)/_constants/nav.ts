@@ -1,13 +1,13 @@
 import {
-	Activity,
 	BarChart3,
+	Bell,
 	Calendar,
 	FolderOpen,
 	Home,
 	Settings,
 	Users,
 } from "lucide-react";
-import type { NavItem } from "@/types/nav";
+import type { NavItem } from "@/lib/types/nav";
 
 export const mainNavigation: NavItem[] = [
 	{
@@ -17,9 +17,10 @@ export const mainNavigation: NavItem[] = [
 		current: true,
 	},
 	{
-		name: "Activities",
-		href: "/activities",
-		icon: Activity,
+		// Was "Activities" pointing at /activities, which had no route and 404d.
+		name: "Notifications",
+		href: "/notifications",
+		icon: Bell,
 		current: false,
 	},
 	{

@@ -15,13 +15,14 @@ import { useTaskModal } from "../../../../projects/_hooks/use-task-modal";
 import { TaskAssignees } from "./task-assignees";
 import { TaskAttachmentsLinks } from "./task-attachments-links";
 import { TaskChecklist } from "./task-checklist";
-import { TaskComments } from "./task-comments";
 import { TaskDescription } from "./task-description";
 import { TaskModalToolbar } from "./task-modal-toolbar";
 import { TaskPropertiesGrid } from "./task-properties-grid";
+import { TaskSidePanel } from "./task-side-panel";
 
 export function TaskModal() {
 	const {
+		projectId,
 		selectedTaskId,
 		isTaskModalOpen,
 		closeTaskModal,
@@ -194,8 +195,9 @@ export function TaskModal() {
 						}`}
 					>
 						<div className="w-full md:w-80 min-w-0 h-full flex flex-col">
-							<TaskComments
+							<TaskSidePanel
 								taskId={selectedTaskId ?? undefined}
+								projectId={projectId}
 								isOpen={isCommentsOpen}
 							/>
 						</div>

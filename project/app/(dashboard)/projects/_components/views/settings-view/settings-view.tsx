@@ -21,6 +21,14 @@ const GroupsSection = dynamic(
 	{ ssr: false },
 );
 
+// Loads its own history on mount, so it is deferred like the other heavy
+// sections rather than shipped with the initial settings bundle.
+const ProjectActivitySection = dynamic(
+	() =>
+		import("./project-activity-section").then((m) => m.ProjectActivitySection),
+	{ ssr: false },
+);
+
 interface SettingsViewProps {
 	projectId: string;
 	role: RoleAccess;
@@ -54,6 +62,8 @@ export function SettingsView({ projectId, role }: SettingsViewProps) {
 			/>
 
 			<CommentModerationSection projectId={projectId} />
+
+			<ProjectActivitySection projectId={projectId} />
 
 			{isOwner && (
 				<DangerZoneSection
