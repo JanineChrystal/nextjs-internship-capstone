@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { redirect, unauthorized } from "next/navigation";
 import { cache } from "react";
+import { syncClerkUserToDbDAL } from "@/lib/dal/users";
 import { db } from "../db/index";
 import { users } from "../db/schema";
 
@@ -75,10 +76,16 @@ export const requireUser = cache(async () => {
 	}
 
 	const user = await getCurrentUser();
+	if (user) return user;
 
-	if (!user) {
-		unauthorized();
-	}
+	// A valid session with no row here means the Clerk webhook has not landed -
+	// it can be blocked by a deployment auth wall, or simply never reach a local
+	// tunnel. Rather than dead-ending the person on the 401 page with no way out,
+	// the row is created from the session itself, which already proves identity.
+	const synced = await syncClerkUserToDbDAL();
+	if (synced) return synced;
 
-	return user;
+	// Only reached when Clerk cannot describe the session either, which is a
+	// genuinely broken state rather than a delivery delay.
+	unauthorized();
 });

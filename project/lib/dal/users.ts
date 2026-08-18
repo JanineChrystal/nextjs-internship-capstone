@@ -1,29 +1,67 @@
 import "server-only";
+import { currentUser } from "@clerk/nextjs/server";
 import { and, eq, isNull } from "drizzle-orm";
+import { normalizeInviteEmail } from "@/lib/dal/pending-invites";
 import { db } from "@/lib/db";
 import { users, workspaceMembers, workspaces } from "@/lib/db/schema";
 import { toUserDTO, type UserOutputDTO } from "@/lib/dtos/user-dto";
-import type { NewDbUser } from "@/lib/types/user";
+import type { DbUser, NewDbUser, SessionUser } from "@/lib/types/user";
 
 export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
 	try {
 		return await db.transaction(async (tx) => {
-			const result = await tx
-				.insert(users)
-				.values(data)
-				.onConflictDoUpdate({
-					target: users.clerkId,
-					set: {
-						email: data.email,
+			// Users has TWO unique columns - clerkId and email - so an insert can
+			// collide on either, and onConflictDoUpdate can only name one of them.
+			// The email collision is the case that matters: deleting a Clerk account
+			// and signing up again with the same address issues a NEW clerkId while
+			// the old row still holds that email, so a clerkId-only upsert throws a
+			// unique violation and the person can never get back in.
+			const [existingByEmail] = await tx
+				.select()
+				.from(users)
+				.where(eq(users.email, data.email));
+
+			let user: DbUser;
+
+			if (existingByEmail && existingByEmail.clerkId !== data.clerkId) {
+				// Same person, new Clerk identity. The row is re-pointed rather than
+				// replaced: projects, memberships and comments all reference Users.id,
+				// so creating a second row would orphan everything they had.
+				const [reclaimed] = await tx
+					.update(users)
+					.set({
+						clerkId: data.clerkId,
 						firstName: data.firstName,
 						lastName: data.lastName,
 						imageUrl: data.imageUrl,
+						// Clears a soft delete, so a user.deleted webhook followed by a
+						// fresh signup restores the account instead of leaving it hidden.
+						deletedAt: null,
 						updatedAt: new Date(),
-					},
-				})
-				.returning();
+					})
+					.where(eq(users.id, existingByEmail.id))
+					.returning();
 
-			const user = result[0];
+				user = reclaimed;
+			} else {
+				const result = await tx
+					.insert(users)
+					.values(data)
+					.onConflictDoUpdate({
+						target: users.clerkId,
+						set: {
+							email: data.email,
+							firstName: data.firstName,
+							lastName: data.lastName,
+							imageUrl: data.imageUrl,
+							deletedAt: null,
+							updatedAt: new Date(),
+						},
+					})
+					.returning();
+
+				user = result[0];
+			}
 
 			// Hook A: Workspace Auto-Creation
 			// Ensure the user has at least one workspace
@@ -87,4 +125,84 @@ export async function deleteUserFromDB(
 		}
 		throw new Error("Failed to soft delete user from database");
 	}
+}
+
+/**
+ * The user id behind an email address, or null when nobody has that address.
+ *
+ * Used when an activity entry needs to name the person an action was about but
+ * the caller only has their email - inviting by address, for instance. Returns
+ * null rather than throwing because "no account yet" is an ordinary outcome
+ * here, not an error: a pending invite is exactly that case.
+ *
+ * Normalises the address the same way invites do, so a lookup cannot miss on
+ * capitalisation alone.
+ */
+export async function findUserIdByEmailDAL(
+	email: string,
+): Promise<string | null> {
+	const [row] = await db
+		.select({ id: users.id })
+		.from(users)
+		.where(
+			and(
+				eq(users.email, normalizeInviteEmail(email)),
+				isNull(users.deletedAt),
+			),
+		);
+
+	return row?.id ?? null;
+}
+
+/**
+ * Creates this session's Users row directly from Clerk, without a webhook.
+ *
+ * The Clerk webhook is normally what creates a user, but it is delivered over
+ * the public internet and can simply not arrive - a tunnel that is down in
+ * development, or a deployment sitting behind an auth wall that answers 401
+ * before the request reaches the app. When that happens the person signs in
+ * successfully at Clerk and then has no row here, which used to leave them
+ * permanently stuck on the "Account not ready yet" page with no way forward:
+ * nothing in the app besides the webhook ever created that row, so refreshing
+ * could not help.
+ *
+ * This closes that hole. The session itself already proves who they are, and
+ * currentUser() reads their profile straight from Clerk, so a missing row can
+ * be filled in on the spot. Webhook delivery becomes a speed optimisation
+ * rather than a hard dependency.
+ *
+ * Safe to call repeatedly: upsertUserInDB is a conflict-safe upsert keyed on
+ * clerkId, and it only creates a workspace when the user has none.
+ */
+export async function syncClerkUserToDbDAL(): Promise<SessionUser | null> {
+	const clerkUser = await currentUser();
+	if (!clerkUser) return null;
+
+	// Prefer the address Clerk marks primary; fall back to the first one so a
+	// user with an unusual address setup is still recoverable.
+	const email =
+		clerkUser.emailAddresses.find(
+			(address) => address.id === clerkUser.primaryEmailAddressId,
+		)?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress;
+
+	// No address means nothing to key invites or membership on, so this is not
+	// a recoverable state - the caller should still refuse the request.
+	if (!email) return null;
+
+	const synced = await upsertUserInDB({
+		clerkId: clerkUser.id,
+		email,
+		firstName: clerkUser.firstName,
+		lastName: clerkUser.lastName,
+		imageUrl: clerkUser.imageUrl,
+	});
+
+	return {
+		id: synced.id,
+		clerkId: clerkUser.id,
+		email: synced.email,
+		firstName: synced.firstName,
+		lastName: synced.lastName,
+		imageUrl: synced.imageUrl,
+	};
 }
