@@ -1,6 +1,6 @@
 {
-  "id": "581bc980-f379-4a96-be33-38ed1ed4d242",
-  "prevId": "d081c1e7-a91a-45f8-b95f-f04ee6815423",
+  "id": "70d16c11-bdca-4dc0-ac3f-f509fd333009",
+  "prevId": "581bc980-f379-4a96-be33-38ed1ed4d242",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1058,7 +1058,7 @@
             }
           ],
           "isUnique": true,
-          "where": "\"deletedAt\" is null and \"projectId\" is not null",
+          "where": "\"deletedAt\" is null and \"claimedAt\" is null and \"projectId\" is not null",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1080,7 +1080,7 @@
             }
           ],
           "isUnique": true,
-          "where": "\"deletedAt\" is null and \"projectId\" is null",
+          "where": "\"deletedAt\" is null and \"claimedAt\" is null and \"projectId\" is null",
           "concurrently": false,
           "method": "btree",
           "with": {}
