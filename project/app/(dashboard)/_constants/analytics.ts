@@ -1,5 +1,4 @@
 import {
-	BarChart3,
 	CheckCircle2,
 	Clock,
 	FolderOpen,
@@ -17,6 +16,7 @@ import type {
 	DashboardOverviewDTO,
 } from "@/lib/dtos/analytics-dto";
 import type { StatCardConfig } from "@/lib/types/analytics";
+import type { ChartSeries } from "@/lib/types/chart";
 
 /**
  * Every stat tile on the dashboard and analytics pages is described here rather
@@ -101,10 +101,50 @@ export function toPriorityLabel(priority: string): string {
 	return PRIORITY_LABELS[priority] ?? priority;
 }
 
-/** Icons for the project Charts tab, which has its own four tiles. */
-export const PROJECT_CHART_ICONS = {
-	total: ListTodo,
-	completed: CheckCircle2,
-	overdue: Clock,
-	progress: BarChart3,
-} as const;
+/**
+ * The four status series every chart on the project Charts tab shares.
+ *
+ * The ORDER of this array is a correctness constraint, not a style choice. It is
+ * the order segments stack in and the order the legend reads, and it was picked
+ * so that no two ADJACENT colours are confusable - adjacent is what matters,
+ * because adjacent segments are the pairs a reader actually has to separate.
+ *
+ * The one thing it deliberately avoids is red touching green. "Late" beside
+ * "Completed" is the most consequential pair on the chart and the classic
+ * red-green confusion, so Overdue sits second and In Progress separates it from
+ * Completed. Completed is also aqua rather than pure green, which roughly
+ * doubles its separation from red under deuteranopia.
+ *
+ * The colours come from CSS custom properties so light and dark are defined
+ * beside every other colour in the design system, and both sets were validated
+ * against this app's own card surface.
+ */
+export const TASK_STATUS_SERIES: ChartSeries[] = [
+	{
+		key: "notStarted",
+		label: "Not Started",
+		color: "var(--chart-status-not-started)",
+	},
+	{
+		key: "overdue",
+		label: "Overdue",
+		color: "var(--chart-status-overdue)",
+	},
+	{
+		key: "inProgress",
+		label: "In Progress",
+		color: "var(--chart-status-in-progress)",
+	},
+	{
+		key: "completed",
+		label: "Completed",
+		color: "var(--chart-status-completed)",
+	},
+];
+
+/** Turns a stacked group into the {label, value} rows ChartCard's table wants. */
+export function toStatusTableRows(
+	groups: { name: string; total: number }[],
+): { label: string; value: number }[] {
+	return groups.map((group) => ({ label: group.name, value: group.total }));
+}

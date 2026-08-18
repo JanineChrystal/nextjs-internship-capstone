@@ -56,6 +56,11 @@
 	--color-chart-grid: var(--chart-grid);
 	--color-chart-axis: var(--chart-axis);
 
+	--color-chart-status-not-started: var(--chart-status-not-started);
+	--color-chart-status-overdue: var(--chart-status-overdue);
+	--color-chart-status-in-progress: var(--chart-status-in-progress);
+	--color-chart-status-completed: var(--chart-status-completed);
+
 	--color-chart-ramp-1: var(--chart-ramp-1);
 	--color-chart-ramp-2: var(--chart-ramp-2);
 	--color-chart-ramp-3: var(--chart-ramp-3);
@@ -136,6 +141,16 @@
 		--chart-4: #eda100;
 		--chart-5: #e87ba4;
 
+		/* Task status, which is its own palette rather than four categorical
+		   slots: these four values mean something, and the meaning has to survive
+		   being read by someone who cannot separate red from green. The ORDER of
+		   these four is part of the validation, not cosmetic - see
+		   app/(dashboard)/_constants/analytics.ts. */
+		--chart-status-not-started: #a89ceb;
+		--chart-status-overdue: #d03b3b;
+		--chart-status-in-progress: #2a78d6;
+		--chart-status-completed: #1baf7a;
+
 		/* Ordinal ramp (one hue, light -> dark) for scales that have an order,
 		   such as priority. Darker reads as "more" on a light surface. */
 		--chart-ramp-1: #86b6ef;
@@ -189,6 +204,11 @@
 		--chart-3: #199e70;
 		--chart-4: #c98500;
 		--chart-5: #d55181;
+
+		--chart-status-not-started: #9085e9;
+		--chart-status-overdue: #e66767;
+		--chart-status-in-progress: #3987e5;
+		--chart-status-completed: #199e70;
 
 		/* The ordinal ramp inverts in dark mode: on a dark surface the LIGHTEST
 		   step is the most prominent, so "more" has to be lighter, not darker. */

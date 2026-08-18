@@ -1,20 +1,15 @@
 "use client";
 
 import { BarChart3 } from "lucide-react";
-import {
-	ChartCard,
-	OrdinalBarChart,
-	RankedBarChart,
-	ShareBarChart,
-	TrendAreaChart,
-} from "@/components/charts";
+import { ChartCard, DonutChart, StackedBarChart } from "@/components/charts";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TREND_WINDOW_DAYS } from "@/lib/constants/analytics";
-import { StatCard } from "../../../../_components/ui/cards/stat-card";
+import type { StackedGroupDTO } from "@/lib/dtos/analytics-dto";
+import type { StackedDatum } from "@/lib/types/chart";
 import {
-	PROJECT_CHART_ICONS,
+	TASK_STATUS_SERIES,
 	toPriorityLabel,
+	toStatusTableRows,
 } from "../../../../_constants/analytics";
 import { useProjectAnalytics } from "../../../_hooks/use-project-analytics";
 
@@ -23,33 +18,50 @@ interface ChartsViewProps {
 }
 
 /**
+ * Turns a DTO group into the shape the chart speaks.
+ *
+ * The chart components take {label, segments} and know nothing about tasks, so
+ * this one-line adapter is where the domain meets the drawing. Doing it here
+ * rather than inside StackedBarChart is what lets that component draw three
+ * different panels without three different props.
+ */
+function toStackedData(
+	groups: StackedGroupDTO[],
+	toLabel: (name: string) => string = (name) => name,
+): StackedDatum[] {
+	return groups.map((group) => ({
+		label: toLabel(group.name),
+		segments: group.segments,
+	}));
+}
+
+function ChartsSkeleton() {
+	return (
+		<div className="flex flex-col gap-6">
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				{["status", "priority", "bucket"].map((key) => (
+					<Skeleton key={key} className="h-96 rounded-xl" />
+				))}
+			</div>
+			<Skeleton className="h-96 rounded-xl" />
+		</div>
+	);
+}
+
+/**
  * The Charts tab of a single project.
  *
- * Every chart on this screen is the same component the /analytics page uses,
- * handed a narrower query. That is the whole reason the chart components take
- * {label, value} instead of a task DTO: two surfaces, one implementation, and no
- * chance of the project view and the workspace view disagreeing about what a
- * stacked bar looks like.
+ * Four panels, and three of them are the same component. Status, Priority,
+ * Bucket and Members all answer "how is this project's work distributed, and
+ * what state is each part in" - so they share one set of status series, one
+ * palette, one legend component and one stacked-bar implementation. The only
+ * thing that varies is which column the tasks are grouped into, and that is
+ * decided in the DAL, not here.
  */
 export function ChartsView({ projectId }: ChartsViewProps) {
 	const { analytics, isLoading } = useProjectAnalytics(projectId);
 
-	if (isLoading) {
-		return (
-			<div className="flex flex-col gap-6">
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-					{["total", "completed", "overdue", "progress"].map((key) => (
-						<Skeleton key={key} className="h-28 rounded-xl" />
-					))}
-				</div>
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<Skeleton className="h-72 rounded-xl lg:col-span-2" />
-					<Skeleton className="h-72 rounded-xl" />
-					<Skeleton className="h-72 rounded-xl" />
-				</div>
-			</div>
-		);
-	}
+	if (isLoading) return <ChartsSkeleton />;
 
 	if (!analytics || analytics.totalTasks === 0) {
 		return (
@@ -61,98 +73,72 @@ export function ChartsView({ projectId }: ChartsViewProps) {
 		);
 	}
 
-	const trend = analytics.completionTrend.map((day) => ({
-		label: day.label,
-		value: day.tasksCompleted,
-	}));
-	const statuses = analytics.statusBreakdown.map((slice) => ({
-		label: slice.name,
-		value: slice.value,
-	}));
-	const priorities = analytics.priorityBreakdown.map((slice) => ({
-		label: toPriorityLabel(slice.name),
-		value: slice.value,
-	}));
-	const workload = analytics.workload.map((slice) => ({
-		label: slice.name,
-		value: slice.value,
-	}));
+	const statusRows = TASK_STATUS_SERIES.map((series) => ({
+		label: series.label,
+		value:
+			analytics.statusTotals[series.key as keyof typeof analytics.statusTotals],
+	})).filter((row) => row.value > 0);
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-				<StatCard
-					label="Total Tasks"
-					value={analytics.totalTasks}
-					icon={PROJECT_CHART_ICONS.total}
-				/>
-				<StatCard
-					label="Completed"
-					value={analytics.completedTasks}
-					unit={`${analytics.progress}% of all tasks`}
-					icon={PROJECT_CHART_ICONS.completed}
-				/>
-				<StatCard
-					label="Overdue"
-					value={analytics.overdueTasks}
-					icon={PROJECT_CHART_ICONS.overdue}
-					hint="Past the due date and not yet completed."
-				/>
-				<StatCard
-					label="Avg. Task Time"
-					value={analytics.avgTaskTime}
-					unit="days"
-					icon={PROJECT_CHART_ICONS.progress}
-					hint="Mean days from creation to completion."
-				/>
-			</div>
-
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				<ChartCard
-					title="Completion trend"
-					description={`Tasks completed per day over the last ${TREND_WINDOW_DAYS} days.`}
-					tableRows={trend}
-					tableValueLabel="Tasks completed"
-					className="lg:col-span-2"
-				>
-					<TrendAreaChart data={trend} seriesLabel="Tasks completed" />
-				</ChartCard>
-
-				<ChartCard
-					title="Task status"
-					description="How this project's tasks split across statuses."
-					tableRows={statuses}
+					title="Status"
+					description="Every task in this project, by state."
+					tableRows={statusRows}
 					tableValueLabel="Tasks"
 				>
-					<ShareBarChart data={statuses} unitLabel="tasks" />
+					<DonutChart
+						values={analytics.statusTotals}
+						series={TASK_STATUS_SERIES}
+						centerValue={analytics.tasksLeft}
+						centerLabel={analytics.tasksLeft === 1 ? "Task left" : "Tasks left"}
+					/>
 				</ChartCard>
 
 				<ChartCard
-					title="Priority distribution"
-					description="Where this project's work sits on the priority scale."
-					tableRows={priorities}
-					tableValueLabel="Tasks"
-				>
-					<OrdinalBarChart data={priorities} seriesLabel="Tasks" />
-				</ChartCard>
-
-				<ChartCard
-					title="Workload by assignee"
-					description="Tasks currently assigned to each person."
-					tableRows={workload}
-					tableValueLabel="Tasks assigned"
-					footnote="A task with several assignees is counted once for each of them."
-					className="lg:col-span-2"
-				>
-					{workload.length > 0 ? (
-						<RankedBarChart data={workload} seriesLabel="Tasks assigned" />
-					) : (
-						<p className="text-sm text-secondary py-8 text-center">
-							No tasks have been assigned to anyone yet.
-						</p>
+					title="Priority"
+					description="Most urgent first."
+					tableRows={toStatusTableRows(
+						analytics.byPriority.map((group) => ({
+							name: toPriorityLabel(group.name),
+							total: group.total,
+						})),
 					)}
+					tableValueLabel="Tasks"
+				>
+					<StackedBarChart
+						data={toStackedData(analytics.byPriority, toPriorityLabel)}
+						series={TASK_STATUS_SERIES}
+					/>
+				</ChartCard>
+
+				<ChartCard
+					title="Bucket"
+					description="Tasks by board column, in board order."
+					tableRows={toStatusTableRows(analytics.byBucket)}
+					tableValueLabel="Tasks"
+				>
+					<StackedBarChart
+						data={toStackedData(analytics.byBucket)}
+						series={TASK_STATUS_SERIES}
+					/>
 				</ChartCard>
 			</div>
+
+			<ChartCard
+				title="Members"
+				description="Who is carrying what, with unassigned work last."
+				tableRows={toStatusTableRows(analytics.byMember)}
+				tableValueLabel="Tasks"
+				footnote="A task with several assignees is counted once for each of them, so these columns can add up to more than the project's task count."
+			>
+				<StackedBarChart
+					data={toStackedData(analytics.byMember)}
+					series={TASK_STATUS_SERIES}
+					className="**:data-[slot=chart]:h-72"
+				/>
+			</ChartCard>
 		</div>
 	);
 }

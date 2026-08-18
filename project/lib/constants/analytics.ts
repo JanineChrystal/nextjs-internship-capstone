@@ -45,3 +45,19 @@ export const PRIORITY_CHART_ORDER = [
 	"high",
 	"urgent",
 ] as const;
+
+/**
+ * Priority order for the project Charts tab, most urgent first.
+ *
+ * Deliberately the reverse of PRIORITY_CHART_ORDER above. That one feeds an
+ * ordinal colour ramp that runs light-to-dark, so its data has to run
+ * low-to-urgent to match. This one feeds a plain column chart where nothing is
+ * encoded by position, so the useful order is the one that puts the work
+ * needing attention on the left, where reading starts.
+ */
+export const PRIORITY_COLUMN_ORDER = [
+	"urgent",
+	"high",
+	"medium",
+	"low",
+] as const;

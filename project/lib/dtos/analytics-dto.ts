@@ -65,14 +65,39 @@ export interface AnalyticsDashboardDTO {
 	teamActivity: DailyCountDTO[];
 }
 
+/**
+ * How many tasks sit in each of the four status buckets.
+ *
+ * A type alias rather than an interface, deliberately: TypeScript gives an alias
+ * an implicit index signature and an interface none, so only this form is
+ * assignable to the Record<string, number> the chart components take. Declaring
+ * it as an interface compiles here and then fails at the one call site that
+ * matters.
+ */
+export type StatusTotalsDTO = {
+	notStarted: number;
+	inProgress: number;
+	overdue: number;
+	completed: number;
+};
+
+/**
+ * One column of a stacked chart: a category, its own total, and the status split
+ * inside it. Used identically by the Priority, Bucket and Members panels.
+ */
+export interface StackedGroupDTO {
+	name: string;
+	total: number;
+	segments: StatusTotalsDTO;
+}
+
 export interface ProjectAnalyticsDTO {
 	totalTasks: number;
 	completedTasks: number;
-	overdueTasks: number;
-	progress: number;
-	avgTaskTime: number;
-	statusBreakdown: ChartSliceDTO[];
-	priorityBreakdown: ChartSliceDTO[];
-	workload: ChartSliceDTO[];
-	completionTrend: DailyCountDTO[];
+	/** The figure printed in the middle of the Status ring. */
+	tasksLeft: number;
+	statusTotals: StatusTotalsDTO;
+	byPriority: StackedGroupDTO[];
+	byBucket: StackedGroupDTO[];
+	byMember: StackedGroupDTO[];
 }

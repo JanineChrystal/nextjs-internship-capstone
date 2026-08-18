@@ -1,7 +1,7 @@
 "use server";
 
-import { getProjectAnalyticsDAL } from "@/lib/dal/analytics";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
+import { getProjectAnalyticsDAL } from "@/lib/dal/project-analytics";
 import type { ProjectAnalyticsDTO } from "@/lib/dtos/analytics-dto";
 
 /**
