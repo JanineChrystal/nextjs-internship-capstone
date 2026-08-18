@@ -42,6 +42,11 @@ const CalendarView = dynamic(
 	{ ssr: false },
 );
 
+const ChartsView = dynamic(
+	() => import("../_components/views/charts-view").then((m) => m.ChartsView),
+	{ ssr: false },
+);
+
 const SettingsView = dynamic(
 	() =>
 		import("../_components/views/settings-view").then((m) => m.SettingsView),
@@ -149,7 +154,7 @@ export function ProjectDetailClient({
 					<GridView projectId={projectId} externalFilters={filters} />
 				)}
 				{effectiveView === "calendar" && <CalendarView projectId={projectId} />}
-				{effectiveView === "charts" && <div>Charts View Draft</div>}
+				{effectiveView === "charts" && <ChartsView projectId={projectId} />}
 				{effectiveView === "settings" && (
 					<SettingsView projectId={projectId} role={role} />
 				)}

@@ -45,6 +45,22 @@
 	--color-error: var(--error);
 	--color-error-container: var(--error-container);
 
+	/* Data visualisation palette. Validated for colour-vision deficiency and
+	   for contrast against the card surface in BOTH themes - see
+	   app/(dashboard)/_constants/analytics.ts for the rules these obey. */
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+	--color-chart-grid: var(--chart-grid);
+	--color-chart-axis: var(--chart-axis);
+
+	--color-chart-ramp-1: var(--chart-ramp-1);
+	--color-chart-ramp-2: var(--chart-ramp-2);
+	--color-chart-ramp-3: var(--chart-ramp-3);
+	--color-chart-ramp-4: var(--chart-ramp-4);
+
 	/* Spacing */
 	--spacing-container-max: 1280px;
 	--spacing-gutter: 24px;
@@ -112,6 +128,25 @@
 		--input: var(--outline-variant);
 		--ring: var(--primary);
 
+		/* Categorical series (identity). Fixed slot order - a series keeps its
+		   colour when the chart is filtered, so hue never means "rank". */
+		--chart-1: #2a78d6;
+		--chart-2: #eb6834;
+		--chart-3: #1baf7a;
+		--chart-4: #eda100;
+		--chart-5: #e87ba4;
+
+		/* Ordinal ramp (one hue, light -> dark) for scales that have an order,
+		   such as priority. Darker reads as "more" on a light surface. */
+		--chart-ramp-1: #86b6ef;
+		--chart-ramp-2: #3987e5;
+		--chart-ramp-3: #256abf;
+		--chart-ramp-4: #0d366b;
+
+		/* Chart chrome stays recessive so the data is the loudest thing. */
+		--chart-grid: #e1e0d9;
+		--chart-axis: #c3c2b7;
+
 		--radius: 0.25rem;
 	}
 
@@ -146,6 +181,24 @@
 		--error: #ffb4ab;
 		--on-error: #690005;
 		--error-container: #93000a;
+
+		/* Re-stepped for the dark card surface (#121212) and re-validated as a
+		   set - the light steps would fail contrast if simply reused. */
+		--chart-1: #3987e5;
+		--chart-2: #d95926;
+		--chart-3: #199e70;
+		--chart-4: #c98500;
+		--chart-5: #d55181;
+
+		/* The ordinal ramp inverts in dark mode: on a dark surface the LIGHTEST
+		   step is the most prominent, so "more" has to be lighter, not darker. */
+		--chart-ramp-1: #184f95;
+		--chart-ramp-2: #3987e5;
+		--chart-ramp-3: #86b6ef;
+		--chart-ramp-4: #cde2fb;
+
+		--chart-grid: #2c2c2a;
+		--chart-axis: #383835;
 	}
 }
 
