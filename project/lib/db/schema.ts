@@ -178,11 +178,26 @@ export const notificationSettings = pgTable("NotificationSettings", {
 	emailWorkspaceInvites: boolean("emailWorkspaceInvites")
 		.default(true)
 		.notNull(),
+	// Separate from emailWorkspaceInvites because the two are genuinely different
+	// events to the person receiving them: being added to someone's directory is
+	// not the same as being given access to a project. Both are recorded as
+	// INVITE_SENT, so they are told apart by whether the row carries a projectId.
+	emailProjectInvites: boolean("emailProjectInvites").default(true).notNull(),
 	emailTaskCompletions: boolean("emailTaskCompletions").default(true).notNull(),
 	emailProjectCompletions: boolean("emailProjectCompletions")
 		.default(true)
 		.notNull(),
 	emailCommentMentions: boolean("emailCommentMentions").default(true).notNull(),
+	// Both of these are stored and editable now, but nothing fires them yet.
+	// emailCommentViolations waits on Phase 6's moderation pipeline, and
+	// emailProjectOverdue waits on something that actually checks a project's due
+	// date - there is no equivalent of isTaskOverdue() running for projects.
+	// Adding the columns now means the preference survives; it does not mean the
+	// email sends.
+	emailCommentViolations: boolean("emailCommentViolations")
+		.default(true)
+		.notNull(),
+	emailProjectOverdue: boolean("emailProjectOverdue").default(true).notNull(),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
 	updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 	deletedAt: timestamp("deletedAt"),
@@ -206,6 +221,12 @@ export const projects = pgTable("Projects", {
 	dueDate: timestamp("dueDate"),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
 	updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+	// Set when the item is put aside deliberately. Kept separate from deletedAt
+	// because the two mean different things and have different exits: archived
+	// items are hidden from lists but permanent, trashed items are hidden and on
+	// a countdown to real deletion. One nullable timestamp each keeps "which
+	// state is this in" a question the WHERE clause can answer.
+	archivedAt: timestamp("archivedAt"),
 	deletedAt: timestamp("deletedAt"),
 });
 
@@ -376,6 +397,7 @@ export const tasks = pgTable("Tasks", {
 	notes: text("notes"),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
 	updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+	archivedAt: timestamp("archivedAt"),
 	deletedAt: timestamp("deletedAt"),
 });
 

@@ -35,7 +35,11 @@ export interface TaskPropertyConfig {
 	options: readonly string[];
 }
 
-export type TaskModalActionId = "TOGGLE_COMPLETION" | "DUPLICATE" | "DELETE";
+export type TaskModalActionId =
+	| "TOGGLE_COMPLETION"
+	| "DUPLICATE"
+	| "ARCHIVE"
+	| "DELETE";
 export type TaskPropertyId = "category" | "status" | "priority" | "board";
 export type PriorityType = "low" | "medium" | "high" | "urgent";
 

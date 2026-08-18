@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/buttons/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { clerkAppearance } from "@/lib/clerk/appearance";
 
 export function TopBar() {
 	const [mounted, setMounted] = useState(false);
@@ -88,6 +89,7 @@ export function TopBar() {
 						<UserButton
 							showName
 							appearance={{
+								...clerkAppearance,
 								elements: {
 									userButtonBox:
 										"flex flex-row-reverse gap-2 font-medium text-sm whitespace-nowrap",

@@ -1,12 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { TASK_PRIORITY_OPTIONS } from "@/app/(dashboard)/_constants/task";
 import { ActionConfirmModal } from "@/components/modals/action-confirm-modal";
+import { applyArchiveOperationAction } from "@/lib/actions/archive-actions";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import type { Project } from "@/lib/validations/project-schema";
 import { useProjectsClient } from "../../_hooks/use-projects-client";
 import { ProjectCard } from "../ui/cards/project-card";
@@ -31,6 +34,31 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 	// 3. (Optional but recommended) Pass the initial data into your custom hook
 	// so it can use the server-fetched data as its starting state.
 	const { modals, selection, filters } = useProjectsClient(initialProjects);
+	const router = useRouter();
+
+	/**
+	 * Archives a project from its card.
+	 *
+	 * No optimistic removal here, unlike the task board: the projects list is
+	 * server-rendered from getAllUserProjectsDAL, so refreshing is what makes the
+	 * card disappear - and it also refreshes the counts and stats that the same
+	 * server render produced, which a local filter would have left stale.
+	 */
+	const handleArchiveProject = async (projectId: string) => {
+		const result = await applyArchiveOperationAction(
+			"project",
+			projectId,
+			"archive",
+		);
+
+		if (!result.success) {
+			reportActionError("Could not archive project", result.error);
+			return;
+		}
+
+		reportActionSuccess("Project archived");
+		router.refresh();
+	};
 
 	const isSingleDelete = selection.projectToDelete !== null;
 	const deleteCount = isSingleDelete ? 1 : selection.selectedProjectIds.size;
@@ -99,6 +127,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 								isSelected={selection.selectedProjectIds.has(project.id)}
 								onToggleSelection={() => selection.toggleSelection(project.id)}
 								onDelete={selection.initiateSingleDelete}
+								onArchive={handleArchiveProject}
 							/>
 						</div>
 					))

@@ -22,12 +22,34 @@ import {
 	SidebarMenuSubItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
+import type { NavSubItem } from "@/lib/types/nav";
 import { cn } from "@/lib/utils";
+import { useSettingsNavStore } from "@/stores/use-settings-nav-store";
 import { bottomNavigation, mainNavigation } from "../../_constants/nav";
 
 export function AppSidebar({ className }: { className?: string }) {
 	const pathname = usePathname();
 	const { state, setOpen } = useSidebar();
+
+	const activeSettingsSection = useSettingsNavStore(
+		(store) => store.activeNavId,
+	);
+	const requestSettingsScroll = useSettingsNavStore(
+		(store) => store.requestScrollTo,
+	);
+
+	/**
+	 * A sub-item that scrolls is active when its section is the one on screen,
+	 * not when the URL matches - four entries share the one /settings path, so
+	 * comparing hrefs would light up all four at once.
+	 */
+	const isSubItemActive = (subItem: NavSubItem): boolean => {
+		if (!subItem.settingsSectionId) return pathname === subItem.href;
+		return (
+			pathname === subItem.href &&
+			activeSettingsSection === subItem.settingsSectionId
+		);
+	};
 
 	return (
 		<Sidebar
@@ -136,10 +158,25 @@ export function AppSidebar({ className }: { className?: string }) {
 													<SidebarMenuSubItem key={subItem.name}>
 														<SidebarMenuSubButton
 															asChild
-															isActive={pathname === subItem.href}
+															isActive={isSubItemActive(subItem)}
 															className="font-medium hover:bg-accent/50 text-muted-foreground hover:text-foreground"
 														>
-															<Link href={subItem.href}>
+															<Link
+																href={subItem.href}
+																onClick={() => {
+																	// Same-page sections rather than routes: the
+																	// store carries the request so it works both
+																	// when already on /settings (the Link is a
+																	// no-op and this scrolls) and when arriving
+																	// from elsewhere (the page consumes it on
+																	// mount).
+																	if (subItem.settingsSectionId) {
+																		requestSettingsScroll(
+																			subItem.settingsSectionId,
+																		);
+																	}
+																}}
+															>
 																<span>{subItem.name}</span>
 															</Link>
 														</SidebarMenuSubButton>

@@ -1,11 +1,27 @@
 import type { LucideIcon } from "lucide-react";
+import type { SettingsNavId } from "@/lib/types/settings";
+
+/**
+ * One entry under a collapsible nav item.
+ *
+ * `settingsSectionId` is what turns a sub-item from a link into a scroll
+ * target. When present, the sub-item stays on the current page and asks the
+ * settings store to scroll instead of navigating - which is the only way a
+ * one-page settings screen can have a working sub-menu without inventing routes
+ * that would each have to render the whole page again.
+ */
+export interface NavSubItem {
+	name: string;
+	href: string;
+	settingsSectionId?: SettingsNavId;
+}
 
 export interface NavItem {
 	name: string;
 	href: string;
 	icon?: LucideIcon;
 	current?: boolean;
-	subItems?: { name: string; href: string }[];
+	subItems?: NavSubItem[];
 }
 
 /**

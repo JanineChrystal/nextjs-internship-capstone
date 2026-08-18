@@ -1,5 +1,6 @@
 // TODO: Task 2.3 - Create sign-in and sign-up pages
 import { SignIn } from "@clerk/nextjs";
+import { clerkAppearance } from "@/lib/clerk/appearance";
 
 export default function SignInPage() {
 	return (
@@ -31,7 +32,11 @@ export default function SignInPage() {
 				</div>
 			</div> */}
 
-			<SignIn forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard" />
+			<SignIn
+				forceRedirectUrl="/dashboard"
+				fallbackRedirectUrl="/dashboard"
+				appearance={clerkAppearance}
+			/>
 		</div>
 	);
 }

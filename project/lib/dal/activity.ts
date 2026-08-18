@@ -35,6 +35,40 @@ export async function createActivityLogDAL(
 	}
 }
 
+/**
+ * Which email preference, if any, governs a given notification.
+ *
+ * Project and workspace invitations are both recorded as INVITE_SENT, so the
+ * action type cannot tell them apart - but the row can, because only a
+ * project-scoped invite carries a projectId. That is what makes them two
+ * separate switches without a second enum value and a migration.
+ *
+ * null means no switch governs it, which the caller treats as do-not-send.
+ */
+function toEmailPreferenceKey(
+	data: NewDbNotification,
+):
+	| "emailProjectInvites"
+	| "emailWorkspaceInvites"
+	| "emailTaskCompletions"
+	| "emailCommentMentions"
+	| null {
+	switch (data.actionType) {
+		case "INVITE_SENT":
+		case "PROJECT_MEMBER_ADDED":
+			return data.projectId ? "emailProjectInvites" : "emailWorkspaceInvites";
+		case "TASK_COMPLETED":
+			return "emailTaskCompletions";
+		case "COMMENT_ADDED":
+			return "emailCommentMentions";
+		default:
+			// Comment violations and overdue projects will map here once Phase 6 and
+			// an overdue check exist to raise them. Their columns are already stored
+			// and editable; nothing raises the event yet.
+			return null;
+	}
+}
+
 export async function createNotificationDAL(
 	data: NewDbNotification,
 ): Promise<{ notification: NotificationDTO; shouldSendEmail: boolean }> {
@@ -53,23 +87,18 @@ export async function createNotificationDAL(
 				),
 			);
 
+		const preferenceKey = toEmailPreferenceKey(data);
+
 		if (settings) {
-			if (data.actionType === "INVITE_SENT" && settings.emailWorkspaceInvites) {
-				shouldSendEmail = true;
-			} else if (
-				data.actionType === "TASK_COMPLETED" &&
-				settings.emailTaskCompletions
-			) {
-				shouldSendEmail = true;
-			} else if (
-				data.actionType === "COMMENT_ADDED" &&
-				settings.emailCommentMentions
-			) {
-				shouldSendEmail = true;
-			}
+			// An event with no preference governing it stays off rather than
+			// defaulting on: the user has no switch for it, so sending anyway would
+			// be mail they cannot stop.
+			shouldSendEmail = preferenceKey ? settings[preferenceKey] : false;
 		} else {
-			// Default schema values are true
-			shouldSendEmail = true;
+			// No row means the user has never changed anything, and every column
+			// defaults to true - so a governed event sends and an ungoverned one
+			// still does not, matching the branch above.
+			shouldSendEmail = preferenceKey !== null;
 		}
 
 		return { notification: toNotificationDTO(result[0]), shouldSendEmail };

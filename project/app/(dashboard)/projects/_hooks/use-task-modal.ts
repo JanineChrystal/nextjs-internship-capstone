@@ -1,5 +1,6 @@
 import { useParams } from "next/navigation";
 import * as React from "react";
+import { applyArchiveOperationAction } from "@/lib/actions/archive-actions";
 import {
 	createTaskAction,
 	deleteTaskAction,
@@ -442,6 +443,27 @@ export function useTaskModal() {
 					handleDuplicate();
 				}
 				break;
+			case "ARCHIVE": {
+				// Removed from the board immediately, then archived on the server.
+				// The task store has no "archived" state of its own - to every screen
+				// except /archive, an archived task is simply gone - so dropping it
+				// from the store is the correct optimistic update, not a shortcut.
+				const archiveResult = await applyArchiveOperationAction(
+					"task",
+					targetId,
+					"archive",
+				);
+
+				if (!archiveResult.success) {
+					reportActionError("Could not archive task", archiveResult.error);
+					break;
+				}
+
+				deleteTask(targetId);
+				if (!isOtherTask) closeTaskModal();
+				reportActionSuccess("Task archived");
+				break;
+			}
 			case "DELETE":
 				if (isOtherTask) {
 					deleteOtherTask(targetId);

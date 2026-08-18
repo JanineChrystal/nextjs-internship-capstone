@@ -49,7 +49,13 @@ async function loadProjectTasks(projectId: string): Promise<ProjectTaskRow[]> {
 		})
 		.from(tasks)
 		.innerJoin(boards, eq(tasks.boardId, boards.id))
-		.where(and(eq(tasks.projectId, projectId), isNull(tasks.deletedAt)))
+		.where(
+			and(
+				eq(tasks.projectId, projectId),
+				isNull(tasks.archivedAt),
+				isNull(tasks.deletedAt),
+			),
+		)
 		.orderBy(asc(boards.position));
 }
 

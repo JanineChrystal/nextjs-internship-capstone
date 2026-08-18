@@ -1,4 +1,4 @@
-import { CheckCircle, Copy, Trash2 } from "lucide-react";
+import { Archive, CheckCircle, Copy, Trash2 } from "lucide-react";
 import {
 	DEFAULT_TASK_STATUSES,
 	TASK_PRIORITIES,
@@ -37,6 +37,11 @@ export const TASK_MODAL_ACTIONS: TaskModalAction[] = [
 		id: "DUPLICATE",
 		label: "Duplicate task",
 		icon: Copy,
+	},
+	{
+		id: "ARCHIVE",
+		label: "Archive task",
+		icon: Archive,
 	},
 	{
 		id: "DELETE",

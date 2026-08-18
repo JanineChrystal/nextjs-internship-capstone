@@ -142,19 +142,33 @@ export async function getProjectsByWorkspaceId(
  * reads (getProjectStatsDAL, getAllUserTasksDAL). Without this, one /projects
  * render issued the three-query fan-out twice.
  */
+/**
+ * "live" is what every normal screen shows. "all" adds archived and trashed
+ * projects, for the one caller that wants them - the archive page.
+ *
+ * A string rather than an options object because cache() keys an object
+ * argument by reference, so every call would miss and re-run three queries.
+ */
+export type ProjectScope = "live" | "all";
+
 export const getAllUserProjectsDAL = cache(
-	async (): Promise<ProjectOutputDTO[]> => {
+	async (scope: ProjectScope = "live"): Promise<ProjectOutputDTO[]> => {
 		const user = await getCurrentUser();
 		if (!user) throw new Error("Unauthorized");
+
+		// Undefined for "all", which drizzle drops from the AND - so the archive
+		// page sees every project it could reach in any state.
+		const visibility =
+			scope === "live"
+				? and(isNull(projects.archivedAt), isNull(projects.deletedAt))
+				: undefined;
 
 		try {
 			const [owned, direct, viaTeams] = await Promise.all([
 				db
 					.select()
 					.from(projects)
-					.where(
-						and(eq(projects.ownerId, user.id), isNull(projects.deletedAt)),
-					),
+					.where(and(eq(projects.ownerId, user.id), visibility)),
 
 				db
 					.select({ project: projects })
@@ -164,7 +178,7 @@ export const getAllUserProjectsDAL = cache(
 						and(
 							eq(projectMembers.userId, user.id),
 							isNull(projectMembers.deletedAt),
-							isNull(projects.deletedAt),
+							visibility,
 						),
 					),
 
@@ -178,7 +192,7 @@ export const getAllUserProjectsDAL = cache(
 						and(
 							eq(teamMembers.userId, user.id),
 							isNull(teams.deletedAt),
-							isNull(projects.deletedAt),
+							visibility,
 						),
 					),
 			]);

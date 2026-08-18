@@ -79,6 +79,7 @@ export async function moveTaskBoardDAL(
 				and(
 					eq(tasks.id, taskId),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			)
@@ -117,6 +118,7 @@ export async function getAllUserTasksDAL(): Promise<TaskWithBoardOutputDTO[]> {
 			.where(
 				and(
 					inArray(tasks.projectId, projectIds),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 					isNull(projects.deletedAt),
 				),
@@ -157,6 +159,7 @@ export async function getTasksByProjectId(
 			.where(
 				and(
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 					isNull(projects.deletedAt),
 				),
@@ -198,6 +201,7 @@ export async function updateTaskInDB(
 				and(
 					eq(tasks.id, taskId),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			);
@@ -211,6 +215,7 @@ export async function updateTaskInDB(
 				and(
 					eq(tasks.id, taskId),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			)
@@ -246,6 +251,7 @@ export async function deleteTaskInDB(
 				and(
 					eq(tasks.id, taskId),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			);
@@ -270,6 +276,7 @@ export async function bulkDeleteTasksInDB(
 				and(
 					inArray(tasks.id, taskIds),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			);
@@ -324,6 +331,7 @@ export async function bulkCompleteTasksInDB(
 				and(
 					inArray(tasks.id, taskIds),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			);
@@ -353,6 +361,7 @@ export async function reorderTasksInDB(
 							eq(tasks.id, taskIds[i]),
 							eq(tasks.boardId, boardId),
 							eq(tasks.projectId, projectId),
+							isNull(tasks.archivedAt),
 							isNull(tasks.deletedAt),
 						),
 					);

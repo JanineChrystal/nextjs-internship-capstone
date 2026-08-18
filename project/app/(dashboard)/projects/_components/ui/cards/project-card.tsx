@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react";
+import { Archive, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { CategoryBadge } from "@/app/(dashboard)/_components/ui/badges/category-badge";
 import { PriorityBadge } from "@/app/(dashboard)/_components/ui/badges/priority-badge";
@@ -13,11 +13,13 @@ export function ProjectCard({
 	isSelected = false,
 	onToggleSelection,
 	onDelete,
+	onArchive,
 }: {
 	project: Project;
 	isSelected?: boolean;
 	onToggleSelection?: () => void;
 	onDelete?: (id: string) => void;
+	onArchive?: (id: string) => void;
 }) {
 	return (
 		<Link
@@ -65,10 +67,28 @@ export function ProjectCard({
 							{project.daysLeft} days left
 						</span>
 
+						{/* Archive Button. Sits before Delete so the reversible action is
+						    the one nearer the content, and the destructive one is the
+						    outermost thing on the row. */}
+						<button
+							type="button"
+							aria-label={`Archive ${project.title}`}
+							onClick={(e) => {
+								// The card is wrapped in a Link, so without these the click
+								// would archive the project AND navigate into it.
+								e.preventDefault();
+								e.stopPropagation();
+								onArchive?.(project.id);
+							}}
+							className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+						>
+							<Archive className="w-4 h-4" />
+						</button>
+
 						{/* Delete Button */}
 						<button
 							type="button"
-							aria-label="Delete project"
+							aria-label={`Delete ${project.title}`}
 							onClick={(e) => {
 								e.preventDefault();
 								e.stopPropagation();

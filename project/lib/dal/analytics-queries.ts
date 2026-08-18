@@ -52,7 +52,15 @@ export async function loadScopedTasks(
 			updatedAt: tasks.updatedAt,
 		})
 		.from(tasks)
-		.where(and(inArray(tasks.projectId, projectIds), isNull(tasks.deletedAt)));
+		.where(
+			and(
+				inArray(tasks.projectId, projectIds),
+				// Archived work is deliberately set aside, so counting it would drag
+				// every completion rate down for tasks nobody intends to finish.
+				isNull(tasks.archivedAt),
+				isNull(tasks.deletedAt),
+			),
+		);
 }
 
 /**
