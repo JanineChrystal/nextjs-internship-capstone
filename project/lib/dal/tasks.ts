@@ -10,7 +10,8 @@ import {
 	type TaskWithBoardOutputDTO,
 	toTaskDTO,
 } from "@/lib/dtos/task-dto";
-import type { NewDbTask } from "@/lib/types/task";
+import type { DbTask, NewDbTask } from "@/lib/types/task";
+import { describeTaskChanges } from "@/lib/utils/activity";
 
 export async function createTaskInDB(data: NewDbTask): Promise<TaskOutputDTO> {
 	const user = await getCurrentUser();
@@ -168,15 +169,41 @@ export async function getTasksByProjectId(
 	}
 }
 
+/**
+ * Updates a task and reports, in one sentence, what actually changed.
+ *
+ * The extra SELECT is what makes an activity entry like "changed category from
+ * Design to Research" possible: an UPDATE ... RETURNING alone yields the new
+ * row with no memory of the old values, so there is nothing to compare against.
+ * One additional read per edit, the same cost as the permission check that
+ * already runs on this path.
+ *
+ * changeSummary is null when nothing tracked actually differs - opening a
+ * task and saving without editing anything - which is what lets the caller skip
+ * writing a meaningless history row.
+ */
 export async function updateTaskInDB(
 	taskId: string,
 	projectId: string,
 	data: Partial<NewDbTask>,
-): Promise<TaskOutputDTO> {
+): Promise<{ task: TaskOutputDTO; changeSummary: string | null }> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
 	try {
+		const [before] = await db
+			.select()
+			.from(tasks)
+			.where(
+				and(
+					eq(tasks.id, taskId),
+					eq(tasks.projectId, projectId),
+					isNull(tasks.deletedAt),
+				),
+			);
+
+		if (!before) throw new Error("Task not found");
+
 		const result = await db
 			.update(tasks)
 			.set({ ...data, updatedAt: new Date() })
@@ -191,8 +218,15 @@ export async function updateTaskInDB(
 
 		if (result.length === 0) throw new Error("Task not found");
 
-		return toTaskDTO(result[0]);
+		const after = result[0] as DbTask;
+
+		return {
+			task: toTaskDTO(after),
+			changeSummary: describeTaskChanges(before as DbTask, after),
+		};
 	} catch (error) {
+		if (error instanceof Error && error.message === "Task not found")
+			throw error;
 		throw new Error("Failed to update task in database", { cause: error });
 	}
 }

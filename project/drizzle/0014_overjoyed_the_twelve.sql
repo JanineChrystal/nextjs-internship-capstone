@@ -1,0 +1,2 @@
+ALTER TYPE "public"."ActionType" ADD VALUE 'TASK_CREATED' BEFORE 'TASK_ASSIGNED';--> statement-breakpoint
+ALTER TYPE "public"."ActionType" ADD VALUE 'TASK_UPDATED' BEFORE 'TASK_ASSIGNED';

@@ -15,7 +15,7 @@ import {
 	TASK_STATUS_IN_PROGRESS,
 	TASK_STATUS_NOT_STARTED,
 } from "@/lib/utils/task-status";
-import { reportActionError } from "@/lib/utils/toast";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import { validateSchedule } from "@/lib/validations/date-rules";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
@@ -132,6 +132,7 @@ export function useTaskModal() {
 					updates.assignees.map((a) => a.userId),
 				);
 				if (!result.success) throw new Error(result.error);
+				reportActionSuccess("Assignees updated");
 				return;
 			}
 
@@ -154,6 +155,15 @@ export function useTaskModal() {
 				statusOverriddenAt: extras.statusOverriddenAt,
 			});
 			if (!result.success) throw new Error(result.error);
+
+			// Only completion gets a toast on this path. Every other field here is a
+			// routine inline edit where the input visibly changing IS the feedback -
+			// toasting each one would fire several times during normal editing.
+			if (updates.isCompleted !== undefined) {
+				reportActionSuccess(
+					updates.isCompleted ? "Task marked complete" : "Task reopened",
+				);
+			}
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
 			reportActionError("Could not update task", error);
@@ -211,6 +221,7 @@ export function useTaskModal() {
 			if (!result.success || !result.data) throw new Error(result.error);
 
 			updateTask(tempId, { id: result.data.id });
+			reportActionSuccess("Task created");
 		} catch (error) {
 			deleteTask(tempId);
 			reportActionError("Could not create task", error);
@@ -370,6 +381,9 @@ export function useTaskModal() {
 				boardId: updates.board ? resolveBoardId(updates.board) : undefined,
 			});
 			if (!result.success) throw new Error(result.error);
+			reportActionSuccess(
+				updates.isCompleted ? "Task marked complete" : "Task reopened",
+			);
 		} catch (error) {
 			useTaskStore.getState().setTasks(previousTasks);
 			reportActionError("Could not update task completion", error);

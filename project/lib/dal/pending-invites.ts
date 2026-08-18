@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
+import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import {
@@ -194,7 +195,7 @@ export async function claimPendingInvitesForUserDAL(
 
 	if (invites.length === 0) return { claimedCount: 0 };
 
-	return await db.transaction(async (tx) => {
+	const result = await db.transaction(async (tx) => {
 		for (const invite of invites) {
 			// Directory membership is granted by every invite, project-scoped or
 			// not - an invited collaborator has to appear in the inviter's people
@@ -234,4 +235,28 @@ export async function claimPendingInvitesForUserDAL(
 
 		return { claimedCount: invites.length };
 	});
+
+	// Recorded after the transaction commits, deliberately. recordActivity uses
+	// its own connection, so calling it inside would put a bookkeeping write in
+	// the same transaction as the membership grant - and a failure there could
+	// roll back access the user has already been told they have.
+	for (const invite of invites) {
+		await recordActivity({
+			workspaceId: invite.workspaceId,
+			actorId: userId,
+			actionType: "INVITE_ACCEPTED",
+			details: `${normalized} accepted an invitation`,
+			projectId: invite.projectId,
+			targetUserId: invite.invitedBy,
+			// The person who sent it is the one waiting to hear back.
+			notify: [
+				{
+					recipientId: invite.invitedBy,
+					message: `${normalized} accepted your invitation`,
+				},
+			],
+		});
+	}
+
+	return result;
 }

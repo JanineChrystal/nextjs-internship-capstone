@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionFailureReason } from "@/lib/dal/auth";
+import { recordActivity } from "@/lib/dal/activity-recorder";
+import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
+import { resolveProjectWorkspaceIdDAL } from "@/lib/dal/categories";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import { getProjectMembersDAL } from "@/lib/dal/project-members";
 import { setTaskAssigneesInDB } from "@/lib/dal/task-assignees";
@@ -43,7 +45,30 @@ export async function setTaskAssigneesAction(
 			return { success: false, error: await getSessionFailureReason() };
 		}
 
-		await setTaskAssigneesInDB(taskId, projectId, userIds);
+		const { addedUserIds } = await setTaskAssigneesInDB(
+			taskId,
+			projectId,
+			userIds,
+		);
+
+		// Only people who were NOT already assigned are notified, so editing any
+		// other part of a task never re-pings its existing assignees.
+		const user = await getCurrentUser();
+		if (user && addedUserIds.length > 0) {
+			await recordActivity({
+				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+				actorId: user.id,
+				actionType: "TASK_ASSIGNED",
+				details: `Assigned ${addedUserIds.length} member(s) to this task`,
+				projectId,
+				taskId,
+				notify: addedUserIds.map((recipientId) => ({
+					recipientId,
+					message: "You were assigned to a task",
+				})),
+			});
+		}
+
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true };
 	} catch (error) {

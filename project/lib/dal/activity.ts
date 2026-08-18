@@ -1,6 +1,7 @@
 import "server-only";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
+import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { db } from "@/lib/db";
 import {
 	activityLogs,
@@ -74,6 +75,13 @@ export async function getProjectActivityLogsDAL(
 ): Promise<ActivityLogDTO[]> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
+
+	// Being signed in was the only check here, which meant any authenticated user
+	// could read any project's history by id. Access is resolved the same way
+	// every other project-scoped read resolves it, so a project cannot appear in
+	// this feed while being invisible everywhere else.
+	const role = await getEffectiveProjectRoleDAL(projectId);
+	if (!role) throw new Error("Unauthorized");
 
 	try {
 		const results = await db

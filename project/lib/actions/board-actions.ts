@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionFailureReason } from "@/lib/dal/auth";
+import { recordActivity } from "@/lib/dal/activity-recorder";
+import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	countTasksInBoardDAL,
 	createBoardDAL,
@@ -10,6 +11,7 @@ import {
 	reorderBoardsDAL,
 	setCompletionBoardDAL,
 } from "@/lib/dal/boards";
+import { resolveProjectWorkspaceIdDAL } from "@/lib/dal/categories";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 
 export async function reorderBoardsAction(
@@ -52,6 +54,18 @@ export async function createBoardAction(
 		}
 
 		const board = await createBoardDAL(projectId, name);
+
+		const user = await getCurrentUser();
+		if (user) {
+			await recordActivity({
+				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+				actorId: user.id,
+				actionType: "BOARD_CREATED",
+				details: `Created board "${board.name}"`,
+				projectId,
+			});
+		}
+
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true, data: board };
 	} catch (error) {
@@ -140,6 +154,18 @@ export async function deleteBoardAction(
 		}
 
 		await deleteBoardDAL(boardId, projectId);
+
+		const user = await getCurrentUser();
+		if (user) {
+			await recordActivity({
+				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+				actorId: user.id,
+				actionType: "BOARD_DELETED",
+				details: "Deleted a board",
+				projectId,
+			});
+		}
+
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true };
 	} catch (error) {

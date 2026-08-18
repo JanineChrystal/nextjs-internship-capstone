@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
+import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
+import { resolveProjectWorkspaceIdDAL } from "@/lib/dal/categories";
 import { upsertProjectCategoryDAL } from "@/lib/dal/category-mutations";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import {
@@ -113,6 +115,20 @@ export async function createTaskAction(
 		// DAL Call
 		const newTask = await createTaskInDB(validatedData);
 
+		// History entry. Awaited so the row exists before the response returns,
+		// but recordActivity never throws - a failed log must not fail the create.
+		const user = await getCurrentUser();
+		if (user) {
+			await recordActivity({
+				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+				actorId: user.id,
+				actionType: "TASK_CREATED",
+				details: `Created task "${newTask.name}"`,
+				projectId,
+				taskId: newTask.id,
+			});
+		}
+
 		// Cache Revalidation
 		revalidatePath(`/projects/${projectId}`);
 
@@ -173,7 +189,44 @@ export async function updateTaskAction(
 				: undefined,
 		};
 
-		const updatedTask = await updateTaskInDB(taskId, projectId, updatePayload);
+		const { task: updatedTask, changeSummary } = await updateTaskInDB(
+			taskId,
+			projectId,
+			updatePayload,
+		);
+
+		const user = await getCurrentUser();
+		if (user) {
+			// Resolved once and shared by both possible entries below.
+			const workspaceId = await resolveProjectWorkspaceIdDAL(projectId);
+
+			// A save that changed nothing tracked produces no row at all, which is
+			// why changeSummary is allowed to be null rather than an empty string.
+			if (changeSummary) {
+				await recordActivity({
+					workspaceId,
+					actorId: user.id,
+					actionType: "TASK_UPDATED",
+					details: changeSummary,
+					projectId,
+					taskId,
+				});
+			}
+
+			// Completion is its own event rather than another "changed status"
+			// line, because Phase 4 counts completions and a free-text sentence is
+			// not something you can aggregate.
+			if (validationResult.data.isCompleted === true) {
+				await recordActivity({
+					workspaceId,
+					actorId: user.id,
+					actionType: "TASK_COMPLETED",
+					details: `Marked "${updatedTask.name}" complete`,
+					projectId,
+					taskId,
+				});
+			}
+		}
 
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true, data: updatedTask };

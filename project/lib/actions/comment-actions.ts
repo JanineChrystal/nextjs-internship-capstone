@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
+import { resolveProjectWorkspaceIdDAL } from "@/lib/dal/categories";
 import {
 	createCommentInDB,
 	deleteCommentInDB,
@@ -10,6 +12,7 @@ import {
 	updateCommentInDB,
 } from "@/lib/dal/comments";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
+import { getTaskAssigneesByTaskIds } from "@/lib/dal/task-assignees";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
 import {
 	CreateCommentSchema,
@@ -82,6 +85,26 @@ export async function createCommentAction(
 			validationResult.data.body,
 			validationResult.data.parentId,
 		);
+
+		// The people working on the task are the ones who need to know it was
+		// commented on. recordActivity drops the author if they are among them, so
+		// commenting on your own task notifies nobody.
+		const assigneesByTask = await getTaskAssigneesByTaskIds([taskId]);
+		const assignees = assigneesByTask.get(taskId) ?? [];
+
+		await recordActivity({
+			workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+			actorId: user.id,
+			actionType: "COMMENT_ADDED",
+			details: "Commented on this task",
+			projectId,
+			taskId,
+			notify: assignees.map((assignee) => ({
+				recipientId: assignee.userId,
+				message: "New comment on a task assigned to you",
+			})),
+		});
+
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true, data: comment };
 	} catch (error) {

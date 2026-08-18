@@ -46,6 +46,8 @@ export const actionTypeEnum = pgEnum("ActionType", [
 	"BOARD_CREATED",
 	"BOARD_REORDERED",
 	"BOARD_DELETED",
+	"TASK_CREATED",
+	"TASK_UPDATED",
 	"TASK_ASSIGNED",
 	"TASK_COMPLETED",
 	"COMMENT_ADDED",

@@ -46,11 +46,21 @@ export async function getTaskAssigneesByTaskIds(
 	}
 }
 
+/**
+ * Replaces a task's assignee list and reports who was newly added.
+ *
+ * The returned ids are what let the caller notify only the people who just
+ * gained the task. This function replaces the whole list on every save, so
+ * without the diff a caller could only notify *all* current assignees - which
+ * would re-notify the same people every time anything about the assignment
+ * changed. The old list is read here because this is the only place that sees
+ * both states; asking the action layer to diff would mean querying twice.
+ */
 export async function setTaskAssigneesInDB(
 	taskId: string,
 	projectId: string,
 	userIds: string[],
-): Promise<void> {
+): Promise<{ addedUserIds: string[] }> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
@@ -66,6 +76,16 @@ export async function setTaskAssigneesInDB(
 				),
 			);
 		if (!task) throw new Error("Task not found");
+
+		const existing = await db
+			.select({ userId: taskAssignees.userId })
+			.from(taskAssignees)
+			.where(
+				and(eq(taskAssignees.taskId, taskId), isNull(taskAssignees.deletedAt)),
+			);
+
+		const before = new Set(existing.map((row) => row.userId));
+		const addedUserIds = userIds.filter((userId) => !before.has(userId));
 
 		await db.transaction(async (tx) => {
 			await tx
@@ -88,7 +108,11 @@ export async function setTaskAssigneesInDB(
 					});
 			}
 		});
+
+		return { addedUserIds };
 	} catch (error) {
+		if (error instanceof Error && error.message === "Task not found")
+			throw error;
 		throw new Error("Failed to set task assignees in database", {
 			cause: error,
 		});

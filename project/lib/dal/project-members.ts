@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
+import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser } from "@/lib/dal/auth";
 import {
 	createPendingInviteInDB,
@@ -60,6 +61,17 @@ export async function inviteUserToProjectInDB(
 				position: jobRole,
 				accessLevel,
 			});
+
+			// Logged even though nobody can be notified yet - there is no Users row
+			// for this address. INVITE_ACCEPTED closes the loop when they sign up.
+			await recordActivity({
+				workspaceId: existingProject.workspaceId,
+				actorId: user.id,
+				actionType: "INVITE_SENT",
+				details: `Invited ${normalizedEmail} (no account yet)`,
+				projectId,
+			});
+
 			return "pending";
 		}
 
@@ -89,6 +101,15 @@ export async function inviteUserToProjectInDB(
 					target: [projectMembers.projectId, projectMembers.userId],
 					set: { deletedAt: null, position: jobRole, accessLevel },
 				});
+		});
+
+		await recordActivity({
+			workspaceId: existingProject.workspaceId,
+			actorId: user.id,
+			actionType: "INVITE_SENT",
+			details: `Invited ${normalizedEmail}`,
+			projectId,
+			targetUserId: knownUser.id,
 		});
 
 		return "invited";

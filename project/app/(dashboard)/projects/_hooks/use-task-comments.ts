@@ -6,6 +6,7 @@ import {
 	getCommentsAction,
 } from "@/lib/actions/comment-actions";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import { COMMENTS_PAGE_SIZE } from "../_constants/comments";
 
 export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
@@ -35,7 +36,16 @@ export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 		const result = await createCommentAction(taskId, projectId, body, parentId);
 		if (result.success && result.data) {
 			setComments((prev) => [...prev, result.data as CommentOutputDTO]);
+			reportActionSuccess("Comment posted");
+			return;
 		}
+
+		// The box was cleared optimistically before the request. Putting the text
+		// back matters more than the toast does - losing what someone typed is the
+		// worst possible outcome of a failed post.
+		setNewComment(body);
+		if (parentId) setReplyingTo(replyingTo);
+		reportActionError("Could not post comment", result.error);
 	};
 
 	const handleReply = (comment: CommentOutputDTO) => {
@@ -58,6 +68,7 @@ export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 		const result = await deleteCommentAction(commentId, projectId);
 		if (!result.success) {
 			setComments(previousComments);
+			reportActionError("Could not delete comment", result.error);
 		}
 	};
 

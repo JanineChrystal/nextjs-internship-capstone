@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionFailureReason } from "@/lib/dal/auth";
+import { recordActivity } from "@/lib/dal/activity-recorder";
+import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
+import { resolveProjectWorkspaceIdDAL } from "@/lib/dal/categories";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import {
 	assignTeamToProjectInDB,
@@ -11,6 +13,7 @@ import {
 	updateMemberJobRoleInDB,
 	updateMemberRoleInDB,
 } from "@/lib/dal/project-members";
+import { findUserIdByEmailDAL } from "@/lib/dal/users";
 import type { ProjectMemberDetailedOutputDTO } from "@/lib/dtos/project-member-dto";
 
 /**
@@ -43,6 +46,30 @@ export async function inviteUserToProjectAction(
 			jobRole,
 			accessLevel,
 		);
+
+		// A real membership row only exists for the "invited" outcome; a pending
+		// invite has no Users row yet, so there is nobody to notify. That case is
+		// covered by INVITE_ACCEPTED when they eventually sign up.
+		const actor = await getCurrentUser();
+		if (actor && outcome === "invited") {
+			const invitedUserId = await findUserIdByEmailDAL(email);
+			await recordActivity({
+				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+				actorId: actor.id,
+				actionType: "PROJECT_MEMBER_ADDED",
+				details: `Added ${email} to the project`,
+				projectId,
+				targetUserId: invitedUserId,
+				notify: invitedUserId
+					? [
+							{
+								recipientId: invitedUserId,
+								message: "You were added to a project",
+							},
+						]
+					: [],
+			});
+		}
 
 		revalidatePath(`/projects/${projectId}`);
 
@@ -147,6 +174,21 @@ export async function removeMemberAction(
 		}
 
 		await removeMemberFromProjectDAL(projectId, userId);
+
+		// Logged for the project history, but the removed member is not notified:
+		// they lose access to the project immediately, which is feedback enough.
+		const actor = await getCurrentUser();
+		if (actor) {
+			await recordActivity({
+				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+				actorId: actor.id,
+				actionType: "PROJECT_MEMBER_REMOVED",
+				details: "Removed a member from the project",
+				projectId,
+				targetUserId: userId,
+			});
+		}
+
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true };
 	} catch (error) {
