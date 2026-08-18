@@ -1,32 +1,43 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-// TODO: Task 2.1 - Set up Clerk authentication service
-// import { ClerkProvider } from "@clerk/nextjs"
-import { ThemeProvider } from "@/components/theme-provider"
+import { ClerkProvider } from "@clerk/nextjs";
+import type { Metadata } from "next";
+import { Geist, Inter } from "next/font/google";
+import type React from "react";
+import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ["latin"] })
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Project Management Tool",
-  description: "Team collaboration and project management platform",
-    generator: 'v0.dev'
-}
+	title: {
+		template: "%s | Takda PH",
+		default: "Takda PH",
+	},
+	description: "Team collaboration and project management platform",
+	generator: "v0.dev",
+};
 
 export default function RootLayout({
-  children,
+	children,
 }: {
-  children: React.ReactNode
+	children: React.ReactNode;
 }) {
-  return (
-    // TODO: Task 2.1 - Wrap with ClerkProvider once Clerk is set up
-    // <ClerkProvider>
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider>{children}</ThemeProvider>
-      </body>
-    </html>
-    // </ClerkProvider>
-  )
+	return (
+		// afterSignOutUrl keeps sign-out inside the app. Without it Clerk falls
+		// back to the instance's hosted page (accounts.dev/sign-in/choose), so
+		// signing out dropped the user out of the product entirely.
+		<ClerkProvider afterSignOutUrl="/">
+			<html
+				lang="en"
+				suppressHydrationWarning
+				className={cn("font-sans", geist.variable)}
+			>
+				<body className={inter.className} suppressHydrationWarning>
+					<ThemeProvider>{children}</ThemeProvider>
+				</body>
+			</html>
+		</ClerkProvider>
+	);
 }
