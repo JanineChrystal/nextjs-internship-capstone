@@ -1,13 +1,14 @@
 "use client";
 
 import { Calendar, CheckSquare, Paperclip } from "lucide-react";
+import { CategoryBadge } from "@/app/(dashboard)/_components/ui/badges/category-badge";
 import { PriorityBadge } from "@/app/(dashboard)/_components/ui/badges/priority-badge";
 import { StatusBadge } from "@/app/(dashboard)/_components/ui/badges/status-badge";
-import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { GridTask } from "@/types/task";
+import type { GridTask } from "@/lib/types/task";
 import { TASK_CARD_FOOTER_METRICS } from "../../../_constants/kanban";
 import { useTaskCard } from "../../../_hooks/use-task-card";
+import { useTaskCategoryScope } from "../../../_hooks/use-task-category-scope";
 
 interface TaskCardProps {
 	task: GridTask;
@@ -29,6 +30,8 @@ export function TaskCard({ task }: TaskCardProps) {
 		toggleTaskSelection,
 		openTaskModal,
 	} = useTaskCard(task);
+
+	const categoryScope = useTaskCategoryScope(task.projectId);
 
 	const getMetricValue = (id: string) => {
 		switch (id) {
@@ -77,7 +80,9 @@ export function TaskCard({ task }: TaskCardProps) {
 				</div>
 				<div className="flex items-center gap-2">
 					{formattedPriority && <PriorityBadge priority={formattedPriority} />}
-					{formattedTag && <TagBadge tag={formattedTag} />}
+					{formattedTag && (
+						<CategoryBadge name={formattedTag} scope={categoryScope} />
+					)}
 				</div>
 			</div>
 

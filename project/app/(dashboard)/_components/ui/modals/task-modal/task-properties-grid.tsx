@@ -46,8 +46,12 @@ export function TaskPropertiesGrid({
 	onStatusChange,
 }: TaskPropertiesGridProps) {
 	const boardColumns = useBoardStore((state) => state.columns);
-	const { categories, fetchProjectCategories, addProjectCategory } =
-		useCategoryStore();
+	const {
+		categories,
+		fetchProjectCategories,
+		addProjectCategory,
+		refreshCategoryStyles,
+	} = useCategoryStore();
 	const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
 	// The task itself knows which project it belongs to; the route param is the
@@ -78,6 +82,13 @@ export function TaskPropertiesGrid({
 		);
 		if (!alreadyKnown && projectId) {
 			await addProjectCategory(projectId, trimmed, "task");
+			// A category created here gets a server-assigned colour, so the cached
+			// palette has to be reloaded before the new badge can paint with it.
+			await refreshCategoryStyles({
+				kind: "project",
+				id: projectId,
+				type: "task",
+			});
 		}
 	};
 

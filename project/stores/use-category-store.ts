@@ -9,16 +9,35 @@ import {
 	updateCategoryAction,
 	updateProjectCategoryAction,
 } from "@/lib/actions/category-actions";
+import type {
+	Category,
+	CategoryColorMap,
+	CategoryScope,
+} from "@/lib/types/category";
+import { getCategoryScopeKey, indexCategoryColors } from "@/lib/utils/category";
 
-export interface Category {
-	id?: string;
-	name: string;
-	color: string;
-	type?: "project" | "task";
-}
+// Re-exported so the components that already import Category from this store
+// keep working while the codebase moves onto @/lib/types.
+export type { Category };
+
+/**
+ * One in-flight palette request per scope, held outside the store because these
+ * are promises rather than rendered state.
+ *
+ * Without it, a board with forty task cards would fire forty identical requests
+ * on mount - every badge asks for its palette independently, and none of them
+ * can see that another already did.
+ */
+const inFlightStyleRequests = new Map<string, Promise<void>>();
 
 interface CategoryState {
 	categories: Category[];
+	/**
+	 * Scope key to (category name -> hex colour). Separate from `categories`
+	 * because that array holds a single scope and is overwritten by whichever
+	 * fetch ran last, whereas badges from several scopes can be on screen at once.
+	 */
+	categoryStyles: Record<string, CategoryColorMap>;
 	isLoading: boolean;
 	error: string | null;
 
@@ -69,10 +88,54 @@ interface CategoryState {
 		categoryName: string,
 		type: "project" | "task",
 	) => Promise<boolean>;
+
+	// Palette lookups for badges. Read-only as far as the rest of the app is
+	// concerned - nothing here writes categories, it only caches their colours.
+	ensureCategoryStyles: (scope: CategoryScope) => Promise<void>;
+	refreshCategoryStyles: (scope: CategoryScope) => Promise<void>;
 }
 
-export const useCategoryStore = create<CategoryState>((set) => ({
+/**
+ * Loads one scope's palette into the cache.
+ *
+ * Shared by both public entry points, which differ only in whether they check
+ * the cache first. A failure is swallowed on purpose: a badge with no colour
+ * still renders using its generated palette, so a palette request is never worth
+ * interrupting the page for.
+ */
+async function loadCategoryStyles(
+	scope: CategoryScope,
+	set: (updater: (state: CategoryState) => Partial<CategoryState>) => void,
+): Promise<void> {
+	const key = getCategoryScopeKey(scope);
+
+	const request = (async () => {
+		try {
+			const result =
+				scope.kind === "project"
+					? await getProjectCategoriesAction(scope.id, scope.type)
+					: await getCategoriesAction(scope.id, scope.type);
+
+			if (result.success && result.data) {
+				const colors = indexCategoryColors(result.data as Category[]);
+				set((state) => ({
+					categoryStyles: { ...state.categoryStyles, [key]: colors },
+				}));
+			}
+		} catch {
+			// Left uncached rather than cached empty, so navigating back retries.
+		} finally {
+			inFlightStyleRequests.delete(key);
+		}
+	})();
+
+	inFlightStyleRequests.set(key, request);
+	return request;
+}
+
+export const useCategoryStore = create<CategoryState>((set, get) => ({
 	categories: [],
+	categoryStyles: {},
 	isLoading: false,
 	error: null,
 
@@ -81,7 +144,16 @@ export const useCategoryStore = create<CategoryState>((set) => ({
 		try {
 			const result = await getCategoriesAction(workspaceId, type);
 			if (result.success && result.data) {
-				set({ categories: result.data as Category[], isLoading: false });
+				const list = result.data as Category[];
+				set((state) => ({
+					categories: list,
+					categoryStyles: {
+						...state.categoryStyles,
+						[getCategoryScopeKey({ kind: "workspace", id: workspaceId, type })]:
+							indexCategoryColors(list),
+					},
+					isLoading: false,
+				}));
 			} else {
 				set({
 					error: result.error || "Failed to fetch categories",
@@ -180,7 +252,16 @@ export const useCategoryStore = create<CategoryState>((set) => ({
 		try {
 			const result = await getProjectCategoriesAction(projectId, type);
 			if (result.success && result.data) {
-				set({ categories: result.data as Category[], isLoading: false });
+				const list = result.data as Category[];
+				set((state) => ({
+					categories: list,
+					categoryStyles: {
+						...state.categoryStyles,
+						[getCategoryScopeKey({ kind: "project", id: projectId, type })]:
+							indexCategoryColors(list),
+					},
+					isLoading: false,
+				}));
 			} else {
 				set({
 					error: result.error || "Failed to fetch categories",
@@ -280,5 +361,31 @@ export const useCategoryStore = create<CategoryState>((set) => ({
 			set({ error: "An unexpected error occurred", isLoading: false });
 			return false;
 		}
+	},
+
+	/**
+	 * Loads a scope's palette unless it is already cached or already being
+	 * fetched. Called by every category badge on mount; the two guards are what
+	 * turn that into one request per scope.
+	 */
+	ensureCategoryStyles: async (scope) => {
+		const key = getCategoryScopeKey(scope);
+
+		if (get().categoryStyles[key]) return;
+
+		const pending = inFlightStyleRequests.get(key);
+		if (pending) return pending;
+
+		return loadCategoryStyles(scope, set);
+	},
+
+	/**
+	 * Reloads a scope's palette regardless of what is cached, for after someone
+	 * edits colours in Manage Categories. Without it the badges would keep
+	 * painting the old colour until the next full page load, which is exactly the
+	 * "editing a category changes nothing" symptom this work set out to fix.
+	 */
+	refreshCategoryStyles: async (scope) => {
+		return loadCategoryStyles(scope, set);
 	},
 }));

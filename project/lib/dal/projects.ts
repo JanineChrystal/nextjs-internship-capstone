@@ -7,6 +7,7 @@ import {
 	normalizeInviteEmail,
 } from "@/lib/dal/pending-invites";
 import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
+import { linkWorkspaceDirectoriesInDB } from "@/lib/dal/workspaces";
 import { db } from "@/lib/db";
 import {
 	boards,
@@ -17,7 +18,6 @@ import {
 	teamMembers,
 	teams,
 	users,
-	workspaceMembers,
 	workspaces,
 } from "@/lib/db/schema";
 import { type ProjectOutputDTO, toProjectDTO } from "@/lib/dtos/project-dto";
@@ -438,26 +438,15 @@ export async function inviteUserToProjectInDB(
 			const targetUser = knownUser;
 			const project = existingProject;
 
-			// Resurrects a soft-deleted directory row rather than doing nothing.
-			// With onConflictDoNothing, re-inviting someone previously removed from
-			// the directory hit the unique (workspaceId, userId) constraint and left
-			// deletedAt set, so they never reappeared. Matches the resurrect pattern
-			// the projectMembers insert below already uses.
-			await tx
-				.insert(workspaceMembers)
-				.values({
-					workspaceId: project.workspaceId,
-					userId: targetUser.id,
-					status: "active",
-				})
-				.onConflictDoUpdate({
-					target: [workspaceMembers.workspaceId, workspaceMembers.userId],
-					set: {
-						deletedAt: null,
-						status: "active",
-						updatedAt: new Date(),
-					},
-				});
+			// Fills both contact directories, not just the inviter's: the invitee
+			// joins the project workspace's directory, and the inviter joins the
+			// invitee's own. Sharing a project is a two-way working relationship, so
+			// each side should be able to find the other on their team page.
+			await linkWorkspaceDirectoriesInDB(tx, {
+				inviterId: user.id,
+				inviteeId: targetUser.id,
+				inviterWorkspaceId: project.workspaceId,
+			});
 
 			await tx
 				.insert(projectMembers)

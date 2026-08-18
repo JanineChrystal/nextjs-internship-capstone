@@ -11,7 +11,8 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { type Category, useCategoryStore } from "@/stores/use-category-store";
+import type { Category, CategoryScope } from "@/lib/types/category";
+import { useCategoryStore } from "@/stores/use-category-store";
 
 interface ManageCategoriesModalProps {
 	isOpen: boolean;
@@ -38,6 +39,7 @@ export function ManageCategoriesModal({
 		deleteCategory,
 		updateProjectCategory,
 		deleteProjectCategory,
+		refreshCategoryStyles,
 	} = useCategoryStore();
 	const [editingCategory, setEditingCategory] = useState<string | null>(null);
 	const [editName, setEditName] = useState("");
@@ -52,6 +54,13 @@ export function ManageCategoriesModal({
 		setEditName(category.name);
 		setEditColor(category.color);
 	};
+
+	// The scope whose palette this modal edits. Task categories belong to the
+	// project's workspace, project categories to the caller's own, and the badges
+	// on screen cache their colours under exactly this key.
+	const categoryScope: CategoryScope = projectId
+		? { kind: "project", id: projectId, type }
+		: { kind: "workspace", id: workspaceId, type };
 
 	const saveEditing = async (oldName: string) => {
 		if (!editName.trim()) return;
@@ -73,6 +82,10 @@ export function ManageCategoriesModal({
 				);
 		if (success) {
 			setEditingCategory(null);
+			// Badges cache colours per scope, so a rename or recolour has to
+			// invalidate that cache or the board keeps painting the old colour until
+			// the next full page load.
+			await refreshCategoryStyles(categoryScope);
 		}
 		setIsPending(false);
 	};
@@ -85,6 +98,7 @@ export function ManageCategoriesModal({
 				: await deleteCategory(workspaceId, categoryToDelete.name, type);
 			if (success) {
 				setCategoryToDelete(null);
+				await refreshCategoryStyles(categoryScope);
 			}
 			setIsPending(false);
 		}

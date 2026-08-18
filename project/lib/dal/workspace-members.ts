@@ -5,7 +5,10 @@ import {
 	createPendingInviteInDB,
 	normalizeInviteEmail,
 } from "@/lib/dal/pending-invites";
-import { resolveActiveWorkspaceDAL } from "@/lib/dal/workspaces";
+import {
+	linkWorkspaceDirectoriesInDB,
+	resolveActiveWorkspaceDAL,
+} from "@/lib/dal/workspaces";
 import { db } from "@/lib/db";
 import {
 	activityLogs,
@@ -199,20 +202,17 @@ export async function inviteToWorkspaceInDB(
 			throw new Error("You are already a member of this workspace");
 		}
 
-		// Same resurrect semantics as the project invite path, so re-adding a
-		// previously removed member restores their row instead of no-opping.
-		const [membership] = await db
-			.insert(workspaceMembers)
-			.values({
-				workspaceId: workspace.id,
-				userId: targetUser.id,
-				status: "active",
-			})
-			.onConflictDoUpdate({
-				target: [workspaceMembers.workspaceId, workspaceMembers.userId],
-				set: { deletedAt: null, status: "active", updatedAt: new Date() },
-			})
-			.returning();
+		// Wrapped in a transaction because a directory link is a pair of writes:
+		// the invitee joins the caller's directory and the caller joins theirs.
+		// Applying only half would leave one side able to see a collaborator the
+		// other cannot.
+		const membership = await db.transaction((tx) =>
+			linkWorkspaceDirectoriesInDB(tx, {
+				inviterId: user.id,
+				inviteeId: targetUser.id,
+				inviterWorkspaceId: workspace.id,
+			}),
+		);
 
 		return {
 			outcome: "invited",

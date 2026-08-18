@@ -1,5 +1,5 @@
-import Image from "next/image";
-import type { Assignee } from "@/types/task";
+import { MemberAvatar } from "@/components/ui/member-avatar";
+import type { Assignee } from "@/lib/types/task";
 import { AssigneeSelector } from "../../../ui/assignee-selector";
 
 interface GridAssigneeCellProps {
@@ -21,12 +21,11 @@ export function GridAssigneeCell({
 						key={assignee.name}
 						className="relative inline-block hover:z-10 group/tooltip"
 					>
-						<Image
-							src={assignee.avatarUrl}
-							alt={assignee.name}
-							width={24}
-							height={24}
-							className="rounded-full bg-surface-variant border-2 border-surface hover:ring-2 ring-primary/30 transition-all object-cover"
+						<MemberAvatar
+							name={assignee.name}
+							avatarUrl={assignee.avatarUrl}
+							size="xs"
+							className="border-2 border-surface hover:ring-2 ring-primary/30 transition-all"
 						/>
 						{/* Custom CSS Tooltip */}
 						<div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-max opacity-0 transition-opacity group-hover/tooltip:opacity-100 bg-surface-container-highest text-foreground text-xs px-2 py-1 rounded shadow-sm z-50">

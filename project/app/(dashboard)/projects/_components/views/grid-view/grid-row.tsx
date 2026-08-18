@@ -4,14 +4,14 @@ import { useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { updateTaskAction } from "@/lib/actions/task-actions";
 import { setTaskAssigneesAction } from "@/lib/actions/task-assignee-actions";
+import type { GridTask, TaskPriority, TaskStatus } from "@/lib/types/task";
 import { cn } from "@/lib/utils";
 import { reportActionError } from "@/lib/utils/toast";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
-import type { GridTask, TaskPriority, TaskStatus } from "@/types/task";
+import { CategoryBadge } from "../../../../_components/ui/badges/category-badge";
 import { PriorityBadge } from "../../../../_components/ui/badges/priority-badge";
 import { StatusBadge } from "../../../../_components/ui/badges/status-badge";
-import { TagBadge } from "../../../../_components/ui/badges/tag-badge";
 import {
 	GRID_COLUMN_CLASSES,
 	GRID_DATE_CELLS,
@@ -97,7 +97,12 @@ export function GridRow({
 				return <PriorityBadge priority={value as TaskPriority} />;
 			case "category":
 			case "tag":
-				return <TagBadge tag={value} />;
+				return (
+					<CategoryBadge
+						name={value}
+						scope={{ kind: "project", id: projectId, type: "task" }}
+					/>
+				);
 			default:
 				return null;
 		}

@@ -1,6 +1,6 @@
 import { UserPlus } from "lucide-react";
-import Image from "next/image";
 import { Button } from "@/components/ui/buttons/button";
+import { MemberAvatar } from "@/components/ui/member-avatar";
 import {
 	Tooltip,
 	TooltipContent,
@@ -29,23 +29,13 @@ export function ProjectMembersGroup({
 						return (
 							<Tooltip key={member.userId}>
 								<TooltipTrigger asChild>
-									{member.avatarUrl ? (
-										<Image
-											alt={member.name}
-											src={member.avatarUrl}
-											width={36}
-											height={36}
-											className="rounded-full border-2 border-surface object-cover bg-surface-container-low shrink-0 cursor-pointer"
-											style={{ zIndex }}
-										/>
-									) : (
-										<div
-											className="w-9 h-9 rounded-full border-2 border-surface bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0 cursor-pointer"
-											style={{ zIndex }}
-										>
-											{member.name.charAt(0).toUpperCase()}
-										</div>
-									)}
+									<MemberAvatar
+										name={member.name}
+										avatarUrl={member.avatarUrl}
+										size="md"
+										className="border-2 border-surface bg-surface-container-low cursor-pointer"
+										style={{ zIndex }}
+									/>
 								</TooltipTrigger>
 								<TooltipContent side="top">
 									<p>{member.name}</p>

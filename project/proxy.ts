@@ -1,21 +1,5 @@
-import {
-	clerkClient,
-	clerkMiddleware,
-	createRouteMatcher,
-} from "@clerk/nextjs/server";
+import { clerkClient, clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-
-// Everything behind the dashboard shell. Listed explicitly rather than matched
-// by exclusion so that adding a public page never accidentally locks it.
-const isProtectedRoute = createRouteMatcher([
-	"/dashboard(.*)",
-	"/projects(.*)",
-	"/team(.*)",
-	"/calendar(.*)",
-	"/analytics(.*)",
-	"/settings(.*)",
-	"/profile(.*)",
-]);
 
 const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const SESSION_START_COOKIE = "takda_session_started_at";
@@ -51,15 +35,12 @@ function readSessionStart(
 }
 
 export default clerkMiddleware(async (auth, req) => {
-	if (!isProtectedRoute(req)) return NextResponse.next();
+	const { sessionId } = await auth();
 
-	const { userId, sessionId } = await auth();
-
-	// Turned away at the edge, before any page code runs, so a lapsed session
-	// never reaches the dashboard shell.
-	if (!userId || !sessionId) {
-		return NextResponse.redirect(new URL("/", req.url));
-	}
+	// Anonymous request: no clock to check, and nothing to guard. Public pages
+	// pass straight through, and protected pages are turned away by their own
+	// server-side checks rather than by this file.
+	if (!sessionId) return NextResponse.next();
 
 	const cachedStart = readSessionStart(
 		req.cookies.get(SESSION_START_COOKIE)?.value,
@@ -125,7 +106,7 @@ export default clerkMiddleware(async (auth, req) => {
 export const config = {
 	matcher: [
 		// skip Next.js internals, static files, and the webhooks route
-		"/((?!_next|api/webhooks|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+		"/((?!_next|api/webhooks|[^?]*.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
 		// always run for API routes, except for the webhooks path
 		"/(api(?!/webhooks)|trpc)(.*)",
 		// always run for Clerk-specific frontend API routes

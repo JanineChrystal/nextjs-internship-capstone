@@ -1,4 +1,5 @@
-import type { TaskBoard } from "@/types/task";
+import type { CSSProperties } from "react";
+import type { TaskBoard } from "@/lib/types/task";
 
 export type IconName =
 	| "clock"
@@ -131,3 +132,35 @@ export const BOARD_CONFIG: Record<TaskBoard, string> = {
 	Backlog:
 		"text-slate-700 bg-slate-100 border-slate-200 dark:text-slate-300 dark:bg-slate-800/40 dark:border-slate-700/30",
 };
+
+// Manage Categories stores whatever an <input type="color"> produced, which is
+// always #rrggbb. Anything else is treated as absent rather than trusted into a
+// style attribute.
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+
+/**
+ * Inline styles for a badge whose colour a user picked, rather than one of the
+ * fixed Tailwind palettes.
+ *
+ * A user-chosen colour cannot be expressed as Tailwind classes - the palettes
+ * are compiled ahead of time and there is no class for #7c3aed - so the only
+ * honest way to honour the choice is an inline style. The colour is used for the
+ * text and, at low alpha, for the fill and border, which is the same
+ * text-dark/bg-light relationship the static palettes use and so reads the same
+ * in either theme.
+ *
+ * The alternative was snapping the hex to the nearest built-in palette entry.
+ * That keeps the design system airtight, but it silently discards the colour the
+ * user picked - which is the bug this exists to fix.
+ */
+export function getCategoryBadgeStyle(
+	color: string | null | undefined,
+): CSSProperties | undefined {
+	if (!color || !HEX_COLOR_PATTERN.test(color)) return undefined;
+
+	return {
+		color,
+		backgroundColor: `${color}1f`,
+		borderColor: `${color}52`,
+	};
+}

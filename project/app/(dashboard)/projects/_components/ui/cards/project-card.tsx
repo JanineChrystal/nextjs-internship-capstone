@@ -1,8 +1,8 @@
 import { Trash2 } from "lucide-react";
 import Link from "next/link";
+import { CategoryBadge } from "@/app/(dashboard)/_components/ui/badges/category-badge";
 import { PriorityBadge } from "@/app/(dashboard)/_components/ui/badges/priority-badge";
 import { StatusBadge } from "@/app/(dashboard)/_components/ui/badges/status-badge";
-import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
 import { BaseCard } from "@/components/ui/cards/base-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -93,7 +93,15 @@ export function ProjectCard({
 				<div className="flex flex-wrap items-center gap-2 mt-1">
 					{/* Category Badge */}
 					{project.category && (
-						<TagBadge tag={project.category} className="uppercase" />
+						<CategoryBadge
+							name={project.category}
+							// The caller's own workspace, which is where Manage Categories
+							// writes project categories from this page. A project shared from
+							// another workspace keeps its generated colour rather than paying
+							// for a per-card lookup of someone else's palette.
+							scope={{ kind: "workspace", id: "default", type: "project" }}
+							className="uppercase"
+						/>
 					)}
 
 					{/* Status Badge */}

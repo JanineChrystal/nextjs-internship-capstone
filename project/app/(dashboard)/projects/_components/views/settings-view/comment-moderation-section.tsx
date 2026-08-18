@@ -1,8 +1,8 @@
 "use client";
 
 import { Check, ShieldAlert, Trash2 } from "lucide-react";
-import Image from "next/image";
 import { Button } from "@/components/ui/buttons/button";
+import { MemberAvatar } from "@/components/ui/member-avatar";
 import { SectionTitle } from "@/components/ui/sections";
 import { GridTable } from "@/components/views/grid-table/grid-table";
 import { useMemberStore } from "@/stores/use-member-store";
@@ -58,19 +58,11 @@ export function CommentModerationSection({
 					<>
 						<div className="w-44 whitespace-nowrap">
 							<div className="flex items-center gap-2">
-								{comment.authorAvatar ? (
-									<Image
-										src={comment.authorAvatar}
-										alt={comment.authorName}
-										width={24}
-										height={24}
-										className="rounded-full shrink-0"
-									/>
-								) : (
-									<div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-										{comment.authorName.charAt(0)}
-									</div>
-								)}
+								<MemberAvatar
+									name={comment.authorName}
+									avatarUrl={comment.authorAvatar}
+									size="xs"
+								/>
 								<span className="font-medium text-on-surface text-sm">
 									{comment.authorName}
 								</span>

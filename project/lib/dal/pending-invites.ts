@@ -2,14 +2,12 @@ import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
-import { resolveActiveWorkspaceDAL } from "@/lib/dal/workspaces";
-import { db } from "@/lib/db";
 import {
-	pendingInvites,
-	projectMembers,
-	projects,
-	workspaceMembers,
-} from "@/lib/db/schema";
+	linkWorkspaceDirectoriesInDB,
+	resolveActiveWorkspaceDAL,
+} from "@/lib/dal/workspaces";
+import { db } from "@/lib/db";
+import { pendingInvites, projectMembers, projects } from "@/lib/db/schema";
 import {
 	type PendingInviteOutputDTO,
 	toPendingInviteDTO,
@@ -200,18 +198,13 @@ export async function claimPendingInvitesForUserDAL(
 		for (const invite of invites) {
 			// Directory membership is granted by every invite, project-scoped or
 			// not - an invited collaborator has to appear in the inviter's people
-			// list either way.
-			await tx
-				.insert(workspaceMembers)
-				.values({
-					workspaceId: invite.workspaceId,
-					userId,
-					status: "active",
-				})
-				.onConflictDoUpdate({
-					target: [workspaceMembers.workspaceId, workspaceMembers.userId],
-					set: { deletedAt: null, status: "active", updatedAt: new Date() },
-				});
+			// list either way - and it is granted in both directions, so the person
+			// who just signed up can find whoever invited them.
+			await linkWorkspaceDirectoriesInDB(tx, {
+				inviterId: invite.invitedBy,
+				inviteeId: userId,
+				inviterWorkspaceId: invite.workspaceId,
+			});
 
 			if (invite.projectId) {
 				await tx

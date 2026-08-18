@@ -1,11 +1,11 @@
 "use client";
 
 import { Lock, Trash2, Users } from "lucide-react";
-import Image from "next/image";
 import { PendingInvitesList } from "@/app/(dashboard)/_components/ui/pending-invites/pending-invites-list";
 import { usePendingInvites } from "@/app/(dashboard)/_hooks/use-pending-invites";
 import { Button } from "@/components/ui/buttons/button";
 import { Input } from "@/components/ui/input";
+import { MemberAvatar } from "@/components/ui/member-avatar";
 import { SectionTitle } from "@/components/ui/sections";
 import { GridTable } from "@/components/views/grid-table/grid-table";
 import type { RoleAccess } from "@/types/member";
@@ -85,19 +85,10 @@ export function TeamAccessSection({
 						<>
 							<div className="flex-2 min-w-50">
 								<div className="flex items-center gap-3">
-									{member.avatarUrl ? (
-										<Image
-											src={member.avatarUrl}
-											alt={member.name}
-											width={32}
-											height={32}
-											className="rounded-full bg-surface-variant shrink-0"
-										/>
-									) : (
-										<div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold shrink-0">
-											{member.name.charAt(0)}
-										</div>
-									)}
+									<MemberAvatar
+										name={member.name}
+										avatarUrl={member.avatarUrl}
+									/>
 									<div>
 										<p className="font-medium text-on-surface text-sm">
 											{member.name}

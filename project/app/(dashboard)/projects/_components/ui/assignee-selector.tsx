@@ -1,9 +1,9 @@
 "use client";
 
 import { Check, Search, UserPlus } from "lucide-react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MemberAvatar } from "@/components/ui/member-avatar";
 import {
 	Popover,
 	PopoverContent,
@@ -83,12 +83,9 @@ export function AssigneeSelector({
 										onClick={() => handleSelect(member)}
 										className="relative flex w-full text-left cursor-pointer select-none items-center gap-3 rounded-sm px-2 py-2 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground"
 									>
-										<Image
-											src={member.avatarUrl}
-											alt={member.name}
-											width={32}
-											height={32}
-											className="rounded-full bg-surface-variant shrink-0"
+										<MemberAvatar
+											name={member.name}
+											avatarUrl={member.avatarUrl}
 										/>
 										<div className="flex flex-col flex-1 overflow-hidden">
 											<span className="text-sm font-medium truncate">
