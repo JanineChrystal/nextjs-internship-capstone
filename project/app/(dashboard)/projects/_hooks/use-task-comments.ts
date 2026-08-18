@@ -6,8 +6,7 @@ import {
 	getCommentsAction,
 } from "@/lib/actions/comment-actions";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
-
-const PAGE_SIZE = 20;
+import { COMMENTS_PAGE_SIZE } from "../_constants/comments";
 
 export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 	const params = useParams();
@@ -68,7 +67,7 @@ export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 		const result = await getCommentsAction(
 			taskId,
 			projectId,
-			PAGE_SIZE,
+			COMMENTS_PAGE_SIZE,
 			comments.filter((c) => !c.parentId).length,
 		);
 		if (result.success && result.data) {
@@ -100,13 +99,15 @@ export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 		}
 
 		setIsLoading(true);
-		getCommentsAction(taskId, projectId, PAGE_SIZE, 0).then((result) => {
-			if (result.success && result.data) {
-				setComments(result.data);
-				setHasMore(Boolean(result.hasMore));
-			}
-			setIsLoading(false);
-		});
+		getCommentsAction(taskId, projectId, COMMENTS_PAGE_SIZE, 0).then(
+			(result) => {
+				if (result.success && result.data) {
+					setComments(result.data);
+					setHasMore(Boolean(result.hasMore));
+				}
+				setIsLoading(false);
+			},
+		);
 	}, [isOpen, taskId, projectId]);
 
 	return {

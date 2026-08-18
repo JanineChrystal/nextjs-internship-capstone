@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { Button } from "@/components/ui/buttons/button";
 import { SectionTitle } from "@/components/ui/sections";
-import type { RoleAccess } from "@/types/member";
+import type { RoleAccess } from "@/lib/types/member";
 import {
 	DANGER_ZONE_ACTIONS,
 	settingsSectionTexts,

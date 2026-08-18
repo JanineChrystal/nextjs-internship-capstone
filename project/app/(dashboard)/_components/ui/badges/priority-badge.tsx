@@ -4,12 +4,10 @@ import {
 	ChevronsUp,
 	ChevronUp,
 } from "lucide-react";
+import type { IconName } from "@/lib/types/badge";
+import type { TaskPriority } from "@/lib/types/task";
 import { cn } from "@/lib/utils";
-import type { TaskPriority } from "@/types/task";
-import {
-	type IconName,
-	PRIORITY_CONFIG,
-} from "../../../projects/_constants/badges";
+import { PRIORITY_CONFIG } from "../../../projects/_constants/badges";
 
 interface PriorityBadgeProps {
 	priority: TaskPriority | string;

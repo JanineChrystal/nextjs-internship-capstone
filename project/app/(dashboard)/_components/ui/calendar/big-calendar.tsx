@@ -1,11 +1,14 @@
 "use client";
 
 import { format, getDay, parse, startOfWeek } from "date-fns";
-import { enUS } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import type { ToolbarProps, View } from "react-big-calendar";
 import { Calendar, dateFnsLocalizer, Navigate } from "react-big-calendar";
+import {
+	CALENDAR_LOCALES,
+	PRIORITY_DOT_CLASSES,
+} from "@/app/(dashboard)/_constants/calendar";
 import { Button } from "@/components/ui/buttons/button";
 import {
 	Tooltip,
@@ -13,44 +16,18 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { CalendarEvent } from "@/lib/types/calendar";
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./calendar-overrides.css";
-
-const locales = {
-	"en-US": enUS,
-};
 
 const localizer = dateFnsLocalizer({
 	format,
 	parse,
 	startOfWeek,
 	getDay,
-	locales,
+	locales: CALENDAR_LOCALES,
 });
-
-export interface CalendarEvent {
-	id: string;
-	title: string;
-	start: Date;
-	end: Date;
-	allDay?: boolean;
-	resource?: unknown;
-	extendedProps?: {
-		priority?: string;
-		type?: "project" | "task";
-		category?: string;
-		status?: string;
-		[key: string]: unknown;
-	};
-}
-
-const PRIORITY_DOT_CLASSES: Record<string, string> = {
-	low: "bg-emerald-500",
-	medium: "bg-amber-500",
-	high: "bg-orange-500",
-	urgent: "bg-red-500",
-};
 
 interface GenericCalendarProps {
 	events: CalendarEvent[];

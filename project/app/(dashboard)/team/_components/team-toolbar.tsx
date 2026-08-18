@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Toolbar, ViewTabs } from "@/app/(dashboard)/_components/ui/toolbar";
 import { Button } from "@/components/ui/buttons/button";
+import type { TeamViewType } from "@/lib/types/team";
 
 const AddMemberModal = dynamic(
 	() =>
@@ -21,8 +22,6 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TEAM_VIEWS } from "../_constants/team-views";
-
-export type TeamViewType = "Grid" | "Board" | "Pending";
 
 interface TeamToolbarProps {
 	activeView?: TeamViewType;

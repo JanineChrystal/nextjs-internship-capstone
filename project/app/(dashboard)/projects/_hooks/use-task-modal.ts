@@ -6,6 +6,8 @@ import {
 	updateTaskAction,
 } from "@/lib/actions/task-actions";
 import { setTaskAssigneesAction } from "@/lib/actions/task-assignee-actions";
+import type { GridTask, TaskModalActionId } from "@/lib/types/task";
+import { toApiDateInput } from "@/lib/utils/date";
 import { hasIncompleteChecklist } from "@/lib/utils/task";
 import {
 	deriveTaskStatus,
@@ -14,60 +16,12 @@ import {
 	TASK_STATUS_NOT_STARTED,
 } from "@/lib/utils/task-status";
 import { reportActionError } from "@/lib/utils/toast";
+import { validateSchedule } from "@/lib/validations/date-rules";
 import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
-import type { GridTask, TaskModalActionId } from "@/types/task";
 import { DEFAULT_TASK_DATA } from "../_constants/task-modal";
 import { useTaskAttachments } from "./use-task-attachments";
 import { useTaskChecklist } from "./use-task-checklist";
-
-function toApiDateInput(value: string | undefined): string | undefined {
-	return value && value !== "--" ? value : undefined;
-}
-
-function parseTaskDate(value: string | undefined): Date | null {
-	if (!value || value === "--") return null;
-	const parsed = new Date(value);
-	return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-/**
- * Task dates are saved field-by-field, so each edit has to be validated
- * against the merged result rather than the single changed field.
- * Returns an error message, or null when the schedule is valid.
- */
-function validateSchedule(
-	merged: Partial<GridTask>,
-	changed: Partial<GridTask>,
-): string | null {
-	const start = parseTaskDate(merged.startDate);
-	const due = parseTaskDate(merged.dueDate);
-
-	if (start && due && due.getTime() < start.getTime()) {
-		return "Due date must be on or after the start date.";
-	}
-
-	// Only the date the user just picked is held to the not-in-the-past rule,
-	// so an existing task that already started remains editable.
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-
-	if (changed.startDate !== undefined) {
-		const changedStart = parseTaskDate(changed.startDate);
-		if (changedStart && changedStart.getTime() < today.getTime()) {
-			return "Start date cannot be earlier than today.";
-		}
-	}
-
-	if (changed.dueDate !== undefined) {
-		const changedDue = parseTaskDate(changed.dueDate);
-		if (changedDue && changedDue.getTime() < today.getTime()) {
-			return "Due date cannot be earlier than today.";
-		}
-	}
-
-	return null;
-}
 
 export function useTaskModal() {
 	const params = useParams();

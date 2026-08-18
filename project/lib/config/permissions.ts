@@ -1,19 +1,4 @@
-export type RoleAccess = "owner" | "co-owner" | "member" | "guest";
-
-export type Permission =
-	| "manage_workspace"
-	| "delete_workspace"
-	| "manage_billing"
-	| "create_project"
-	| "edit_project"
-	| "delete_project"
-	| "manage_members"
-	| "create_task"
-	| "edit_task"
-	| "delete_task"
-	| "manage_boards"
-	| "view_project"
-	| "comment_task";
+import type { Permission, RoleAccess } from "@/lib/types/member";
 
 export const ROLE_PERMISSIONS: Record<RoleAccess, Permission[]> = {
 	owner: [

@@ -3,16 +3,8 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { taskAssignees, tasks, users } from "@/lib/db/schema";
+import { toMemberName } from "@/lib/dtos/project-member-dto";
 import type { Assignee } from "@/lib/types/task";
-
-function toMemberName(user: {
-	firstName: string | null;
-	lastName: string | null;
-	email: string;
-}): string {
-	const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ");
-	return fullName || user.email;
-}
 
 export async function getTaskAssigneesByTaskIds(
 	taskIds: string[],

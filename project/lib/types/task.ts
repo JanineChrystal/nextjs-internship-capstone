@@ -61,3 +61,20 @@ export type NewDbChecklist = typeof checklists.$inferInsert;
 
 export type DbAttachment = typeof attachments.$inferSelect;
 export type NewDbAttachment = typeof attachments.$inferInsert;
+
+/**
+ * What the create-task form sends to the server.
+ *
+ * Lives here rather than in the action file because client components build this
+ * object before calling the action, and a client must never import from a module
+ * whose other exports are server-only.
+ */
+export interface CreateTaskInput {
+	name: string;
+	category?: string;
+	status?: string;
+	priority?: "low" | "medium" | "high" | "urgent";
+	notes?: string;
+	startDate?: string;
+	dueDate?: string;
+}

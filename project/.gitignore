@@ -26,7 +26,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# Local documentation for code review
-GEMINI.md
-.agents/

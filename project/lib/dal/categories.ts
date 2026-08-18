@@ -1,12 +1,11 @@
 import "server-only";
-import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { resolveActiveWorkspaceDAL } from "@/lib/dal/workspaces";
 import { db } from "@/lib/db";
 import { categories, projects, tasks } from "@/lib/db/schema";
-
-type CategoryType = "project" | "task";
+import type { CategoryType } from "@/lib/types/category";
 
 /**
  * The workspace a category operation should act on.
@@ -16,7 +15,9 @@ type CategoryType = "project" | "task";
  * returned any non-"default" value verbatim, so a crafted id could read or
  * rename another tenant's categories.
  */
-async function resolveWorkspaceId(workspaceId: string): Promise<string> {
+export async function resolveWorkspaceIdDAL(
+	workspaceId: string,
+): Promise<string> {
 	const workspace = await resolveActiveWorkspaceDAL(workspaceId);
 	return workspace.id;
 }
@@ -104,7 +105,7 @@ export async function getWorkspaceCategoryStylesDAL(
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	const resolvedWorkspaceId = await resolveWorkspaceId(workspaceId);
+	const resolvedWorkspaceId = await resolveWorkspaceIdDAL(workspaceId);
 
 	return db.query.categories.findMany({
 		where: and(
@@ -135,295 +136,5 @@ export async function getProjectCategoryStylesDAL(
 			eq(categories.type, type),
 		),
 		orderBy: (categories, { asc }) => [asc(categories.name)],
-	});
-}
-
-/**
- * Renames a category across the project's workspace, cascading to the rows that
- * reference it by name. Mirrors updateWorkspaceCategoryDAL but authorised by
- * project role.
- */
-export async function updateProjectCategoryDAL(
-	projectId: string,
-	oldName: string,
-	newName: string,
-	newColor: string,
-	type: CategoryType,
-) {
-	const workspaceId = await resolveProjectWorkspaceIdDAL(projectId);
-	return updateCategoryInWorkspace(
-		workspaceId,
-		oldName,
-		newName,
-		newColor,
-		type,
-	);
-}
-
-/**
- * Deletes a category from the project's workspace, falling the affected rows
- * back to "Uncategorized". Authorised by project role.
- */
-export async function deleteProjectCategoryDAL(
-	projectId: string,
-	categoryName: string,
-	type: CategoryType,
-) {
-	const workspaceId = await resolveProjectWorkspaceIdDAL(projectId);
-	return deleteCategoryInWorkspace(workspaceId, categoryName, type);
-}
-
-// Upsert Category (Auto-add)
-export async function upsertWorkspaceCategoryDAL(
-	workspaceId: string,
-	name: string,
-	type: CategoryType,
-	color?: string,
-) {
-	const user = await getCurrentUser();
-	if (!user) throw new Error("Unauthorized");
-
-	const resolvedWorkspaceId = await resolveWorkspaceId(workspaceId);
-
-	const existing = await db.query.categories.findFirst({
-		where: and(
-			eq(categories.workspaceId, resolvedWorkspaceId),
-			eq(categories.type, type),
-			eq(categories.name, name),
-		),
-	});
-
-	if (existing) {
-		return existing;
-	}
-
-	const [newCategory] = await db
-		.insert(categories)
-		.values({
-			workspaceId: resolvedWorkspaceId,
-			name,
-			type,
-			color: color || "#94a3b8", // Fallback color
-		})
-		.returning();
-
-	return newCategory;
-}
-
-/**
- * Registers a category against the workspace that owns a given project.
- *
- * Separate from upsertWorkspaceCategoryDAL because the two answer "which
- * workspace?" differently. That one resolves the *caller's* workspace, which is
- * right when creating a project but wrong for anything scoped to an existing
- * one: a member styling a task in a shared project would file the category in
- * their own workspace, where the project owner never sees it.
- *
- * Authorised by project role rather than workspace membership, so a co-owner
- * whose directory entry was later removed can still edit the project they were
- * given access to.
- */
-export async function upsertProjectCategoryDAL(
-	projectId: string,
-	name: string,
-	type: CategoryType,
-	color?: string,
-) {
-	const workspaceId = await resolveProjectWorkspaceIdDAL(projectId);
-
-	const existing = await db.query.categories.findFirst({
-		where: and(
-			eq(categories.workspaceId, workspaceId),
-			eq(categories.type, type),
-			eq(categories.name, name),
-		),
-	});
-
-	if (existing) return existing;
-
-	const [newCategory] = await db
-		.insert(categories)
-		.values({
-			workspaceId,
-			name,
-			type,
-			color: color || "#94a3b8",
-		})
-		.returning();
-
-	return newCategory;
-}
-
-// Update Category (Cascading)
-export async function updateWorkspaceCategoryDAL(
-	workspaceId: string,
-	oldName: string,
-	newName: string,
-	newColor: string,
-	type: CategoryType,
-) {
-	const user = await getCurrentUser();
-	if (!user) throw new Error("Unauthorized");
-
-	const resolvedWorkspaceId = await resolveWorkspaceId(workspaceId);
-
-	return updateCategoryInWorkspace(
-		resolvedWorkspaceId,
-		oldName,
-		newName,
-		newColor,
-		type,
-	);
-}
-
-/**
- * The rename itself, once a workspace has been resolved and authorised. Shared
- * by the workspace-scoped and project-scoped entry points so the cascade is
- * written once.
- */
-async function updateCategoryInWorkspace(
-	resolvedWorkspaceId: string,
-	oldName: string,
-	newName: string,
-	newColor: string,
-	type: CategoryType,
-) {
-	return await db.transaction(async (tx) => {
-		// Update the category record
-		const [updatedCategory] = await tx
-			.update(categories)
-			.set({
-				name: newName,
-				color: newColor,
-				updatedAt: new Date(),
-			})
-			.where(
-				and(
-					eq(categories.workspaceId, resolvedWorkspaceId),
-					eq(categories.type, type),
-					eq(categories.name, oldName),
-				),
-			)
-			.returning();
-
-		if (!updatedCategory) {
-			throw new Error("Category not found");
-		}
-
-		// Update associated projects or tasks
-		if (type === "project") {
-			await tx
-				.update(projects)
-				.set({
-					category: newName,
-					updatedAt: new Date(),
-				})
-				.where(
-					and(
-						eq(projects.workspaceId, resolvedWorkspaceId),
-						eq(projects.category, oldName),
-					),
-				);
-		} else if (type === "task") {
-			// Find all tasks in this workspace where category matches
-			const workspaceProjects = await tx.query.projects.findMany({
-				where: eq(projects.workspaceId, resolvedWorkspaceId),
-				columns: { id: true },
-			});
-
-			const projectIds = workspaceProjects.map((p) => p.id);
-
-			if (projectIds.length > 0) {
-				await tx
-					.update(tasks)
-					.set({
-						category: newName,
-						updatedAt: new Date(),
-					})
-					.where(
-						and(
-							inArray(tasks.projectId, projectIds),
-							eq(tasks.category, oldName),
-						),
-					);
-			}
-		}
-
-		return updatedCategory;
-	});
-}
-
-// Delete Category (Graceful Fallback)
-export async function deleteWorkspaceCategoryDAL(
-	workspaceId: string,
-	categoryName: string,
-	type: CategoryType,
-) {
-	const user = await getCurrentUser();
-	if (!user) throw new Error("Unauthorized");
-
-	const resolvedWorkspaceId = await resolveWorkspaceId(workspaceId);
-
-	return deleteCategoryInWorkspace(resolvedWorkspaceId, categoryName, type);
-}
-
-/**
- * The delete-and-fall-back itself, once a workspace has been resolved and
- * authorised. Shared by both entry points.
- */
-async function deleteCategoryInWorkspace(
-	resolvedWorkspaceId: string,
-	categoryName: string,
-	type: CategoryType,
-) {
-	return await db.transaction(async (tx) => {
-		// Update associated projects or tasks to "Uncategorized"
-		if (type === "project") {
-			await tx
-				.update(projects)
-				.set({
-					category: "Uncategorized",
-					updatedAt: new Date(),
-				})
-				.where(
-					and(
-						eq(projects.workspaceId, resolvedWorkspaceId),
-						eq(projects.category, categoryName),
-					),
-				);
-		} else if (type === "task") {
-			const workspaceProjects = await tx.query.projects.findMany({
-				where: eq(projects.workspaceId, resolvedWorkspaceId),
-				columns: { id: true },
-			});
-
-			const projectIds = workspaceProjects.map((p) => p.id);
-
-			if (projectIds.length > 0) {
-				await tx
-					.update(tasks)
-					.set({
-						category: "Uncategorized",
-						updatedAt: new Date(),
-					})
-					.where(
-						and(
-							inArray(tasks.projectId, projectIds),
-							eq(tasks.category, categoryName),
-						),
-					);
-			}
-		}
-
-		// Delete the category record
-		await tx
-			.delete(categories)
-			.where(
-				and(
-					eq(categories.workspaceId, resolvedWorkspaceId),
-					eq(categories.type, type),
-					eq(categories.name, categoryName),
-				),
-			);
 	});
 }

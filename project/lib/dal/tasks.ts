@@ -5,7 +5,11 @@ import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { getAllUserProjectsDAL } from "@/lib/dal/projects";
 import { db } from "@/lib/db";
 import { boards, projects, tasks } from "@/lib/db/schema";
-import { type TaskOutputDTO, toTaskDTO } from "@/lib/dtos/task-dto";
+import {
+	type TaskOutputDTO,
+	type TaskWithBoardOutputDTO,
+	toTaskDTO,
+} from "@/lib/dtos/task-dto";
 import type { NewDbTask } from "@/lib/types/task";
 
 export async function createTaskInDB(data: NewDbTask): Promise<TaskOutputDTO> {
@@ -85,10 +89,6 @@ export async function moveTaskBoardDAL(
 	} catch (error) {
 		throw new Error("Failed to move task to new board", { cause: error });
 	}
-}
-
-export interface TaskWithBoardOutputDTO extends TaskOutputDTO {
-	boardTitle: string;
 }
 
 // Cross-project task fetch for surfaces like the global calendar page, which

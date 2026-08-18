@@ -2,12 +2,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useCallback } from "react";
 import { type Resolver, useForm } from "react-hook-form";
 import type { z } from "zod";
+import type { RoleAccess } from "@/lib/types/member";
 import {
 	AddProjectInviteSchema,
 	AddWorkspaceInviteSchema,
 } from "@/lib/validations/member-schema";
 import { useMemberStore } from "@/stores/use-member-store";
-import type { RoleAccess } from "@/types/member";
 
 export type AddInviteFormValues = z.infer<typeof AddProjectInviteSchema>;
 

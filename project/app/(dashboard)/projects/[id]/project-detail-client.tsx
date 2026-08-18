@@ -3,8 +3,9 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import { FilterPopover } from "@/components/ui/filters/filter-popover";
-import { hasPermission, type RoleAccess } from "@/lib/config/permissions";
+import { hasPermission } from "@/lib/config/permissions";
 import type { ProjectOutputDTO } from "@/lib/dtos/project-dto";
+import type { RoleAccess } from "@/lib/types/member";
 import type { GridTask } from "@/lib/types/task";
 import type { Project } from "@/lib/validations/project-schema";
 import { useBoardStore } from "@/stores/use-board-store";
@@ -13,13 +14,6 @@ import { useTaskStore } from "@/stores/use-task-store";
 import { ProjectHeader } from "../_components/ui/project-header/project-header";
 import { ProjectToolbar } from "../_components/ui/project-toolbar";
 import { useProjectPage } from "../_hooks/use-project-page";
-
-export type ProjectViewType =
-	| "grid"
-	| "board"
-	| "calendar"
-	| "charts"
-	| "settings";
 
 const TaskModal = dynamic(
 	() =>

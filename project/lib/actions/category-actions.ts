@@ -4,15 +4,17 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
-	deleteProjectCategoryDAL,
-	deleteWorkspaceCategoryDAL,
 	getProjectCategoryStylesDAL,
 	getWorkspaceCategoryStylesDAL,
+} from "@/lib/dal/categories";
+import {
+	deleteProjectCategoryDAL,
+	deleteWorkspaceCategoryDAL,
 	updateProjectCategoryDAL,
 	updateWorkspaceCategoryDAL,
 	upsertProjectCategoryDAL,
 	upsertWorkspaceCategoryDAL,
-} from "@/lib/dal/categories";
+} from "@/lib/dal/category-mutations";
 
 const categoryTypeSchema = z.enum(["project", "task"]);
 const categorySchema = z.object({

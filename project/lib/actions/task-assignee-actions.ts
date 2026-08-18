@@ -3,11 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { getSessionFailureReason } from "@/lib/dal/auth";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
-import {
-	getProjectMembersDAL,
-	type ProjectMemberOutputDTO,
-} from "@/lib/dal/projects";
+import { getProjectMembersDAL } from "@/lib/dal/project-members";
 import { setTaskAssigneesInDB } from "@/lib/dal/task-assignees";
+import type { ProjectMemberOutputDTO } from "@/lib/dtos/project-member-dto";
 
 export async function getProjectMembersAction(projectId: string): Promise<{
 	success: boolean;

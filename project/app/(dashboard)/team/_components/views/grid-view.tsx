@@ -2,14 +2,15 @@
 
 import { Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/buttons/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { GridTable } from "@/components/views/grid-table/grid-table";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
-import type { ColumnDef } from "@/types/grid-table";
+import type { ColumnDef } from "@/lib/types/grid-table";
+import { DIRECTORY_COLUMNS } from "../../_constants/directory-columns";
 
 interface GridViewProps {
 	users: WorkspaceMemberOutputDTO[];
@@ -33,57 +34,32 @@ export function GridView({
 	const [isSelectionModeActive, setIsSelectionModeActive] = useState(false);
 	const isSelectionActive = isSelectionModeActive || selectedIds.size > 0;
 
-	const columns: ColumnDef[] = [
-		{
-			key: "select",
-			title: "",
-			className: "w-12 flex-none",
-			sortable: false,
-			renderHeader: () => (
-				<Checkbox
-					checked={isSelectionActive}
-					onCheckedChange={(c) => {
-						const checked = Boolean(c);
-						setIsSelectionModeActive(checked);
-						if (!checked) {
-							onSelectAll(false);
+	// Only the select header depends on state, so the static definitions are
+	// reused and just that one column is rebuilt when selection mode changes.
+	const columns = useMemo<ColumnDef[]>(
+		() =>
+			DIRECTORY_COLUMNS.map((column) =>
+				column.key === "select"
+					? {
+							...column,
+							renderHeader: () => (
+								<Checkbox
+									checked={isSelectionActive}
+									onCheckedChange={(c) => {
+										const checked = Boolean(c);
+										setIsSelectionModeActive(checked);
+										if (!checked) {
+											onSelectAll(false);
+										}
+									}}
+									aria-label="Toggle selection mode"
+								/>
+							),
 						}
-					}}
-					aria-label="Toggle selection mode"
-				/>
+					: column,
 			),
-		},
-		{
-			key: "name",
-			title: "Username",
-			sortable: true,
-			className: "flex-2",
-		},
-		{
-			key: "email",
-			title: "Email",
-			sortable: true,
-			className: "flex-2",
-		},
-		{
-			key: "jobRoles",
-			title: "Roles",
-			sortable: false,
-			className: "flex-2",
-		},
-		{
-			key: "projectCount",
-			title: "Projects",
-			sortable: true,
-			className: "flex-1 justify-center",
-		},
-		{
-			key: "action",
-			title: "",
-			sortable: false,
-			className: "w-12 flex-none",
-		},
-	];
+		[isSelectionActive, onSelectAll],
+	);
 
 	return (
 		<div className="mt-6 w-full relative">

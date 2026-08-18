@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 import type { FilterField } from "@/components/ui/filters/filter-popover";
+import type { ProjectViewType } from "@/lib/types/project";
 import {
 	DEFAULT_TASK_CATEGORIES,
 	TASK_PRIORITIES,
 } from "@/lib/validations/task-schema";
 import { useBoardStore } from "@/stores/use-board-store";
-import type { ProjectViewType } from "../_constants/project";
 
 export function useProjectPage() {
 	const [activeView, setActiveView] = useState<ProjectViewType>("board");

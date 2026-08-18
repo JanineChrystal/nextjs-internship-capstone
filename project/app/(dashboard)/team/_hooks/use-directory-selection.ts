@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
-import type { TeamViewType } from "../_components/team-toolbar";
+import type { TeamViewType } from "@/lib/types/team";
 
 type SortConfig = { key: string; direction: "asc" | "desc" } | null;
 

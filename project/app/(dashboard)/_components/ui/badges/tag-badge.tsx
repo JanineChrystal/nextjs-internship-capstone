@@ -1,9 +1,6 @@
 import { cn } from "@/lib/utils";
-import {
-	getCategoryBadgeStyle,
-	getDynamicBadgeColor,
-	TAG_CONFIG,
-} from "../../../projects/_constants/badges";
+import { getCategoryBadgeStyle, getDynamicBadgeColor } from "@/lib/utils/badge";
+import { TAG_CONFIG } from "../../../projects/_constants/badges";
 
 interface TagBadgeProps {
 	tag: string;

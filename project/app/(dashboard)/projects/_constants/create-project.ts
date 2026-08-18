@@ -1,15 +1,4 @@
-export type SelectOption = {
-	label: string;
-	value: string;
-};
-
-export type FormFieldConfig = {
-	id: string;
-	label: string;
-	type: "text" | "date" | "datetime-local" | "select" | "creatable-combobox";
-	placeholder?: string;
-	options?: readonly SelectOption[];
-};
+import type { FormFieldConfig } from "@/lib/types/form";
 
 export const projectStatusOptions = [
 	{ label: "Active", value: "active" },

@@ -1,2 +1,2 @@
 export { Toolbar, type ToolbarProps } from "./toolbar";
-export { type TabOption, ViewTabs } from "./view-tabs";
+export { ViewTabs } from "./view-tabs";

@@ -1,14 +1,9 @@
-import type { Project } from "@/lib/validations/project-schema";
-export type ProjectViewType =
-	| "grid"
-	| "board"
-	| "calendar"
-	| "charts"
-	| "settings";
+import type { TabOption } from "@/lib/types/nav";
+import type { ProjectViewType } from "@/lib/types/project";
 
 export const MAX_VISIBLE_MEMBERS = 5;
 
-export const VIEW_TABS: { label: string; value: ProjectViewType }[] = [
+export const VIEW_TABS: TabOption<ProjectViewType>[] = [
 	{ label: "Grid", value: "grid" },
 	{ label: "Board", value: "board" },
 	{ label: "Calendar", value: "calendar" },
@@ -20,56 +15,4 @@ export const FILTERABLE_VIEWS: ProjectViewType[] = [
 	"grid",
 	"board",
 	"calendar",
-];
-
-export const mockProjects: Project[] = [
-	{
-		id: "11111111-1111-1111-1111-111111111111",
-		title: "Website Redesign",
-		description:
-			"Revamp the landing page to use the new floating card UI shell.",
-		category: "Design",
-		startDate: "2024-03-01",
-		dueDate: "2024-03-15",
-		membersCount: 6,
-		tasksCount: 17,
-		progress: 65,
-		daysLeft: 10,
-		status: "active",
-		priority: "high",
-		isOwned: true,
-		isAssigned: false,
-	},
-	{
-		id: "22222222-2222-2222-2222-222222222222",
-		title: "Database Migration",
-		description: "Move schemas to Drizzle ORM and Neon Postgres.",
-		category: "Backend",
-		startDate: "2024-02-15",
-		dueDate: "2024-04-01",
-		membersCount: 4,
-		tasksCount: 12,
-		progress: 30,
-		daysLeft: 17,
-		status: "active",
-		priority: "low",
-		isOwned: false,
-		isAssigned: true,
-	},
-	{
-		id: "33333333-3333-3333-3333-333333333333",
-		title: "Auth Integration",
-		description: "Finalize Clerk webhooks and user synchronization logic.",
-		category: "Security",
-		startDate: "2024-01-10",
-		dueDate: "2024-01-30",
-		membersCount: 2,
-		tasksCount: 8,
-		progress: 100,
-		daysLeft: 5,
-		status: "completed",
-		priority: "high",
-		isOwned: false,
-		isAssigned: false,
-	},
 ];

@@ -4,8 +4,8 @@ import dynamic from "next/dynamic";
 import type React from "react";
 import { Toolbar } from "@/app/(dashboard)/_components/ui/toolbar";
 import { useToolbar } from "@/app/(dashboard)/_hooks/use-toolbar";
-import type { ProjectViewType } from "@/app/(dashboard)/projects/_constants/project";
 import { FILTERABLE_VIEWS } from "@/app/(dashboard)/projects/_constants/project";
+import type { ProjectViewType } from "@/lib/types/project";
 import { ProjectMembersGroup } from "./project-members-group";
 import { ProjectViewTabs } from "./project-view-tabs";
 

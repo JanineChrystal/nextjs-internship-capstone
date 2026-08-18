@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import { SectionTitle } from "@/components/ui/sections";
 import { GridTable } from "@/components/views/grid-table/grid-table";
-import type { RoleAccess } from "@/types/member";
+import type { RoleAccess } from "@/lib/types/member";
 import {
 	settingsSectionTexts,
 	TEAM_ACCESS_COLUMNS,

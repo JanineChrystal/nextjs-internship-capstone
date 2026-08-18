@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
+import type { RoleAccess } from "@/lib/types/member";
 import { useMemberStore } from "@/stores/use-member-store";
-import type { RoleAccess } from "@/types/member";
 import { emptyMembers } from "../_constants/settings-view";
 
 export function useTeamAccess(projectId: string, currentUserRole: RoleAccess) {

@@ -1,11 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
-import type { CalendarEvent } from "@/app/(dashboard)/_components/ui/calendar/big-calendar";
+import type { CalendarDeadlineItem, CalendarEvent } from "@/lib/types/calendar";
 import { isItemOnDate } from "@/lib/utils/calendar";
 import { toDueDateEventRange } from "@/lib/utils/calendar-event";
 import type { Project } from "@/lib/validations/project-schema";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useTaskStore } from "@/stores/use-task-store";
-import type { CalendarDeadlineItem } from "@/types/calendar";
 
 export function useCalendarPage() {
 	const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);

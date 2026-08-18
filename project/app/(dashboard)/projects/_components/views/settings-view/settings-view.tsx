@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
-import type { RoleAccess } from "@/lib/config/permissions";
+import type { RoleAccess } from "@/lib/types/member";
 import { useProjectStore } from "@/stores/use-project-store";
 import { CommentModerationSection } from "./comment-moderation-section";
 

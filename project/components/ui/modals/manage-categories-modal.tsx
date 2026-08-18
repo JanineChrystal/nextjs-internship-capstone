@@ -1,7 +1,6 @@
 "use client";
 
 import { Check, Loader2, Pencil, Trash2, X } from "lucide-react";
-import { useState } from "react";
 import { ActionConfirmModal } from "@/components/modals/action-confirm-modal";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,13 +10,13 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import type { Category, CategoryScope } from "@/lib/types/category";
-import { useCategoryStore } from "@/stores/use-category-store";
+import { useManageCategories } from "@/hooks/use-manage-categories";
+import type { Category, CategoryType } from "@/lib/types/category";
 
 interface ManageCategoriesModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	type: "project" | "task";
+	type: CategoryType;
 	workspaceId: string;
 	// Present for task categories, which belong to the project's workspace rather
 	// than the viewer's. Without it a member could only manage the categories
@@ -35,74 +34,17 @@ export function ManageCategoriesModal({
 	const {
 		categories,
 		isLoading,
-		updateCategory,
-		deleteCategory,
-		updateProjectCategory,
-		deleteProjectCategory,
-		refreshCategoryStyles,
-	} = useCategoryStore();
-	const [editingCategory, setEditingCategory] = useState<string | null>(null);
-	const [editName, setEditName] = useState("");
-	const [editColor, setEditColor] = useState("");
-	const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
-		null,
-	);
-	const [isPending, setIsPending] = useState(false);
-
-	const startEditing = (category: Category) => {
-		setEditingCategory(category.id || "");
-		setEditName(category.name);
-		setEditColor(category.color);
-	};
-
-	// The scope whose palette this modal edits. Task categories belong to the
-	// project's workspace, project categories to the caller's own, and the badges
-	// on screen cache their colours under exactly this key.
-	const categoryScope: CategoryScope = projectId
-		? { kind: "project", id: projectId, type }
-		: { kind: "workspace", id: workspaceId, type };
-
-	const saveEditing = async (oldName: string) => {
-		if (!editName.trim()) return;
-		setIsPending(true);
-		const success = projectId
-			? await updateProjectCategory(
-					projectId,
-					oldName,
-					editName.trim(),
-					editColor,
-					type,
-				)
-			: await updateCategory(
-					workspaceId,
-					oldName,
-					editName.trim(),
-					editColor,
-					type,
-				);
-		if (success) {
-			setEditingCategory(null);
-			// Badges cache colours per scope, so a rename or recolour has to
-			// invalidate that cache or the board keeps painting the old colour until
-			// the next full page load.
-			await refreshCategoryStyles(categoryScope);
-		}
-		setIsPending(false);
-	};
-
-	const confirmDelete = async () => {
-		if (categoryToDelete) {
-			setIsPending(true);
-			const success = projectId
-				? await deleteProjectCategory(projectId, categoryToDelete.name, type)
-				: await deleteCategory(workspaceId, categoryToDelete.name, type);
-			if (success) {
-				setCategoryToDelete(null);
-				await refreshCategoryStyles(categoryScope);
-			}
-			setIsPending(false);
-		}
-	};
+		isSubmitting,
+		errors,
+		register,
+		editingRowId,
+		startEditing,
+		cancelEditing,
+		saveEditing,
+		categoryToDelete,
+		setCategoryToDelete,
+		confirmDelete,
+	} = useManageCategories({ type, workspaceId, projectId });
 
 	return (
 		<>
@@ -127,41 +69,51 @@ export function ManageCategoriesModal({
 									key={category.id}
 									className="flex items-center justify-between p-3 rounded-md border bg-card"
 								>
-									{editingCategory === category.id ? (
-										<div className="flex items-center gap-2 flex-1">
-											<Input
-												type="color"
-												value={editColor}
-												onChange={(e) => setEditColor(e.target.value)}
-												className="w-8 h-8 p-0 border-none rounded cursor-pointer"
-											/>
-											<Input
-												value={editName}
-												onChange={(e) => setEditName(e.target.value)}
-												className="flex-1 h-8"
-												autoFocus
-											/>
-											<Button
-												size="icon-xs"
-												variant="ghost"
-												onClick={() => saveEditing(category.name)}
-												disabled={isPending}
-											>
-												{isPending ? (
-													<Loader2 className="h-4 w-4 animate-spin" />
-												) : (
-													<Check className="h-4 w-4 text-green-500" />
-												)}
-											</Button>
-											<Button
-												size="icon-xs"
-												variant="ghost"
-												onClick={() => setEditingCategory(null)}
-												disabled={isPending}
-											>
-												<X className="h-4 w-4 text-muted-foreground" />
-											</Button>
-										</div>
+									{editingRowId === category.id ? (
+										<form
+											onSubmit={saveEditing(category.name)}
+											className="flex flex-col gap-1 flex-1"
+										>
+											<div className="flex items-center gap-2">
+												<Input
+													type="color"
+													{...register("color")}
+													className="w-8 h-8 p-0 border-none rounded cursor-pointer"
+												/>
+												<Input
+													{...register("name")}
+													className="flex-1 h-8"
+													aria-invalid={Boolean(errors.name)}
+													autoFocus
+												/>
+												<Button
+													type="submit"
+													size="icon-xs"
+													variant="ghost"
+													disabled={isSubmitting}
+												>
+													{isSubmitting ? (
+														<Loader2 className="h-4 w-4 animate-spin" />
+													) : (
+														<Check className="h-4 w-4 text-green-500" />
+													)}
+												</Button>
+												<Button
+													type="button"
+													size="icon-xs"
+													variant="ghost"
+													onClick={cancelEditing}
+													disabled={isSubmitting}
+												>
+													<X className="h-4 w-4 text-muted-foreground" />
+												</Button>
+											</div>
+											{errors.name && (
+												<p className="text-xs text-destructive">
+													{errors.name.message}
+												</p>
+											)}
+										</form>
 									) : (
 										<>
 											<div className="flex items-center gap-3">
@@ -175,6 +127,7 @@ export function ManageCategoriesModal({
 											</div>
 											<div className="flex items-center gap-1">
 												<Button
+													type="button"
 													size="icon-xs"
 													variant="ghost"
 													onClick={() => startEditing(category)}
@@ -182,6 +135,7 @@ export function ManageCategoriesModal({
 													<Pencil className="h-4 w-4 text-muted-foreground" />
 												</Button>
 												<Button
+													type="button"
 													size="icon-xs"
 													variant="ghost"
 													onClick={() => setCategoryToDelete(category)}
@@ -204,7 +158,7 @@ export function ManageCategoriesModal({
 				onConfirm={confirmDelete}
 				title="Delete Category"
 				description="Are you sure you want to delete this category? All associated items will be safely marked as 'Uncategorized'."
-				confirmText={isPending ? "Deleting..." : "Delete"}
+				confirmText="Delete"
 				cancelText="Cancel"
 				isDestructive
 			/>

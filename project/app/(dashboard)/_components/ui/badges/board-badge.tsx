@@ -1,9 +1,7 @@
+import type { TaskBoard } from "@/lib/types/task";
 import { cn } from "@/lib/utils";
-import type { TaskBoard } from "@/types/task";
-import {
-	BOARD_CONFIG,
-	getDynamicBadgeColor,
-} from "../../../projects/_constants/badges";
+import { getDynamicBadgeColor } from "@/lib/utils/badge";
+import { BOARD_CONFIG } from "../../../projects/_constants/badges";
 
 interface BoardBadgeProps {
 	board: TaskBoard;

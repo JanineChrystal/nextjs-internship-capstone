@@ -1,6 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+	PENDING_INVITE_MESSAGE,
+	WORKSPACE_MEMBER_USER_FACING_ERRORS,
+} from "@/lib/constants/action-errors";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	getWorkspaceDirectoryDAL,
@@ -8,26 +12,7 @@ import {
 	removeWorkspaceMembersDAL,
 } from "@/lib/dal/workspace-members";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
-
-// Messages raised deliberately by the DAL for the user to read; anything else
-// is reported generically so database internals are never surfaced.
-const USER_FACING_ERRORS = [
-	"Workspace not found",
-	"No active workspace found for user",
-	"Only the workspace owner can remove members",
-	"Only the workspace owner can invite members",
-	"The workspace owner cannot be removed",
-	"You are already a member of this workspace",
-];
-
-const PENDING_MESSAGE =
-	"Invite saved. They will get access as soon as they sign up.";
-
-function toUserFacingError(error: unknown): string {
-	return error instanceof Error && USER_FACING_ERRORS.includes(error.message)
-		? error.message
-		: "An unexpected error occurred";
-}
+import { toUserFacingError } from "@/lib/utils/action-error";
 
 export async function getWorkspaceDirectoryAction(
 	workspaceId?: string,
@@ -45,7 +30,10 @@ export async function getWorkspaceDirectoryAction(
 		return { success: true, data: members };
 	} catch (error) {
 		console.error("getWorkspaceDirectoryAction error:", error);
-		return { success: false, error: toUserFacingError(error) };
+		return {
+			success: false,
+			error: toUserFacingError(error, WORKSPACE_MEMBER_USER_FACING_ERRORS),
+		};
 	}
 }
 
@@ -74,13 +62,16 @@ export async function inviteToWorkspaceAction(
 		revalidatePath("/team");
 
 		if (result.outcome === "pending") {
-			return { success: true, notice: PENDING_MESSAGE };
+			return { success: true, notice: PENDING_INVITE_MESSAGE };
 		}
 
 		return { success: true, data: result.member };
 	} catch (error) {
 		console.error("inviteToWorkspaceAction error:", error);
-		return { success: false, error: toUserFacingError(error) };
+		return {
+			success: false,
+			error: toUserFacingError(error, WORKSPACE_MEMBER_USER_FACING_ERRORS),
+		};
 	}
 }
 
@@ -110,6 +101,9 @@ export async function removeWorkspaceMembersAction(
 		return { success: true, removedCount };
 	} catch (error) {
 		console.error("removeWorkspaceMembersAction error:", error);
-		return { success: false, error: toUserFacingError(error) };
+		return {
+			success: false,
+			error: toUserFacingError(error, WORKSPACE_MEMBER_USER_FACING_ERRORS),
+		};
 	}
 }

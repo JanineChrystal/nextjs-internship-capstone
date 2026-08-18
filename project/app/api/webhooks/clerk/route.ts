@@ -77,15 +77,7 @@ export async function POST(req: Request) {
 			// retrying the whole webhook is safe because claiming is idempotent.
 			if (eventType === "user.created" && userToSync.email) {
 				try {
-					const { claimedCount } = await claimPendingInvitesForUserDAL(
-						userToSync.email,
-						syncedUser.id,
-					);
-					if (claimedCount > 0) {
-						console.log(
-							`Claimed ${claimedCount} pending invite(s) for ${userToSync.email}`,
-						);
-					}
+					await claimPendingInvitesForUserDAL(userToSync.email, syncedUser.id);
 				} catch (claimError) {
 					console.error("Pending invite claim failed:", claimError);
 				}

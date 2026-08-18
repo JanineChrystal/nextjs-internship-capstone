@@ -1,5 +1,6 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	ChevronDown,
 	ChevronRight,
@@ -8,10 +9,15 @@ import {
 	UserPlus,
 } from "lucide-react";
 import { useState } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/buttons/button";
 import { Input } from "@/components/ui/input";
+import { MemberAvatar } from "@/components/ui/member-avatar";
 import { SectionTitle } from "@/components/ui/sections";
+import {
+	type SaveGroupFormValues,
+	SaveGroupSchema,
+} from "@/lib/validations/group-schema";
 import { useProjectGroups } from "../../../_hooks/use-project-groups";
 
 interface GroupsSectionProps {
@@ -39,17 +45,30 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 		removeGroup,
 	} = useProjectGroups(projectId);
 
+	// isNaming is a UI toggle, not form data, so useState is the right tool for it.
+	// The name itself moved to React Hook Form: it is a validated input, and the
+	// schema it validates against is the same one the server action re-checks.
 	const [isNaming, setIsNaming] = useState(false);
-	const [groupName, setGroupName] = useState("");
 
-	const handleSave = async () => {
-		if (!groupName.trim()) return;
-		const saved = await saveAsGroup(groupName.trim());
-		if (saved) {
-			setGroupName("");
-			setIsNaming(false);
-		}
+	const {
+		register,
+		handleSubmit,
+		reset,
+		formState: { errors, isSubmitting },
+	} = useForm<SaveGroupFormValues>({
+		resolver: zodResolver(SaveGroupSchema),
+		defaultValues: { name: "" },
+	});
+
+	const closeNameForm = () => {
+		reset();
+		setIsNaming(false);
 	};
+
+	const onSubmit = handleSubmit(async ({ name }) => {
+		const saved = await saveAsGroup(name);
+		if (saved) closeNameForm();
+	});
 
 	return (
 		<section className="bg-surface rounded-xl border border-outline-variant p-6 flex flex-col gap-6">
@@ -67,30 +86,36 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 			{canManage && (
 				<div className="flex flex-col gap-3">
 					{isNaming ? (
-						<div className="flex flex-col sm:flex-row gap-2">
-							<Input
-								value={groupName}
-								onChange={(e) => setGroupName(e.target.value)}
-								placeholder="Group name (e.g. Design Squad)"
-								className="h-10 flex-1"
-							/>
-							<div className="flex gap-2">
-								<Button type="button" onClick={handleSave} className="h-10">
-									Save group
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									className="h-10"
-									onClick={() => {
-										setIsNaming(false);
-										setGroupName("");
-									}}
-								>
-									Cancel
-								</Button>
+						<form onSubmit={onSubmit} className="flex flex-col gap-1">
+							<div className="flex flex-col sm:flex-row gap-2">
+								<Input
+									{...register("name")}
+									placeholder="Group name (e.g. Design Squad)"
+									className="h-10 flex-1"
+									aria-invalid={Boolean(errors.name)}
+								/>
+								<div className="flex gap-2">
+									<Button
+										type="submit"
+										disabled={isSubmitting}
+										className="h-10"
+									>
+										Save group
+									</Button>
+									<Button
+										type="button"
+										variant="outline"
+										className="h-10"
+										onClick={closeNameForm}
+									>
+										Cancel
+									</Button>
+								</div>
 							</div>
-						</div>
+							{errors.name && (
+								<p className="text-xs text-error">{errors.name.message}</p>
+							)}
+						</form>
 					) : (
 						<Button
 							type="button"
@@ -186,11 +211,7 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 													key={member.id}
 													className="flex items-center gap-3 py-1"
 												>
-													<Avatar className="h-7 w-7 shrink-0">
-														<AvatarFallback className="text-xs">
-															{member.name.charAt(0).toUpperCase()}
-														</AvatarFallback>
-													</Avatar>
+													<MemberAvatar name={member.name} size="sm" />
 													<div className="min-w-0">
 														<p className="text-sm text-on-surface truncate">
 															{member.name}

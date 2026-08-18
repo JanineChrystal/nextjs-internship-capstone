@@ -40,23 +40,29 @@ export function usePendingInvites(
 		setIsLoading(false);
 	}, [scope, projectId]);
 
+	const revoke = useCallback(async (inviteId: string) => {
+		let previous: PendingInviteOutputDTO[] = [];
+
+		// The snapshot is taken inside the updater rather than read from `invites`,
+		// so this callback no longer depends on the list it mutates. Depending on
+		// it rebuilt `revoke` on every change, which meant every row that received
+		// it re-rendered whenever any invite was revoked.
+		setInvites((current) => {
+			previous = current;
+			return current.filter((invite) => invite.id !== inviteId);
+		});
+
+		const result = await revokePendingInviteAction(inviteId);
+		if (!result.success) {
+			setInvites(previous);
+			reportActionError("Could not revoke invite", result.error);
+		}
+	}, []);
+
+	// Effects last, after every value they might close over has been declared.
 	useEffect(() => {
 		load();
 	}, [load]);
-
-	const revoke = useCallback(
-		async (inviteId: string) => {
-			const previous = invites;
-			setInvites((current) => current.filter((i) => i.id !== inviteId));
-
-			const result = await revokePendingInviteAction(inviteId);
-			if (!result.success) {
-				setInvites(previous);
-				reportActionError("Could not revoke invite", result.error);
-			}
-		},
-		[invites],
-	);
 
 	return { invites, isLoading, refresh: load, revoke };
 }

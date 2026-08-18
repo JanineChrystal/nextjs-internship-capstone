@@ -1,10 +1,6 @@
 import { Button } from "@/components/ui/buttons/button";
+import type { TabOption } from "@/lib/types/nav";
 import { cn } from "@/lib/utils";
-
-export interface TabOption<T extends string = string> {
-	label: string;
-	value: T;
-}
 
 interface ViewTabsProps<T extends string = string> {
 	tabs: readonly TabOption<T>[];

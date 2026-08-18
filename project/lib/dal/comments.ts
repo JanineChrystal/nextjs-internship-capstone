@@ -4,11 +4,7 @@ import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { comments, tasks, users } from "@/lib/db/schema";
 import { type CommentOutputDTO, toCommentDTO } from "@/lib/dtos/comment-dto";
-
-export interface CommentsPageResult {
-	comments: CommentOutputDTO[];
-	hasMore: boolean;
-}
+import type { CommentsPageResult } from "@/lib/types/comment";
 
 // Paginates by top-level (root) comment thread, always including every reply
 // to whatever root comments are on the page - keeps replies from ever being

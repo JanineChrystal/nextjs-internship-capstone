@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { GROUP_USER_FACING_ERRORS } from "@/lib/constants/action-errors";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	applyGroupToProjectDAL,
@@ -12,31 +12,15 @@ import {
 	setGroupMembersDAL,
 } from "@/lib/dal/groups";
 import type { GroupMemberDTO, GroupOutputDTO } from "@/lib/dtos/group-dto";
+import { toUserFacingError } from "@/lib/utils/action-error";
+import { GroupNameSchema } from "@/lib/validations/group-schema";
 
-const groupNameSchema = z
-	.string()
-	.trim()
-	.min(1, "Group name is required")
-	.max(80, "Group name must be 80 characters or fewer");
-
-// Raised deliberately by the DAL for the user to read; anything else is
-// reported generically so database internals never surface.
-const USER_FACING_ERRORS = [
-	"A group with that name already exists",
-	"Group not found",
-	"Project not found",
-	"Only the workspace owner can edit groups",
-	"Only the workspace owner can delete groups",
-];
-
-function toUserFacingError(error: unknown): string {
-	if (error instanceof Error && error.message === "Unauthorized") {
-		return "You do not have permission to manage groups on this project";
-	}
-	return error instanceof Error && USER_FACING_ERRORS.includes(error.message)
-		? error.message
-		: "An unexpected error occurred";
-}
+// "Unauthorized" is accurate but tells a user nothing, so this one message is
+// rewritten to name the permission that is actually missing.
+const toGroupError = (error: unknown) =>
+	toUserFacingError(error, GROUP_USER_FACING_ERRORS, {
+		Unauthorized: "You do not have permission to manage groups on this project",
+	});
 
 export async function getWorkspaceGroupsAction(): Promise<{
 	success: boolean;
@@ -51,7 +35,10 @@ export async function getWorkspaceGroupsAction(): Promise<{
 		return { success: true, data: await getWorkspaceGroupsDAL() };
 	} catch (error) {
 		console.error("getWorkspaceGroupsAction error:", error);
-		return { success: false, error: toUserFacingError(error) };
+		return {
+			success: false,
+			error: toGroupError(error),
+		};
 	}
 }
 
@@ -68,7 +55,10 @@ export async function getGroupMembersAction(groupId: string): Promise<{
 		return { success: true, data: await getGroupMembersDAL(groupId) };
 	} catch (error) {
 		console.error("getGroupMembersAction error:", error);
-		return { success: false, error: toUserFacingError(error) };
+		return {
+			success: false,
+			error: toGroupError(error),
+		};
 	}
 }
 
@@ -82,7 +72,7 @@ export async function saveProjectMembersAsGroupAction(
 		if (!user)
 			return { success: false, error: await getSessionFailureReason() };
 
-		const parsed = groupNameSchema.safeParse(name);
+		const parsed = GroupNameSchema.safeParse(name);
 		if (!parsed.success) {
 			return { success: false, error: parsed.error.issues[0]?.message };
 		}
@@ -97,7 +87,10 @@ export async function saveProjectMembersAsGroupAction(
 		return { success: true, data: group };
 	} catch (error) {
 		console.error("saveProjectMembersAsGroupAction error:", error);
-		return { success: false, error: toUserFacingError(error) };
+		return {
+			success: false,
+			error: toGroupError(error),
+		};
 	}
 }
 
@@ -121,7 +114,10 @@ export async function applyGroupToProjectAction(
 		return { success: true, addedCount };
 	} catch (error) {
 		console.error("applyGroupToProjectAction error:", error);
-		return { success: false, error: toUserFacingError(error) };
+		return {
+			success: false,
+			error: toGroupError(error),
+		};
 	}
 }
 
@@ -139,7 +135,10 @@ export async function setGroupMembersAction(
 		return { success: true };
 	} catch (error) {
 		console.error("setGroupMembersAction error:", error);
-		return { success: false, error: toUserFacingError(error) };
+		return {
+			success: false,
+			error: toGroupError(error),
+		};
 	}
 }
 
@@ -156,6 +155,9 @@ export async function deleteGroupAction(
 		return { success: true };
 	} catch (error) {
 		console.error("deleteGroupAction error:", error);
-		return { success: false, error: toUserFacingError(error) };
+		return {
+			success: false,
+			error: toGroupError(error),
+		};
 	}
 }

@@ -5,15 +5,15 @@ import {
 	removeMemberAction,
 	updateMemberJobRoleAction,
 	updateMemberRoleAction,
-} from "@/lib/actions/project-actions";
+} from "@/lib/actions/project-member-actions";
 import { inviteToWorkspaceAction } from "@/lib/actions/workspace-member-actions";
-import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import type {
 	FlaggedCommentItem,
 	PendingInviteItem,
 	ProjectMember,
 	RoleAccess,
-} from "@/types/member";
+} from "@/lib/types/member";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 
 const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {};
 
@@ -213,12 +213,13 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 		}
 	},
 
-	resolveFlaggedComment: (projectId, commentId, action) =>
+	// `_action` is kept in the signature and deliberately unused: this store still
+	// holds mock moderation data, so accepting and rejecting both just drop the
+	// row. Phase 6 gives it meaning - accept dismisses the flag, reject deletes
+	// the comment - and callers already pass it, so removing it now would mean
+	// changing every call site twice.
+	resolveFlaggedComment: (projectId, commentId, _action) =>
 		set((state) => {
-			// Log action for debugging / backend readiness (accept = dismiss flag, reject = delete comment)
-			console.log(
-				`[Moderation] Resolved comment ${commentId} on project ${projectId} with action: ${action}`,
-			);
 			const comments = state.flaggedComments[projectId] || [];
 			return {
 				flaggedComments: {

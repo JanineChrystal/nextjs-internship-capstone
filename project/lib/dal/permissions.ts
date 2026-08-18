@@ -2,12 +2,7 @@ import "server-only";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { unionAll } from "drizzle-orm/pg-core";
 import { cache } from "react";
-import {
-	hasPermission,
-	type Permission,
-	type RoleAccess,
-	resolveEffectiveRole,
-} from "@/lib/config/permissions";
+import { hasPermission, resolveEffectiveRole } from "@/lib/config/permissions";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import {
@@ -19,6 +14,7 @@ import {
 	workspaceMembers,
 	workspaces,
 } from "@/lib/db/schema";
+import type { Permission, RoleAccess } from "@/lib/types/member";
 
 /**
  * Resolves the single role that governs a user's access to a project.

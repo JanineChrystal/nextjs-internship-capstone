@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
-import { upsertProjectCategoryDAL } from "@/lib/dal/categories";
+import { upsertProjectCategoryDAL } from "@/lib/dal/category-mutations";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import {
 	bulkCompleteTasksInDB,
@@ -14,11 +14,13 @@ import {
 	getTasksByProjectId,
 	moveTaskBoardDAL,
 	reorderTasksInDB,
-	type TaskWithBoardOutputDTO,
 	updateTaskInDB,
 } from "@/lib/dal/tasks";
-import type { TaskOutputDTO } from "@/lib/dtos/task-dto";
-import type { NewDbTask } from "@/lib/types/task";
+import type {
+	TaskOutputDTO,
+	TaskWithBoardOutputDTO,
+} from "@/lib/dtos/task-dto";
+import type { CreateTaskInput, NewDbTask } from "@/lib/types/task";
 import {
 	bulkUpdateTaskStatusSchema,
 	insertTaskDbSchema,
@@ -58,16 +60,6 @@ export async function getAllUserTasksAction(): Promise<{
 		console.error("getAllUserTasksAction error:", error);
 		return { success: false, error: "Failed to fetch tasks" };
 	}
-}
-
-export interface CreateTaskInput {
-	name: string;
-	category?: string;
-	status?: string;
-	priority?: "low" | "medium" | "high" | "urgent";
-	notes?: string;
-	startDate?: string;
-	dueDate?: string;
 }
 
 export async function createTaskAction(

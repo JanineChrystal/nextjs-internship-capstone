@@ -1,5 +1,5 @@
-import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, Edit2, Trash2 } from "lucide-react";
+import type { ColumnActionConfig } from "@/lib/types/board";
 
 export const projectPriorityOptions = [
 	{ label: "Low", value: "low" },
@@ -7,13 +7,6 @@ export const projectPriorityOptions = [
 	{ label: "High", value: "high" },
 	{ label: "Urgent", value: "urgent" },
 ];
-
-export interface ColumnActionConfig {
-	id: "rename" | "delete" | "set-completion";
-	label: string;
-	icon: LucideIcon;
-	variant?: "danger" | "default";
-}
 
 export const COLUMN_DROPDOWN_ACTIONS: ColumnActionConfig[] = [
 	{

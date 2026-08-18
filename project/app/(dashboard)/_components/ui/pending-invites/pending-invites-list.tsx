@@ -5,7 +5,10 @@ import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
 import { Button } from "@/components/ui/buttons/button";
 import { GridTable } from "@/components/views/grid-table/grid-table";
 import type { PendingInviteOutputDTO } from "@/lib/dtos/pending-invite-dto";
-import type { ColumnDef } from "@/types/grid-table";
+import {
+	PENDING_INVITE_COLUMNS,
+	PENDING_INVITE_COLUMNS_WITH_PROJECT,
+} from "../../../_constants/pending-invites";
 
 interface PendingInvitesListProps {
 	invites: PendingInviteOutputDTO[];
@@ -30,20 +33,9 @@ export function PendingInvitesList({
 	showProject = false,
 	emptyMessage = "No pending invites.",
 }: PendingInvitesListProps) {
-	const columns: ColumnDef[] = [
-		{ key: "email", title: "Email", className: "flex-2 min-w-[220px]" },
-		...(showProject
-			? [{ key: "project", title: "Project", className: "w-48" }]
-			: []),
-		{ key: "position", title: "Position", className: "w-40" },
-		{ key: "accessLevel", title: "Access Level", className: "w-36" },
-		{ key: "invitedAt", title: "Invited", className: "w-32" },
-		{
-			key: "actions",
-			title: "",
-			className: "w-16 text-right justify-end",
-		},
-	];
+	const columns = showProject
+		? PENDING_INVITE_COLUMNS_WITH_PROJECT
+		: PENDING_INVITE_COLUMNS;
 
 	return (
 		<GridTable
@@ -58,7 +50,7 @@ export function PendingInvitesList({
 			)}
 			renderRow={(invite) => (
 				<>
-					<div className="flex-2 min-w-[220px] flex items-center gap-3">
+					<div className="flex-2 min-w-55 flex items-center gap-3">
 						<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-secondary">
 							<MailQuestion size={16} />
 						</span>

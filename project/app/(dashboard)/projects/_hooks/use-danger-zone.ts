@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import { updateProjectAction } from "@/lib/actions/project-actions";
+import type { RoleAccess } from "@/lib/types/member";
 import { reportActionError } from "@/lib/utils/toast";
 import { useProjectStore } from "@/stores/use-project-store";
-import type { RoleAccess } from "@/types/member";
 
 export function useDangerZone(projectId: string, currentUserRole: RoleAccess) {
 	// Local state

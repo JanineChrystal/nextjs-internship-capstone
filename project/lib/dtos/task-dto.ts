@@ -143,3 +143,14 @@ export function toAttachmentDTO(attachment: DbAttachment): AttachmentOutputDTO {
 		updatedAt: attachment.updatedAt,
 	};
 }
+
+/**
+ * A task carrying the name of the board it sits on.
+ *
+ * Only the cross-project surfaces need this - the global calendar and the
+ * dashboard span many projects at once, so the column a task belongs to is no
+ * longer implied by which board you are looking at.
+ */
+export interface TaskWithBoardOutputDTO extends TaskOutputDTO {
+	boardTitle: string;
+}

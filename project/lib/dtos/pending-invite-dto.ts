@@ -1,4 +1,4 @@
-import type { RoleAccess } from "@/lib/config/permissions";
+import type { RoleAccess } from "@/lib/types/member";
 import type { DbPendingInvite } from "@/lib/types/pending-invite";
 
 export interface PendingInviteOutputDTO {

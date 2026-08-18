@@ -1,10 +1,8 @@
 import { AlertTriangle, CheckCircle2, Circle, Clock } from "lucide-react";
+import type { IconName } from "@/lib/types/badge";
+import type { TaskStatus } from "@/lib/types/task";
 import { cn } from "@/lib/utils";
-import type { TaskStatus } from "@/types/task";
-import {
-	type IconName,
-	STATUS_CONFIG,
-} from "../../../projects/_constants/badges";
+import { STATUS_CONFIG } from "../../../projects/_constants/badges";
 
 interface StatusBadgeProps {
 	status: TaskStatus | string;
