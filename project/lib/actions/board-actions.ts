@@ -7,6 +7,7 @@ import {
 	countTasksInBoardDAL,
 	createBoardDAL,
 	deleteBoardDAL,
+	getProjectBoardsDAL,
 	renameBoardDAL,
 	reorderBoardsDAL,
 	setCompletionBoardDAL,
@@ -171,5 +172,54 @@ export async function deleteBoardAction(
 	} catch (error) {
 		console.error("deleteBoardAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+/**
+ * A project's board columns, for a caller that is not on the project page.
+ *
+ * The project page loads its own boards on the server and pushes them into the
+ * board store, so nothing needed to read them from the browser until now. The
+ * dashboard's "Create Task" shortcut does: it has to know which columns exist
+ * before the task modal can decide where a new task goes.
+ *
+ * Gated on view_project rather than left open, because the column names are
+ * project content - they describe how a team works.
+ */
+export async function getProjectBoardsAction(projectId: string): Promise<{
+	success: boolean;
+	data?: {
+		id: string;
+		name: string;
+		position: number;
+		isCompletionBoard: boolean;
+	}[];
+	error?: string;
+}> {
+	try {
+		const user = await getCurrentUser();
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
+
+		const allowed = await verifyProjectPermissionDAL(projectId, "view_project");
+		if (!allowed)
+			return {
+				success: false,
+				error: "You do not have access to that project",
+			};
+
+		const boards = await getProjectBoardsDAL(projectId);
+		return {
+			success: true,
+			data: boards.map((board) => ({
+				id: board.id,
+				name: board.name,
+				position: board.position,
+				isCompletionBoard: board.isCompletionBoard,
+			})),
+		};
+	} catch (error) {
+		console.error("getProjectBoardsAction error:", error);
+		return { success: false, error: "Could not load the project's columns" };
 	}
 }

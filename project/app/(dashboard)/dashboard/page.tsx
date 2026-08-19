@@ -3,6 +3,8 @@ import { ChartCard, TrendAreaChart } from "@/components/charts";
 import { TREND_WINDOW_DAYS } from "@/lib/constants/analytics";
 import { getDashboardOverviewDAL } from "@/lib/dal/analytics";
 import { requireUser } from "@/lib/dal/auth";
+import { getAllUserProjectsDAL } from "@/lib/dal/projects";
+import type { ProjectPickerOption } from "@/lib/types/dashboard";
 import { StatCard } from "../_components/ui/cards/stat-card";
 import { PageHeader } from "../_components/ui/headers/page-header";
 import { DASHBOARD_STAT_CARDS } from "../_constants/analytics";
@@ -24,7 +26,23 @@ export const metadata: Metadata = {
  */
 export default async function DashboardPage() {
 	const user = await requireUser();
-	const overview = await getDashboardOverviewDAL();
+
+	// Both reads are independent, so they run together rather than one after the
+	// other. The project list feeds the two Quick Actions that have to ask which
+	// project they apply to.
+	const [overview, projects] = await Promise.all([
+		getDashboardOverviewDAL(),
+		getAllUserProjectsDAL(),
+	]);
+
+	// Narrowed to what the picker renders. Sending the full rows would ship every
+	// project's description, dates and counts to draw a list of names.
+	const pickerProjects: ProjectPickerOption[] = projects.map((project) => ({
+		id: project.id,
+		name: project.name,
+		category: project.category,
+		isOwned: project.ownerId === user.id,
+	}));
 
 	const trend = overview.completionTrend.map((day) => ({
 		label: day.label,
@@ -63,7 +81,7 @@ export default async function DashboardPage() {
 
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				<RecentProjectsPanel projects={overview.recentProjects} />
-				<QuickActionsPanel />
+				<QuickActionsPanel projects={pickerProjects} />
 			</div>
 		</div>
 	);

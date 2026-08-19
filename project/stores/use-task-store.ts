@@ -9,9 +9,25 @@ interface TaskState {
 	selectedTaskIds: Set<string>;
 	createBoardTitle: string | null;
 	createDate: Date | null;
+	/**
+	 * Which project the modal was opened for, when the opener is not on that
+	 * project's page.
+	 *
+	 * The task modal normally reads the project from the route. That works
+	 * everywhere it has ever been opened from - the board, the grid, the
+	 * calendar - because all of those live under /projects/[id]. The dashboard's
+	 * "Create Task" shortcut does not, so it passes the project here instead.
+	 *
+	 * It sits beside createBoardTitle and createDate because it is the same kind
+	 * of thing: context the opener knows and the modal cannot work out for
+	 * itself. Threading it as a prop instead would mean passing it through the
+	 * modal, the properties grid and the assignee picker, none of which are
+	 * otherwise related.
+	 */
+	createProjectId: string | null;
 	openTaskModal: (
 		taskId?: string,
-		options?: { board?: string; date?: Date },
+		options?: { board?: string; date?: Date; projectId?: string },
 	) => void;
 	closeTaskModal: () => void;
 	createTask: (task: GridTask) => void;
@@ -35,6 +51,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 	selectedTaskIds: new Set<string>(),
 	createBoardTitle: null,
 	createDate: null,
+	createProjectId: null,
 
 	openTaskModal: (taskId, options) =>
 		set({
@@ -42,13 +59,17 @@ export const useTaskStore = create<TaskState>((set) => ({
 			selectedTaskId: taskId || null,
 			createBoardTitle: options?.board || null,
 			createDate: options?.date || null,
+			createProjectId: options?.projectId || null,
 		}),
+	// Cleared on close so a project chosen once from the dashboard cannot leak
+	// into the next task opened from an actual project page.
 	closeTaskModal: () =>
 		set({
 			isTaskModalOpen: false,
 			selectedTaskId: null,
 			createBoardTitle: null,
 			createDate: null,
+			createProjectId: null,
 		}),
 
 	createTask: (task) => set((state) => ({ tasks: [task, ...state.tasks] })),

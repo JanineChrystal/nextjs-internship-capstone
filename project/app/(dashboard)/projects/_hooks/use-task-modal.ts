@@ -26,7 +26,6 @@ import { useTaskChecklist } from "./use-task-checklist";
 
 export function useTaskModal() {
 	const params = useParams();
-	const projectId = params?.id as string;
 
 	// External Stores
 	const {
@@ -40,7 +39,14 @@ export function useTaskModal() {
 		updateTask,
 		duplicateTask,
 		deleteTask,
+		createProjectId,
 	} = useTaskStore();
+
+	// The route wins when there is one, because every in-project opener is
+	// already under /projects/[id] and that is the authoritative answer there.
+	// createProjectId only carries a value when the modal was opened from
+	// somewhere with no project in its URL - today, the dashboard shortcut.
+	const projectId = (params?.id as string) ?? createProjectId ?? "";
 
 	const { columns } = useBoardStore();
 
@@ -504,6 +510,11 @@ export function useTaskModal() {
 
 				setTaskData({
 					...DEFAULT_TASK_DATA,
+					// Seeded so the properties grid can scope its category list
+					// without a route param. It already prefers the task's own
+					// project over the URL; in create mode there was simply no
+					// task yet to read it from.
+					projectId,
 					board: initialBoard,
 					status: TASK_STATUS_NOT_STARTED,
 					startDate: prefillDate,
@@ -526,6 +537,7 @@ export function useTaskModal() {
 		createBoardTitle,
 		createDate,
 		columns,
+		projectId,
 	]);
 
 	return {
