@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { FilterPopover } from "@/components/ui/filters/filter-popover";
 import { hasPermission } from "@/lib/config/permissions";
@@ -75,6 +76,8 @@ export function ProjectDetailClient({
 	boards,
 	role,
 }: ProjectDetailClientProps) {
+	const router = useRouter();
+	const searchParams = useSearchParams();
 	const setTasks = useTaskStore((state) => state.setTasks);
 	const setColumns = useBoardStore((state) => state.setColumns);
 	const isInitialized = useRef(false);
@@ -102,6 +105,31 @@ export function ProjectDetailClient({
 			isInitialized.current = true;
 		}
 	}, [project, projectUI, tasks, boards, setTasks, setColumns]);
+
+	/**
+	 * Opens the task a search result pointed at.
+	 *
+	 * A task has no page of its own, so a search hit links to its project with
+	 * ?task={id}. Without this the link would drop the reader on a board and
+	 * leave them to find the card themselves - which is most of the work they
+	 * just asked search to do.
+	 *
+	 * It waits for the store to be populated: the tasks arrive from the server
+	 * through the effect above, and opening the modal before they land would show
+	 * an empty editor. The param is then cleared with replace() rather than
+	 * push(), so pressing Back leaves the project rather than silently reopening
+	 * the same task.
+	 */
+	useEffect(() => {
+		const taskId = searchParams.get("task");
+		if (!taskId) return;
+
+		const storeTasks = useTaskStore.getState().tasks;
+		if (!storeTasks.some((task) => task.id === taskId)) return;
+
+		useTaskStore.getState().openTaskModal(taskId);
+		router.replace(`/projects/${projectId}`, { scroll: false });
+	}, [searchParams, projectId, router]);
 
 	const {
 		activeView,
