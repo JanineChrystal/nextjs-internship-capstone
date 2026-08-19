@@ -37,6 +37,14 @@ export const taskPriorityEnum = pgEnum("TaskPriority", [
 	"urgent",
 ]);
 export const attachmentTypeEnum = pgEnum("AttachmentType", ["file", "link"]);
+// The reason someone is writing in from the landing page. An enum rather than
+// free text so the inbox can be filtered without relying on how people type.
+export const contactTopicEnum = pgEnum("ContactTopic", [
+	"general",
+	"demo",
+	"support",
+	"partnership",
+]);
 export const actionTypeEnum = pgEnum("ActionType", [
 	"INVITE_SENT",
 	"INVITE_ACCEPTED",
@@ -768,3 +776,39 @@ export const projectTeamsRelations = relations(projectTeams, ({ one }) => ({
 		references: [teams.id],
 	}),
 }));
+
+/**
+ * Messages sent from the public landing page's contact drawer.
+ *
+ * Deliberately has no `userId` and no relation to any other table: the whole
+ * point of the form is that someone who does not have an account can reach us.
+ * Adding a foreign key would mean either rejecting exactly the people the
+ * landing page exists to serve, or carrying a nullable column that is null in
+ * almost every row.
+ *
+ * `topic` is an enum rather than free text so the inbox can be filtered without
+ * anyone having to agree on spelling, and `respondedAt` gives triage a place to
+ * live later without a second migration.
+ */
+export const contactMessages = pgTable(
+	"ContactMessages",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		name: text("name").notNull(),
+		email: text("email").notNull(),
+		organization: text("organization"),
+		topic: contactTopicEnum("topic").notNull(),
+		message: text("message").notNull(),
+		respondedAt: timestamp("respondedAt"),
+		createdAt: timestamp("createdAt").defaultNow().notNull(),
+		updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+		deletedAt: timestamp("deletedAt"),
+	},
+	(table) => [
+		// The inbox is always read newest-first, and the duplicate check the action
+		// runs looks up by sender. Both are covered here rather than left to a
+		// sequential scan that only starts hurting once the form is working.
+		index("contact_messages_created_at_idx").on(table.createdAt),
+		index("contact_messages_email_idx").on(table.email),
+	],
+);
