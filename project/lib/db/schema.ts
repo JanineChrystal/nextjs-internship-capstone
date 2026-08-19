@@ -466,6 +466,9 @@ export const comments = pgTable("Comments", {
 	body: text("body").notNull(),
 	isFlagged: boolean("isFlagged").default(false).notNull(),
 	flagReason: text("flagReason"),
+	pendingProfanityCheck: boolean("pendingProfanityCheck")
+		.default(false)
+		.notNull(),
 	moderatedById: uuid("moderatedById").references(() => users.id),
 	moderatedAt: timestamp("moderatedAt"),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),

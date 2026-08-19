@@ -8,7 +8,6 @@ import {
 } from "@/lib/actions/project-member-actions";
 import { inviteToWorkspaceAction } from "@/lib/actions/workspace-member-actions";
 import type {
-	FlaggedCommentItem,
 	PendingInviteItem,
 	ProjectMember,
 	RoleAccess,
@@ -17,28 +16,12 @@ import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 
 const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {};
 
-const INITIAL_FLAGGED_COMMENTS: Record<string, FlaggedCommentItem[]> = {
-	"prj-1": [
-		{
-			commentId: "cmt-1",
-			taskId: "task-1",
-			taskTitle: "Design responsive Kanban board layout",
-			authorName: "John Doe",
-			authorAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-			commentSnippet: "This is completely wrong and looks terrible.",
-			flagReason: "Inappropriate language / Toxic behavior",
-			flaggedAt: new Date().toISOString(),
-		},
-	],
-};
-
 interface MemberState {
 	// State
 	projectMembers: Record<string, ProjectMember[]>;
 	pendingInvites: PendingInviteItem[];
 	// Surfaced after a bulk invite so failures are visible rather than logged.
 	inviteError: string | null;
-	flaggedComments: Record<string, FlaggedCommentItem[]>;
 
 	// Real, server-backed actions
 	fetchProjectMembers: (projectId: string) => Promise<void>;
@@ -62,19 +45,12 @@ interface MemberState {
 	addPendingInvite: (invite: PendingInviteItem) => void;
 	removePendingInvite: (recipient: string) => void;
 	clearPendingInvites: () => void;
-
-	resolveFlaggedComment: (
-		projectId: string,
-		commentId: string,
-		action: "accept" | "reject",
-	) => void;
 }
 
 export const useMemberStore = create<MemberState>((set, get) => ({
 	projectMembers: INITIAL_MEMBERS,
 	pendingInvites: [],
 	inviteError: null,
-	flaggedComments: INITIAL_FLAGGED_COMMENTS,
 
 	addPendingInvite: (invite) =>
 		set((state) => ({
@@ -212,20 +188,4 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 			reportActionError("Could not remove member", result.error);
 		}
 	},
-
-	// `_action` is kept in the signature and deliberately unused: this store still
-	// holds mock moderation data, so accepting and rejecting both just drop the
-	// row. Phase 6 gives it meaning - accept dismisses the flag, reject deletes
-	// the comment - and callers already pass it, so removing it now would mean
-	// changing every call site twice.
-	resolveFlaggedComment: (projectId, commentId, _action) =>
-		set((state) => {
-			const comments = state.flaggedComments[projectId] || [];
-			return {
-				flaggedComments: {
-					...state.flaggedComments,
-					[projectId]: comments.filter((c) => c.commentId !== commentId),
-				},
-			};
-		}),
 }));

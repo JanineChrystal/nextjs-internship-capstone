@@ -23,6 +23,10 @@
  * Keeping them apart is why this can be run before a single message exists.
  */
 
+// Marks this file as a module. Without an import or export, TypeScript treats
+// a script as global scope, and these two share helper names like ok() and bad().
+export {};
+
 const GREEN = "\x1b[32m";
 const RED = "\x1b[31m";
 const YELLOW = "\x1b[33m";

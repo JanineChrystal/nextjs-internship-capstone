@@ -21,6 +21,14 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
 	resolve: {
 		alias: [
+			// See test/empty-module.ts - lets server-only modules expose their pure
+			// helpers to tests without weakening the real build.
+			{
+				find: /^server-only$/,
+				replacement: fileURLToPath(
+					new URL("./test/empty-module.ts", import.meta.url),
+				),
+			},
 			{
 				find: /^@\/types\/(.*)$/,
 				replacement: `${fileURLToPath(new URL("./lib/types", import.meta.url))}/$1`,

@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/buttons/button";
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import { SectionTitle } from "@/components/ui/sections";
 import { GridTable } from "@/components/views/grid-table/grid-table";
-import { useMemberStore } from "@/stores/use-member-store";
+import { useTaskStore } from "@/stores/use-task-store";
 import {
 	COMMENT_MODERATION_COLUMNS,
-	emptyComments,
 	settingsSectionTexts,
 } from "../../../_constants/settings-view";
+import { useCommentModeration } from "../../../_hooks/use-comment-moderation";
 
 interface CommentModerationSectionProps {
 	projectId: string;
@@ -19,9 +19,9 @@ interface CommentModerationSectionProps {
 export function CommentModerationSection({
 	projectId,
 }: CommentModerationSectionProps) {
-	const { flaggedComments, resolveFlaggedComment } = useMemberStore();
-
-	const comments = flaggedComments[projectId] ?? emptyComments;
+	const openTask = useTaskStore((state) => state.openTaskModal);
+	const { comments, isLoading, busyId, resolve, retryPending, isRetrying } =
+		useCommentModeration(projectId);
 
 	return (
 		<section className="bg-surface rounded-xl border border-outline-variant p-6 flex flex-col gap-6">
@@ -39,6 +39,18 @@ export function CommentModerationSection({
 				description={settingsSectionTexts.commentModeration.description}
 			/>
 
+			<div className="flex justify-end -mt-2">
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					onClick={() => retryPending()}
+					disabled={isRetrying}
+				>
+					{isRetrying ? "Retrying..." : "Retry Pending Checks"}
+				</Button>
+			</div>
+
 			<GridTable
 				data={comments}
 				columns={COMMENT_MODERATION_COLUMNS}
@@ -47,10 +59,12 @@ export function CommentModerationSection({
 					<div className="flex flex-col items-center justify-center py-10 border-t border-dashed border-outline-variant bg-surface-container-lowest">
 						<ShieldAlert size={48} className="text-secondary/50 mb-4" />
 						<h3 className="text-lg font-semibold text-on-surface">
-							No flagged comments
+							{isLoading ? "Loading..." : "No flagged comments"}
 						</h3>
 						<p className="text-sm text-secondary">
-							Everything is looking good!
+							{isLoading
+								? "Checking the review queue."
+								: "Nothing is waiting for review."}
 						</p>
 					</div>
 				)}
@@ -81,8 +95,7 @@ export function CommentModerationSection({
 								type="button"
 								className="text-primary hover:underline font-medium text-sm whitespace-nowrap truncate max-w-37.5 inline-block"
 								title={comment.taskTitle}
-								// This would route to /projects/[projectId]?task=[taskId] later on
-								onClick={() => alert(`Navigating to task: ${comment.taskId}`)}
+								onClick={() => openTask(comment.taskId)}
 							>
 								{comment.taskTitle}
 							</button>
@@ -97,9 +110,8 @@ export function CommentModerationSection({
 								type="button"
 								variant="outline"
 								size="sm"
-								onClick={() =>
-									resolveFlaggedComment(projectId, comment.commentId, "accept")
-								}
+								disabled={busyId === comment.commentId}
+								onClick={() => resolve(comment.commentId, "dismiss")}
 								className="border-outline-variant text-secondary hover:text-on-surface"
 								title="Dismiss Flag"
 							>
@@ -109,9 +121,8 @@ export function CommentModerationSection({
 								type="button"
 								variant="destructive"
 								size="sm"
-								onClick={() =>
-									resolveFlaggedComment(projectId, comment.commentId, "reject")
-								}
+								disabled={busyId === comment.commentId}
+								onClick={() => resolve(comment.commentId, "delete")}
 								className="bg-error text-error-foreground hover:bg-error/90"
 								title="Delete Comment"
 							>

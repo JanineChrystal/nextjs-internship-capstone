@@ -1,6 +1,6 @@
 {
-	"id": "b04a7850-cb5f-4046-97be-b05be9c3d541",
-	"prevId": "49e6a7a1-8393-4f39-8bee-7326f25a18a8",
+	"id": "77bc17ac-570e-47c2-8b9d-2caa31462a08",
+	"prevId": "989c91dd-2391-4b4d-ba0e-7df05f5dc628",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -569,6 +569,13 @@
 					"primaryKey": false,
 					"notNull": false
 				},
+				"pendingProfanityCheck": {
+					"name": "pendingProfanityCheck",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
 				"moderatedById": {
 					"name": "moderatedById",
 					"type": "uuid",
@@ -682,6 +689,12 @@
 				},
 				"respondedAt": {
 					"name": "respondedAt",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"notifiedAt": {
+					"name": "notifiedAt",
 					"type": "timestamp",
 					"primaryKey": false,
 					"notNull": false

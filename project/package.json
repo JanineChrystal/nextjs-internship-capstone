@@ -27,7 +27,8 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"db:seed": "tsx --env-file=.env.local lib/db/seed.ts",
-		"check:notifiers": "tsx --env-file=.env.local scripts/check-notifiers.ts"
+		"check:notifiers": "tsx --env-file=.env.local scripts/check-notifiers.ts",
+		"check:profanity": "tsx --env-file=.env.local scripts/check-profanity.ts"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.7.0",
@@ -39,6 +40,7 @@
 		"@neondatabase/serverless": "^1.1.0",
 		"@upstash/ratelimit": "^2.0.8",
 		"@upstash/redis": "^1.38.0",
+		"bad-words": "^4.1.5",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"date-fns": "^4.1.0",

@@ -1,0 +1,1 @@
+ALTER TABLE "Comments" ADD COLUMN "pendingProfanityCheck" boolean DEFAULT false NOT NULL;

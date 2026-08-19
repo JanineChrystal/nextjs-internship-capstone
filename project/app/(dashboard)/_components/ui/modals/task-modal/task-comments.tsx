@@ -1,8 +1,13 @@
 "use client";
 
 import { Send, Trash2, X } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/buttons/button";
+import { MentionText } from "@/components/ui/mention-text";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
+import { toMentionHandle } from "@/lib/utils/mentions";
+import { useMentionAutocomplete } from "../../../../projects/_hooks/use-mention-autocomplete";
 import { useTaskComments } from "../../../../projects/_hooks/use-task-comments";
 import { MemberAvatarChip } from "../../avatars/member-avatar-chip";
 
@@ -16,11 +21,13 @@ function CommentRow({
 	isReply,
 	onReply,
 	onDelete,
+	mentionMembers,
 }: {
 	comment: CommentOutputDTO;
 	isReply: boolean;
 	onReply: (comment: CommentOutputDTO) => void;
 	onDelete: (id: string) => void;
+	mentionMembers: Map<string, { userId: string; label: string }>;
 }) {
 	return (
 		<div className="flex gap-3 group">
@@ -42,8 +49,8 @@ function CommentRow({
 						// overflow-wrap:anywhere (rather than break-word) so a single
 						// very long unbroken string also shrinks this flex item's
 						// min-content width instead of widening the whole panel.
-						<p className="text-sm text-on-surface whitespace-pre-wrap wrap-anywhere">
-							{comment.body}
+						<p className="text-sm text-on-surface wrap-anywhere">
+							<MentionText body={comment.body} members={mentionMembers} />
 						</p>
 					)}
 				</div>
@@ -90,6 +97,25 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 		cancelReply,
 	} = useTaskComments(taskId, isOpen);
 
+	const params = useParams();
+	const projectId = params?.id as string | undefined;
+
+	const mentions = useMentionAutocomplete(projectId, newComment, setNewComment);
+
+	// handle -> member, for turning "@janine" back into a display name. Built
+	// from the same member list the suggestions come from, so what is rendered
+	// and what is offered can never disagree.
+	const mentionMembers = useMemo(
+		() =>
+			new Map(
+				mentions.allMembers.map((member) => [
+					toMentionHandle(member.email),
+					{ userId: member.userId, label: member.name },
+				]),
+			),
+		[mentions.allMembers],
+	);
+
 	const rootComments = comments.filter((c) => !c.parentId);
 	const repliesByParent = new Map<string, CommentOutputDTO[]>();
 	for (const c of comments) {
@@ -133,6 +159,7 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 								isReply={false}
 								onReply={handleReply}
 								onDelete={handleDeleteComment}
+								mentionMembers={mentionMembers}
 							/>
 							{replies.length > 0 && (
 								<div className="relative ml-4.5 pl-8 mt-3 space-y-3 border-l border-outline-variant">
@@ -144,6 +171,7 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 												isReply
 												onReply={handleReply}
 												onDelete={handleDeleteComment}
+												mentionMembers={mentionMembers}
 											/>
 										</div>
 									))}
@@ -171,15 +199,58 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 					</div>
 				)}
 				<div className="relative border border-outline-variant rounded-lg overflow-hidden bg-surface focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+					{/* The suggestion list sits ABOVE the box: the composer is at the
+					    bottom of a scrolling panel, so a dropdown below it would open
+					    off-screen. */}
+					{mentions.isOpen && (
+						<ul className="absolute bottom-full left-0 z-20 mb-1 w-full overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest shadow-lg">
+							{mentions.suggestions.map((member, index) => (
+								<li key={member.userId}>
+									<button
+										type="button"
+										onMouseMove={() => mentions.setActiveIndex(index)}
+										onClick={() => mentions.select(member)}
+										className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
+											index === mentions.activeIndex
+												? "bg-primary/10"
+												: "hover:bg-surface-container"
+										}`}
+									>
+										<MemberAvatarChip
+											name={member.name}
+											avatarUrl={member.avatarUrl}
+											size="sm"
+										/>
+										<span className="min-w-0 flex-1 truncate text-on-surface">
+											{member.name}
+										</span>
+										<span className="shrink-0 text-xs text-secondary">
+											@{member.email.split("@")[0]}
+										</span>
+									</button>
+								</li>
+							))}
+						</ul>
+					)}
 					<textarea
+						ref={mentions.inputRef}
 						placeholder={
 							replyingTo
 								? `Reply to ${replyingTo.authorName}...`
-								: "Write a comment..."
+								: "Write a comment... use @ to mention someone"
 						}
 						value={newComment}
-						onChange={(e) => setNewComment(e.target.value)}
+						onChange={(e) => {
+							setNewComment(e.target.value);
+							mentions.syncCaret(e.currentTarget);
+						}}
+						onClick={(e) => mentions.syncCaret(e.currentTarget)}
+						onKeyUp={(e) => mentions.syncCaret(e.currentTarget)}
 						onKeyDown={(e) => {
+							// The suggestion list gets first refusal on the keys it
+							// uses, so Enter accepts a mention instead of posting a
+							// half-typed comment.
+							if (mentions.handleKeyDown(e)) return;
 							if (e.key === "Enter" && !e.shiftKey) {
 								e.preventDefault();
 								handleSubmitComment();
