@@ -1,4 +1,5 @@
 import "server-only";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { contactMessages } from "@/lib/db/schema";
 import {
@@ -28,5 +29,31 @@ export async function createContactMessageDAL(
 		return toContactMessageDTO(row);
 	} catch (error) {
 		throw new Error("Failed to save contact message", { cause: error });
+	}
+}
+
+/**
+ * Records that the alert for a message reached somebody.
+ *
+ * Separate from the insert, and run afterwards, because the two answer different
+ * questions and fail independently: the insert is whether we still have the
+ * message, this is whether anyone was told about it. Writing one timestamp at
+ * insert time and hoping would mean a row that claims it was announced during an
+ * outage in which nothing was.
+ *
+ * A failure here is swallowed by the caller for the same reason the delivery
+ * itself is - the message is safe either way, and nothing the sender sees
+ * depends on it.
+ */
+export async function markContactMessageNotifiedDAL(id: string): Promise<void> {
+	try {
+		await db
+			.update(contactMessages)
+			.set({ notifiedAt: new Date(), updatedAt: new Date() })
+			.where(eq(contactMessages.id, id));
+	} catch (error) {
+		throw new Error("Failed to mark contact message as notified", {
+			cause: error,
+		});
 	}
 }

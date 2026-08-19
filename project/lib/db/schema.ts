@@ -800,6 +800,10 @@ export const contactMessages = pgTable(
 		topic: contactTopicEnum("topic").notNull(),
 		message: text("message").notNull(),
 		respondedAt: timestamp("respondedAt"),
+		// When the alert actually reached a person, on any channel. Null means it
+		// never did - the row is still safe, but nobody was told about it, which is
+		// exactly the case worth being able to query for after an outage.
+		notifiedAt: timestamp("notifiedAt"),
 		createdAt: timestamp("createdAt").defaultNow().notNull(),
 		updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 		deletedAt: timestamp("deletedAt"),
