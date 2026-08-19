@@ -107,6 +107,8 @@ export function QuickActionsPanel({
 					title={pickerCopy.title}
 					description={pickerCopy.description}
 					confirmLabel={pickerCopy.confirmLabel}
+					requiredPermission={pickerCopy.requiredPermission}
+					deniedHint={pickerCopy.deniedHint}
 					isBusy={isPreparing}
 				/>
 			)}

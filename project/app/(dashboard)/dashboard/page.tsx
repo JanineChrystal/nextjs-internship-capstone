@@ -3,6 +3,7 @@ import { ChartCard, TrendAreaChart } from "@/components/charts";
 import { TREND_WINDOW_DAYS } from "@/lib/constants/analytics";
 import { getDashboardOverviewDAL } from "@/lib/dal/analytics";
 import { requireUser } from "@/lib/dal/auth";
+import { getEffectiveProjectRolesDAL } from "@/lib/dal/permissions";
 import { getAllUserProjectsDAL } from "@/lib/dal/projects";
 import type { ProjectPickerOption } from "@/lib/types/dashboard";
 import { StatCard } from "../_components/ui/cards/stat-card";
@@ -30,19 +31,37 @@ export default async function DashboardPage() {
 	// Both reads are independent, so they run together rather than one after the
 	// other. The project list feeds the two Quick Actions that have to ask which
 	// project they apply to.
-	const [overview, projects] = await Promise.all([
+	const [overview, projects, roles] = await Promise.all([
 		getDashboardOverviewDAL(),
 		getAllUserProjectsDAL(),
+		getEffectiveProjectRolesDAL(),
 	]);
 
 	// Narrowed to what the picker renders. Sending the full rows would ship every
 	// project's description, dates and counts to draw a list of names.
-	const pickerProjects: ProjectPickerOption[] = projects.map((project) => ({
-		id: project.id,
-		name: project.name,
-		category: project.category,
-		isOwned: project.ownerId === user.id,
-	}));
+	//
+	// The role is resolved in one batched read rather than per project, and is
+	// what lets the picker grey out a project the action would be refused on. The
+	// server still re-checks when the action runs - this only moves the answer
+	// forward so nobody fills in a form to be told no afterwards.
+	const pickerProjects: ProjectPickerOption[] = projects.flatMap((project) => {
+		const roleAccess = roles.get(project.id);
+		// A project with no resolved role should not be reachable here at all,
+		// since both reads use the same three access routes. Dropping it rather
+		// than defaulting to a role keeps a future divergence from silently
+		// granting something.
+		if (!roleAccess) return [];
+
+		return [
+			{
+				id: project.id,
+				name: project.name,
+				category: project.category,
+				isOwned: project.ownerId === user.id,
+				roleAccess,
+			},
+		];
+	});
 
 	const trend = overview.completionTrend.map((day) => ({
 		label: day.label,

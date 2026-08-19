@@ -1,12 +1,14 @@
 "use client";
 
-import { FolderOpen, Search } from "lucide-react";
+import { FolderOpen, Lock, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { BaseModal } from "@/components/modals/base-modal";
 import { Button } from "@/components/ui/buttons/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { hasPermission } from "@/lib/config/permissions";
 import type { ProjectPickerOption } from "@/lib/types/dashboard";
+import type { Permission } from "@/lib/types/member";
 import { cn } from "@/lib/utils";
 
 interface ProjectPickerModalProps {
@@ -17,6 +19,10 @@ interface ProjectPickerModalProps {
 	title: string;
 	description: string;
 	confirmLabel: string;
+	/** Projects where the viewer lacks this are listed but not selectable. */
+	requiredPermission: Permission;
+	/** Shown on a disabled row, saying why it cannot be used. */
+	deniedHint: string;
 	isBusy?: boolean;
 }
 
@@ -28,19 +34,22 @@ interface ProjectPickerModalProps {
  * no project, so both have to ask first. Writing it once means the two cannot
  * end up asking the same question in two different shapes.
  *
- * ## Why it does not filter by permission
+ * ## Disabled rather than hidden, and never instead of the server check
  *
- * Every project the viewer can reach is listed, including ones where they may
- * not be allowed to complete the action - a member can open this from "Add a
- * member" and pick a project they cannot invite to. The invite is then refused
- * by the server with a message that says so.
+ * A project the viewer cannot perform this action on is shown, greyed, with the
+ * reason beside it. Two deliberate choices there:
  *
- * Hiding those projects would mean sending each one's effective role to the
- * browser just to grey out a row, and the refusal has to exist regardless: the
- * server cannot trust a filtered list it did not produce. Showing everything and
- * letting the real check speak is the same zero-trust rule the rest of the app
- * follows, and it explains itself rather than silently omitting a project the
- * user knows they have.
+ * **Disabled, not hidden.** Someone who knows they are on a project and cannot
+ * find it in this list has no way to tell whether it is missing because of their
+ * access or because something is broken. A greyed row with "Only the owner or a
+ * co-owner can invite" answers that on the spot.
+ *
+ * **This is not the security boundary.** The server re-checks the same
+ * permission when the action runs, and has to: this list is assembled in the
+ * browser and nothing stops a caller invoking the action directly. Greying rows
+ * out is purely so a refusal never arrives after someone has filled in a form.
+ * The two read the same `Permission` value, so they cannot drift into disagreeing
+ * about which projects are usable.
  */
 export function ProjectPickerModal({
 	isOpen,
@@ -50,6 +59,8 @@ export function ProjectPickerModal({
 	title,
 	description,
 	confirmLabel,
+	requiredPermission,
+	deniedHint,
 	isBusy = false,
 }: ProjectPickerModalProps) {
 	const [query, setQuery] = useState("");
@@ -58,13 +69,24 @@ export function ProjectPickerModal({
 	// A search box only earns its place once the list is long enough to scan.
 	const showSearch = projects.length > 6;
 
+	const options = useMemo(
+		() =>
+			projects.map((project) => ({
+				...project,
+				isAllowed: hasPermission(project.roleAccess, requiredPermission),
+			})),
+		[projects, requiredPermission],
+	);
+
 	const visible = useMemo(() => {
 		const trimmed = query.trim().toLowerCase();
-		if (!trimmed) return projects;
-		return projects.filter((project) =>
+		if (!trimmed) return options;
+		return options.filter((project) =>
 			project.name.toLowerCase().includes(trimmed),
 		);
-	}, [projects, query]);
+	}, [options, query]);
+
+	const allowedCount = options.filter((project) => project.isAllowed).length;
 
 	const handleClose = () => {
 		setQuery("");
@@ -111,6 +133,15 @@ export function ProjectPickerModal({
 						title="No projects yet"
 						description="Create a project first, then you can add tasks and members to it."
 					/>
+				) : allowedCount === 0 ? (
+					/* Every project is listed but none can be used. Saying so once at
+					   the top is clearer than leaving someone to work it out from a
+					   list where every row happens to be greyed. */
+					<EmptyState
+						icon={Lock}
+						title="No project you can do this on"
+						description={`You have access to ${projects.length} ${projects.length === 1 ? "project" : "projects"}, but not at a level that allows this.`}
+					/>
 				) : visible.length === 0 ? (
 					<EmptyState
 						icon={Search}
@@ -118,9 +149,6 @@ export function ProjectPickerModal({
 						description={`Nothing matches "${query.trim()}".`}
 					/>
 				) : (
-					/* A radiogroup rather than a list of buttons: picking a project is
-					   choosing one of several, and arrow-key navigation between options
-					   comes free from the role. */
 					<ul
 						className="flex max-h-72 flex-col gap-1 overflow-y-auto"
 						aria-label="Projects"
@@ -131,41 +159,58 @@ export function ProjectPickerModal({
 								<li key={project.id}>
 									<button
 										type="button"
+										disabled={!project.isAllowed}
 										aria-pressed={isSelected}
+										// The reason travels with the control rather than
+										// only being printed beside it, so it is announced
+										// when the row is reached rather than needing to be
+										// found separately.
+										aria-description={
+											project.isAllowed ? undefined : deniedHint
+										}
 										onClick={() => setSelectedId(project.id)}
 										onDoubleClick={() => {
+											if (!project.isAllowed) return;
 											setSelectedId(project.id);
 											onSelect(project.id);
 										}}
 										className={cn(
 											"flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors",
-											isSelected
-												? "border-primary bg-primary/5"
-												: "border-border bg-surface-container-low hover:bg-surface-container",
+											!project.isAllowed &&
+												"cursor-not-allowed border-border bg-surface-container-low/50 opacity-60",
+											project.isAllowed &&
+												(isSelected
+													? "border-primary bg-primary/5"
+													: "border-border bg-surface-container-low hover:bg-surface-container"),
 										)}
 									>
-										<FolderOpen
-											className={cn(
-												"h-4 w-4 shrink-0",
-												isSelected ? "text-primary" : "text-secondary",
-											)}
-											aria-hidden="true"
-										/>
+										{project.isAllowed ? (
+											<FolderOpen
+												className={cn(
+													"h-4 w-4 shrink-0",
+													isSelected ? "text-primary" : "text-secondary",
+												)}
+												aria-hidden="true"
+											/>
+										) : (
+											<Lock
+												className="h-4 w-4 shrink-0 text-secondary"
+												aria-hidden="true"
+											/>
+										)}
+
 										<span className="flex min-w-0 flex-1 flex-col">
 											<span className="truncate text-sm font-medium text-on-surface">
 												{project.name}
 											</span>
-											{project.category && (
-												<span className="truncate text-xs text-secondary">
-													{project.category}
-												</span>
-											)}
-										</span>
-										{project.isOwned && (
-											<span className="shrink-0 rounded-full bg-surface-container-high px-2 py-0.5 text-xs text-secondary">
-												Owner
+											<span className="truncate text-xs text-secondary">
+												{project.isAllowed ? project.category : deniedHint}
 											</span>
-										)}
+										</span>
+
+										<span className="shrink-0 rounded-full bg-surface-container-high px-2 py-0.5 text-xs capitalize text-secondary">
+											{project.roleAccess}
+										</span>
 									</button>
 								</li>
 							);

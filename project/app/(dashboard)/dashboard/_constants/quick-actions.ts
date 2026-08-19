@@ -1,5 +1,5 @@
 import { FolderPlus, ListPlus, UserPlus, Users } from "lucide-react";
-import type { QuickAction } from "@/lib/types/dashboard";
+import type { ProjectPickerCopy, QuickAction } from "@/lib/types/dashboard";
 
 /**
  * The dashboard's four shortcuts.
@@ -58,18 +58,24 @@ export const QUICK_ACTIONS: QuickAction[] = [
  */
 export const PROJECT_PICKER_COPY: Record<
 	"create-task" | "add-project-member",
-	{ title: string; description: string; confirmLabel: string }
+	ProjectPickerCopy
 > = {
 	"create-task": {
 		title: "Which project is this task for?",
 		description:
 			"Pick a project and the task editor will open for it. You can change the column and dates there.",
 		confirmLabel: "Continue",
+		// Guests may view and comment but not create, so their projects are
+		// listed and disabled rather than silently missing.
+		requiredPermission: "create_task",
+		deniedHint: "You can only view this project",
 	},
 	"add-project-member": {
 		title: "Which project are you adding someone to?",
 		description:
-			"Pick a project and the invite form will open for it. You need to be its owner or a co-owner to send invites.",
+			"Pick a project and the invite form will open for it. Projects you cannot invite to are shown but greyed out.",
 		confirmLabel: "Continue",
+		requiredPermission: "manage_members",
+		deniedHint: "Only the owner or a co-owner can invite",
 	},
 };
