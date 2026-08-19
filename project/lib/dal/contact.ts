@@ -7,6 +7,7 @@ import {
 	toContactMessageDTO,
 } from "@/lib/dtos/contact-dto";
 import type { NewDbContactMessage } from "@/lib/types/contact";
+import { encrypt, deterministicEncrypt } from "@/lib/utils/encryption";
 
 /**
  * The one DAL function in this codebase that does not call getCurrentUser().
@@ -25,7 +26,14 @@ export async function createContactMessageDAL(
 	data: NewDbContactMessage,
 ): Promise<ContactMessageDTO> {
 	try {
-		const [row] = await db.insert(contactMessages).values(data).returning();
+		const encryptedData = {
+			...data,
+			name: encrypt(data.name) || data.name,
+			email: deterministicEncrypt(data.email) || data.email,
+			organization: data.organization ? encrypt(data.organization) || data.organization : data.organization,
+			message: encrypt(data.message) || data.message,
+		};
+		const [row] = await db.insert(contactMessages).values(encryptedData).returning();
 		return toContactMessageDTO(row);
 	} catch (error) {
 		throw new Error("Failed to save contact message", { cause: error });

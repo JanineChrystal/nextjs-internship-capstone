@@ -21,3 +21,11 @@ export const actionRateLimiter = new Ratelimit({
 	analytics: true,
 	prefix: "@upstash/ratelimit",
 });
+
+// 3. Create the global sliding window rate limiter (100 requests per 10 seconds)
+export const globalRateLimiter = new Ratelimit({
+	redis: redis,
+	limiter: Ratelimit.slidingWindow(100, "10 s"),
+	analytics: true,
+	prefix: "@upstash/ratelimit/global",
+});

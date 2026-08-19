@@ -13,6 +13,7 @@ import {
 	type PendingInviteOutputDTO,
 	toPendingInviteDTO,
 } from "@/lib/dtos/pending-invite-dto";
+import { deterministicEncrypt } from "@/lib/utils/encryption";
 
 export function normalizeInviteEmail(email: string): string {
 	return email.trim().toLowerCase();
@@ -33,7 +34,7 @@ export async function createPendingInviteInDB(params: {
 	position?: string;
 	accessLevel?: "co-owner" | "member" | "guest";
 }): Promise<void> {
-	const email = normalizeInviteEmail(params.email);
+	const email = deterministicEncrypt(normalizeInviteEmail(params.email)) || normalizeInviteEmail(params.email);
 
 	// Matches the partial unique indexes exactly: only an outstanding invite is
 	// updated in place. A claimed one is history, so re-inviting the same address
@@ -180,7 +181,7 @@ export async function claimPendingInvitesForUserDAL(
 	email: string,
 	userId: string,
 ): Promise<{ claimedCount: number }> {
-	const normalized = normalizeInviteEmail(email);
+	const normalized = deterministicEncrypt(normalizeInviteEmail(email)) || normalizeInviteEmail(email);
 
 	const invites = await db
 		.select()

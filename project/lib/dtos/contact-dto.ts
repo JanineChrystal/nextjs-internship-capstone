@@ -1,4 +1,5 @@
 import type { DbContactMessage } from "@/lib/types/contact";
+import { decrypt, deterministicDecrypt } from "@/lib/utils/encryption";
 
 /**
  * A contact message as anything outside the DAL is allowed to see it.
@@ -22,11 +23,11 @@ export interface ContactMessageDTO {
 export function toContactMessageDTO(row: DbContactMessage): ContactMessageDTO {
 	return {
 		id: row.id,
-		name: row.name,
-		email: row.email,
-		organization: row.organization,
+		name: decrypt(row.name) || row.name,
+		email: deterministicDecrypt(row.email) || row.email,
+		organization: row.organization ? decrypt(row.organization) || row.organization : row.organization,
 		topic: row.topic,
-		message: row.message,
+		message: decrypt(row.message) || row.message,
 		createdAt: row.createdAt,
 	};
 }

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { comments, tasks, users } from "@/lib/db/schema";
 import { type CommentOutputDTO, toCommentDTO } from "@/lib/dtos/comment-dto";
 import type { CommentsPageResult } from "@/lib/types/comment";
+import { encrypt } from "@/lib/utils/encryption";
 
 // Paginates by top-level (root) comment thread, always including every reply
 // to whatever root comments are on the page - keeps replies from ever being
@@ -107,7 +108,7 @@ export async function createCommentInDB(
 
 		const [comment] = await db
 			.insert(comments)
-			.values({ taskId, authorId, body, parentId })
+			.values({ taskId, authorId, body: encrypt(body) || body, parentId })
 			.returning();
 
 		return toCommentDTO(comment, author);
@@ -127,7 +128,7 @@ export async function updateCommentInDB(
 	try {
 		const result = await db
 			.update(comments)
-			.set({ body, updatedAt: new Date() })
+			.set({ body: encrypt(body) || body, updatedAt: new Date() })
 			.where(
 				and(
 					eq(comments.id, commentId),

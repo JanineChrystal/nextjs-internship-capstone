@@ -6,6 +6,7 @@ import type {
 	GridTask,
 } from "@/lib/types/task";
 import { deriveTaskStatus, isTaskOverdue } from "@/lib/utils/task-status";
+import { decrypt } from "@/lib/utils/encryption";
 
 export interface TaskOutputDTO {
 	id: string;
@@ -47,7 +48,7 @@ export function toTaskDTO(task: DbTask): TaskOutputDTO {
 		priority: task.priority,
 		startDate: task.startDate,
 		dueDate: task.dueDate,
-		notes: sanitizeText(task.notes),
+		notes: sanitizeText(decrypt(task.notes) || task.notes),
 		createdAt: task.createdAt,
 		updatedAt: task.updatedAt,
 	};

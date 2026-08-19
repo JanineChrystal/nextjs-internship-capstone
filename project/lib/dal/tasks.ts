@@ -12,6 +12,7 @@ import {
 } from "@/lib/dtos/task-dto";
 import type { DbTask, NewDbTask } from "@/lib/types/task";
 import { describeTaskChanges } from "@/lib/utils/activity";
+import { encrypt } from "@/lib/utils/encryption";
 
 export async function createTaskInDB(data: NewDbTask): Promise<TaskOutputDTO> {
 	const user = await getCurrentUser();
@@ -47,7 +48,11 @@ export async function createTaskInDB(data: NewDbTask): Promise<TaskOutputDTO> {
 
 		const result = await db
 			.insert(tasks)
-			.values({ ...data, position: maxPosition + 1 })
+			.values({ 
+				...data, 
+				notes: data.notes ? encrypt(data.notes) || data.notes : data.notes,
+				position: maxPosition + 1 
+			})
 			.returning();
 
 		return toTaskDTO(result[0]);
@@ -208,9 +213,15 @@ export async function updateTaskInDB(
 
 		if (!before) throw new Error("Task not found");
 
+		const updateData = {
+			...data,
+			...(data.notes !== undefined && { notes: data.notes ? encrypt(data.notes) || data.notes : data.notes }),
+			updatedAt: new Date(),
+		};
+
 		const result = await db
 			.update(tasks)
-			.set({ ...data, updatedAt: new Date() })
+			.set(updateData)
 			.where(
 				and(
 					eq(tasks.id, taskId),

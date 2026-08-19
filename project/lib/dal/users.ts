@@ -5,6 +5,7 @@ import { normalizeInviteEmail } from "@/lib/dal/pending-invites";
 import { db } from "@/lib/db";
 import { users, workspaceMembers, workspaces } from "@/lib/db/schema";
 import { toUserDTO, type UserOutputDTO } from "@/lib/dtos/user-dto";
+import { encrypt, deterministicEncrypt } from "@/lib/utils/encryption";
 import type { DbUser, NewDbUser, SessionUser } from "@/lib/types/user";
 
 export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
@@ -16,10 +17,11 @@ export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
 			// and signing up again with the same address issues a NEW clerkId while
 			// the old row still holds that email, so a clerkId-only upsert throws a
 			// unique violation and the person can never get back in.
+			const encryptedEmail = deterministicEncrypt(data.email) || data.email;
 			const [existingByEmail] = await tx
 				.select()
 				.from(users)
-				.where(eq(users.email, data.email));
+				.where(eq(users.email, encryptedEmail));
 
 			let user: DbUser;
 
@@ -31,8 +33,8 @@ export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
 					.update(users)
 					.set({
 						clerkId: data.clerkId,
-						firstName: data.firstName,
-						lastName: data.lastName,
+						firstName: encrypt(data.firstName) || data.firstName,
+						lastName: encrypt(data.lastName) || data.lastName,
 						imageUrl: data.imageUrl,
 						// Clears a soft delete, so a user.deleted webhook followed by a
 						// fresh signup restores the account instead of leaving it hidden.
@@ -46,13 +48,18 @@ export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
 			} else {
 				const result = await tx
 					.insert(users)
-					.values(data)
+					.values({
+						...data,
+						email: encryptedEmail,
+						firstName: encrypt(data.firstName) || data.firstName,
+						lastName: encrypt(data.lastName) || data.lastName,
+					})
 					.onConflictDoUpdate({
 						target: users.clerkId,
 						set: {
-							email: data.email,
-							firstName: data.firstName,
-							lastName: data.lastName,
+							email: encryptedEmail,
+							firstName: encrypt(data.firstName) || data.firstName,
+							lastName: encrypt(data.lastName) || data.lastName,
 							imageUrl: data.imageUrl,
 							deletedAt: null,
 							updatedAt: new Date(),
@@ -146,7 +153,7 @@ export async function findUserIdByEmailDAL(
 		.from(users)
 		.where(
 			and(
-				eq(users.email, normalizeInviteEmail(email)),
+				eq(users.email, deterministicEncrypt(normalizeInviteEmail(email)) || email),
 				isNull(users.deletedAt),
 			),
 		);
