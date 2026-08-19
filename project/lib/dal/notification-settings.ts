@@ -32,13 +32,26 @@ export async function getNotificationSettingsDAL(): Promise<NotificationSettings
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
+	return getUserNotificationSettingsForWorkerDAL(user.id);
+}
+
+/**
+ * Reads a specific user's preferences, falling back to the defaults when no row exists.
+ *
+ * This function bypasses session-based access control and is meant ONLY for internal
+ * system processes (like the email notification worker) that need to know another
+ * user's preferences to decide whether to send them an email.
+ */
+export async function getUserNotificationSettingsForWorkerDAL(
+	userId: string,
+): Promise<NotificationSettingsDTO> {
 	try {
 		const [row] = await db
 			.select()
 			.from(notificationSettings)
 			.where(
 				and(
-					eq(notificationSettings.userId, user.id),
+					eq(notificationSettings.userId, userId),
 					isNull(notificationSettings.deletedAt),
 				),
 			);

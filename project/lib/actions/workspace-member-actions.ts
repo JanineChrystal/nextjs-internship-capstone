@@ -1,11 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { sendNotification } from "@/lib/email/send-notification";
+import { ProjectInviteEmail } from "@/app/(dashboard)/notifications/_components/email/project-invite-email";
 import {
 	PENDING_INVITE_MESSAGE,
 	WORKSPACE_MEMBER_USER_FACING_ERRORS,
 } from "@/lib/constants/action-errors";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
+import { resolveActiveWorkspaceDAL } from "@/lib/dal/workspaces";
 import {
 	getWorkspaceDirectoryDAL,
 	inviteToWorkspaceInDB,
@@ -60,6 +64,36 @@ export async function inviteToWorkspaceAction(
 		const result = await inviteToWorkspaceInDB(email, workspaceId);
 
 		revalidatePath("/team");
+
+		if (result.outcome === "pending" || result.outcome === "invited") {
+			after(async () => {
+				try {
+					const activeWorkspace = await resolveActiveWorkspaceDAL(workspaceId);
+					const invitedBy = user.firstName
+						? `${user.firstName} ${user.lastName || ""}`.trim()
+						: user.email;
+					const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/sign-up`;
+
+					await sendNotification({
+						userId:
+							result.outcome === "invited" && result.member
+								? result.member.id
+								: "pending-user",
+						to: email,
+						subject: `You've been invited to ${activeWorkspace.name}`,
+						type: "emailWorkspaceInvites",
+						template: ProjectInviteEmail({
+							invitedBy,
+							projectName: "the directory",
+							workspaceName: activeWorkspace.name,
+							inviteUrl,
+						}),
+					});
+				} catch (error) {
+					console.error("Failed to send workspace invite email:", error);
+				}
+			});
+		}
 
 		if (result.outcome === "pending") {
 			return { success: true, notice: PENDING_INVITE_MESSAGE };
