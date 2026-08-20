@@ -20,8 +20,15 @@ export function CommentModerationSection({
 	projectId,
 }: CommentModerationSectionProps) {
 	const openTask = useTaskStore((state) => state.openTaskModal);
-	const { comments, isLoading, busyId, resolve, retryPending, isRetrying } =
-		useCommentModeration(projectId);
+	const {
+		comments,
+		isLoading,
+		busyId,
+		resolve,
+		retryPending,
+		isRetrying,
+		pendingCount,
+	} = useCommentModeration(projectId);
 
 	return (
 		<section className="bg-surface rounded-xl border border-outline-variant p-6 flex flex-col gap-6">
@@ -39,17 +46,27 @@ export function CommentModerationSection({
 				description={settingsSectionTexts.commentModeration.description}
 			/>
 
-			<div className="flex justify-end -mt-2">
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					onClick={() => retryPending()}
-					disabled={isRetrying}
-				>
-					{isRetrying ? "Retrying..." : "Retry Pending Checks"}
-				</Button>
-			</div>
+			{/* Absent entirely when nothing is pending, rather than present and
+			    disabled. This control exists to report a fault; on a healthy project
+			    a permanently greyed "No Pending Checks" is a broken-looking button
+			    advertising a problem that does not exist. */}
+			{pendingCount > 0 && (
+				<div className="flex items-center justify-end gap-3 -mt-2">
+					<p className="text-xs text-secondary">
+						{pendingCount} comment{pendingCount === 1 ? "" : "s"} could not be
+						checked and {pendingCount === 1 ? "is" : "are"} awaiting a retry.
+					</p>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => retryPending()}
+						disabled={isRetrying}
+					>
+						{isRetrying ? "Retrying..." : `Retry Now (${pendingCount})`}
+					</Button>
+				</div>
+			)}
 
 			<GridTable
 				data={comments}

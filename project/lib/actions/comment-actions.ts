@@ -124,9 +124,20 @@ export async function createCommentAction(
 			await applyModerationVerdictDAL(comment.id, true, verdict.reason);
 		}
 
-		// A detector that could not answer leaves the comment provisionally
-		// unjudged rather than provisionally innocent - the retry picks it up.
-		if (verdict.failedDetectors && verdict.failedDetectors.length > 0) {
+		// Only an UNFLAGGED comment is worth rechecking. A failed detector on a
+		// comment that is already flagged could at most widen the reason from
+		// "English profanity" to "English and Filipino profanity" - it cannot
+		// change the outcome, and the comment is already sitting in the queue.
+		//
+		// Marking those pending as well produced a genuinely confusing screen:
+		// the same two comments appeared in the flagged table AND under "could
+		// not be checked", which reads as a contradiction. Pending now means what
+		// it says - nobody reached a verdict on this one.
+		if (
+			!verdict.isFlagged &&
+			verdict.failedDetectors &&
+			verdict.failedDetectors.length > 0
+		) {
 			await markCommentForProfanityRetryDAL(comment.id);
 		}
 

@@ -60,3 +60,23 @@ export const FLAG_REASONS = {
 
 /** How much of the comment the moderation table previews. */
 export const FLAGGED_SNIPPET_LENGTH = 160;
+
+/**
+ * How many pending comments one press of "Retry Pending Checks" re-examines.
+ *
+ * Derived from the rate limit rather than chosen by feel. The API allows 30
+ * requests per minute per IP, every check costs two of them (/check plus
+ * /variants/lookup), and every user of this deployment shares one IP:
+ *
+ *     30 requests/min / 2 per check  =  15 checks/min for the whole app
+ *
+ * Ten leaves ten requests of headroom for people actually posting comments
+ * while a retry runs. Without a cap the loop kept going until it hit 429s,
+ * which fail open and leave those comments still pending - so the next press
+ * hit the same wall at the same place and the queue could never drain.
+ *
+ * The batch also bounds how long the request takes. Ten checks running together
+ * finish in about the time of the slowest one, rather than the sum of all of
+ * them, which is what used to run past the function's budget.
+ */
+export const PROFANITY_RETRY_BATCH_SIZE = 10;

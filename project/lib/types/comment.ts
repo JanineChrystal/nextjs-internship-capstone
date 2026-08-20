@@ -37,3 +37,31 @@ export interface CreateCommentResult {
 	/** The comment was saved AND flagged, so the author is told it is queued for review. */
 	underReview?: boolean;
 }
+
+/**
+ * A comment the retry still has to reach a verdict on.
+ *
+ * Carries the author and task, not just the text, because a verdict that lands
+ * after the fact cannot be delivered by the composer dialog - the author has
+ * long since closed the tab - so it has to be delivered by notification.
+ */
+export interface PendingProfanityComment {
+	id: string;
+	body: string;
+	authorId: string;
+	authorEmail: string;
+	taskId: string;
+	taskName: string;
+}
+
+/** What one press of "Retry Pending Checks" reports back. */
+export interface RetryProfanityResult {
+	success: boolean;
+	error?: string;
+	/** Comments this run reached a verdict on. */
+	processed?: number;
+	/** Still waiting afterwards, so the button can say whether to press again. */
+	remaining?: number;
+	/** Of the processed ones, how many turned out to be profane. */
+	flagged?: number;
+}
