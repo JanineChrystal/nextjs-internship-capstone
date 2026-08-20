@@ -1,4 +1,5 @@
 import type { DbActivityLog, DbNotification } from "@/lib/types/activity";
+import { decrypt } from "@/lib/utils/encryption";
 
 export interface ActivityLogDTO {
 	id: string;
@@ -22,7 +23,7 @@ export function toActivityLogDTO(log: DbActivityLog): ActivityLogDTO {
 		actorId: log.actorId,
 		targetUserId: log.targetUserId,
 		actionType: log.actionType,
-		details: log.details,
+		details: decrypt(log.details),
 		createdAt: log.createdAt,
 		updatedAt: log.updatedAt,
 	};

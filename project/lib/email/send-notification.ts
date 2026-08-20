@@ -1,8 +1,8 @@
 import "server-only";
 import { render } from "@react-email/render";
+import type { ReactElement } from "react";
 import { getUserNotificationSettingsForWorkerDAL } from "@/lib/dal/notification-settings";
 import type { NotificationSettingKey } from "@/lib/types/notification-settings";
-import type { ReactElement } from "react";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const NOTIFIER_TIMEOUT_MS = 10000;

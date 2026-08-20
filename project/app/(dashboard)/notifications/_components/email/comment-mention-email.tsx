@@ -1,9 +1,4 @@
-import {
-	Button,
-	Heading,
-	Section,
-	Text,
-} from "@react-email/components";
+import { Button, Heading, Section, Text } from "@react-email/components";
 import { EmailLayout } from "./layout";
 
 interface CommentMentionEmailProps {
@@ -26,9 +21,7 @@ export function CommentMentionEmail({
 			<Heading className="text-2xl font-bold text-slate-900 mx-0 my-7.5 p-0 text-center">
 				You were mentioned
 			</Heading>
-			<Text className="text-base leading-[24px] text-slate-700">
-				Hello,
-			</Text>
+			<Text className="text-base leading-[24px] text-slate-700">Hello,</Text>
 			<Text className="text-base leading-[24px] text-slate-700">
 				<strong>{mentionedBy}</strong> mentioned you in a comment on the task{" "}
 				<strong>{taskName}</strong>:

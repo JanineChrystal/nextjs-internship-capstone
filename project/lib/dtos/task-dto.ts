@@ -5,8 +5,8 @@ import type {
 	DbTask,
 	GridTask,
 } from "@/lib/types/task";
-import { deriveTaskStatus, isTaskOverdue } from "@/lib/utils/task-status";
 import { decrypt } from "@/lib/utils/encryption";
+import { deriveTaskStatus, isTaskOverdue } from "@/lib/utils/task-status";
 
 export interface TaskOutputDTO {
 	id: string;
@@ -48,7 +48,7 @@ export function toTaskDTO(task: DbTask): TaskOutputDTO {
 		priority: task.priority,
 		startDate: task.startDate,
 		dueDate: task.dueDate,
-		notes: sanitizeText(decrypt(task.notes) || task.notes),
+		notes: sanitizeText(task.notes),
 		createdAt: task.createdAt,
 		updatedAt: task.updatedAt,
 	};
@@ -116,7 +116,7 @@ export function toChecklistDTO(checklist: DbChecklist): ChecklistOutputDTO {
 	return {
 		id: checklist.id,
 		taskId: checklist.taskId,
-		title: checklist.title,
+		title: sanitizeText(decrypt(checklist.title) ?? checklist.title),
 		isCompleted: checklist.isCompleted,
 		createdAt: checklist.createdAt,
 		updatedAt: checklist.updatedAt,

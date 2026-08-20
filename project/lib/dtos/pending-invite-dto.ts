@@ -1,6 +1,5 @@
 import type { RoleAccess } from "@/lib/types/member";
 import type { DbPendingInvite } from "@/lib/types/pending-invite";
-import { deterministicDecrypt } from "@/lib/utils/encryption";
 
 export interface PendingInviteOutputDTO {
 	id: string;
@@ -25,7 +24,7 @@ export function toPendingInviteDTO(
 ): PendingInviteOutputDTO {
 	return {
 		id: invite.id,
-		email: deterministicDecrypt(invite.email) || sanitize(invite.email),
+		email: sanitize(invite.email),
 		position: sanitize(invite.position),
 		accessLevel: invite.accessLevel as RoleAccess,
 		projectId: invite.projectId,

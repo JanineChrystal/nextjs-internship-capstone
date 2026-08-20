@@ -23,6 +23,7 @@ import type {
 	NewDbNotification,
 	NotificationsPageResult,
 } from "@/lib/types/activity";
+import { decrypt } from "@/lib/utils/encryption";
 
 export async function createActivityLogDAL(
 	data: NewDbActivityLog,
@@ -146,7 +147,7 @@ function toActivityFeedItem(row: ActivityFeedRow): ActivityFeedItemDTO {
 		actorName: toMemberName(row),
 		actorAvatarUrl: row.imageUrl,
 		actionType: row.actionType,
-		details: row.details,
+		details: decrypt(row.details),
 		projectId: row.projectId,
 		taskId: row.taskId,
 		createdAt: row.createdAt,
@@ -302,7 +303,7 @@ export async function getUserNotificationsDAL(
 					: null,
 				actorAvatarUrl: row.imageUrl,
 				actionType: row.actionType,
-				message: row.message,
+				message: decrypt(row.message) ?? row.message,
 				isRead: row.isRead,
 				projectId: row.projectId,
 				taskId: row.taskId,

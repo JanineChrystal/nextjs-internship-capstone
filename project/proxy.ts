@@ -37,7 +37,7 @@ function readSessionStart(
 
 export default clerkMiddleware(async (auth, req) => {
 	const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-	
+
 	try {
 		const { success } = await globalRateLimiter.limit(`global_${ip}`);
 		if (!success) {

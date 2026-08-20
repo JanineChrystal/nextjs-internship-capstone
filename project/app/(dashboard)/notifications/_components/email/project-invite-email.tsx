@@ -1,9 +1,4 @@
-import {
-	Button,
-	Heading,
-	Section,
-	Text,
-} from "@react-email/components";
+import { Button, Heading, Section, Text } from "@react-email/components";
 import { EmailLayout } from "./layout";
 
 interface ProjectInviteEmailProps {
@@ -26,9 +21,7 @@ export function ProjectInviteEmail({
 			<Heading className="text-2xl font-bold text-slate-900 mx-0 my-7.5 p-0 text-center">
 				Join {projectName}
 			</Heading>
-			<Text className="text-base leading-[24px] text-slate-700">
-				Hello,
-			</Text>
+			<Text className="text-base leading-[24px] text-slate-700">Hello,</Text>
 			<Text className="text-base leading-[24px] text-slate-700">
 				<strong>{invitedBy}</strong> has invited you to collaborate on the{" "}
 				<strong>{projectName}</strong> project in the{" "}

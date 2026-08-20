@@ -1,100 +1,126 @@
-import crypto from "crypto";
-
-// 32-byte key for AES-256
-// In a real production app, ensure ENCRYPTION_KEY is a 64-character hex string in .env
-const envKey = process.env.ENCRYPTION_KEY || "0".repeat(64);
-const key = Buffer.from(envKey.padEnd(64, '0').slice(0, 64), 'hex'); 
-
-// Static IV for deterministic encryption (16 bytes)
-// This ensures that `encrypt(email)` always results in the same string, allowing DB lookups.
-const envIv = process.env.DETERMINISTIC_IV || "0".repeat(32);
-const DETERMINISTIC_IV = Buffer.from(envIv.padEnd(32, '0').slice(0, 32), 'hex');
+import crypto from "node:crypto";
 
 /**
- * Standard Encryption (Non-Deterministic)
- * Uses AES-256-GCM with a random IV.
- * Best for: messages, notes, descriptions, names (if not searched)
- * Two identical plaintexts will yield DIFFERENT ciphertexts.
+ * Application-level encryption for the small number of columns that hold
+ * genuinely private content.
+ *
+ * ## What ENCRYPTION_KEY is, and why it is required
+ *
+ * `ENCRYPTION_KEY` is a 64-character hex string - 32 raw bytes - and it is the
+ * secret that makes this encryption meaningful. AES is a public algorithm, so
+ * the key is the only thing standing between a leaked database and readable
+ * content. It belongs in `.env.local` locally and in the environment variables
+ * of every deployment, and it is never committed.
+ *
+ * Generate one with:
+ *
+ *     node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+ *
+ * This module used to fall back to `"0".repeat(64)` when the variable was
+ * missing. That is worse than not encrypting at all: it looks like protection
+ * in the schema and in code review, while the key is a constant that anyone
+ * reading the repository already knows. A missing secret now throws, matching
+ * how `lib/db/index.ts` and `lib/rate-limit.ts` already behave.
+ *
+ * The key is read on first use rather than at import, so a build that never
+ * encrypts anything does not need the variable present - the same pattern the
+ * Filipino profanity detector uses for its base URL.
+ *
+ * ## Why there is only one scheme here
+ *
+ * Every value is encrypted with a random IV (AES-256-GCM), so encrypting the
+ * same text twice produces two unrelated ciphertexts. That is what stops the
+ * database from leaking which rows share a value even while the encryption
+ * holds.
  */
-export function encrypt(text: string | null | undefined): string | null {
-	if (!text) return text as any;
-	
-	const iv = crypto.randomBytes(16);
-	const cipher = crypto.createCipheriv("aes-256-gcm", key as any, iv as any);
-	
-	let encrypted = cipher.update(text, "utf8", "hex");
-	encrypted += cipher.final("hex");
-	const authTag = cipher.getAuthTag().toString("hex");
-	
-	// Format: iv:authTag:encryptedData
-	return `${iv.toString("hex")}:${authTag}:${encrypted}`;
+
+const IV_BYTES = 16;
+
+// A KeyObject rather than a Buffer: Node's cipher types accept it directly,
+// which is what lets this file drop the `as any` casts it used to carry.
+let cachedKey: crypto.KeyObject | null = null;
+
+function getKey(): crypto.KeyObject {
+	if (cachedKey) return cachedKey;
+
+	const hex = process.env.ENCRYPTION_KEY;
+
+	if (!hex) {
+		throw new Error(
+			"ENCRYPTION_KEY is missing. Generate one with: node -e \"console.log(require('node:crypto').randomBytes(32).toString('hex'))\"",
+		);
+	}
+
+	// Length is checked rather than padded. Padding a short key to size hides a
+	// misconfiguration behind a weaker key, and the resulting ciphertext cannot
+	// be read once the real key is supplied.
+	if (!/^[0-9a-fA-F]{64}$/.test(hex)) {
+		throw new Error(
+			`ENCRYPTION_KEY must be 64 hex characters (32 bytes), got ${hex.length} characters.`,
+		);
+	}
+
+	cachedKey = crypto.createSecretKey(new Uint8Array(Buffer.from(hex, "hex")));
+	return cachedKey;
 }
 
 /**
- * Standard Decryption (Non-Deterministic)
+ * Encrypts one value, returning `iv:authTag:ciphertext` in hex.
+ *
+ * Null and empty inputs pass straight through, so a nullable column stays
+ * nullable rather than gaining a ciphertext that decrypts to an empty string.
+ */
+export function encrypt(text: string): string;
+export function encrypt(text: string | null | undefined): string | null;
+export function encrypt(text: string | null | undefined): string | null {
+	if (!text) return text ?? null;
+
+	const iv = crypto.randomBytes(IV_BYTES);
+	const cipher = crypto.createCipheriv(
+		"aes-256-gcm",
+		getKey(),
+		new Uint8Array(iv),
+	);
+
+	const encrypted = Buffer.concat([
+		new Uint8Array(cipher.update(text, "utf8")),
+		new Uint8Array(cipher.final()),
+	]).toString("hex");
+
+	return `${iv.toString("hex")}:${cipher.getAuthTag().toString("hex")}:${encrypted}`;
+}
+
+/**
+ * Reverses `encrypt`, and leaves anything it did not produce untouched.
+ *
+ * The pass-through matters during a migration: a table part-way through being
+ * encrypted holds a mix of ciphertext and plaintext, and rows written before
+ * the change must keep rendering rather than showing an error to the user.
  */
 export function decrypt(text: string | null | undefined): string | null {
-	if (!text) return text as any;
-	
-	// If it doesn't look like our encrypted format, return as is (for migration safety)
-	if (!text.includes(":")) return text;
-	
-	try {
-		const parts = text.split(":");
-		if (parts.length !== 3) return text;
-		
-		const iv = Buffer.from(parts[0], "hex");
-		const authTag = Buffer.from(parts[1], "hex");
-		const encryptedText = Buffer.from(parts[2], "hex");
-		
-		const decipher = crypto.createDecipheriv("aes-256-gcm", key as any, iv as any);
-		decipher.setAuthTag(authTag as any);
-		
-		let decrypted = decipher.update(encryptedText as any, undefined, "utf8");
-		decrypted += decipher.final("utf8");
-		
-		return decrypted;
-	} catch (error) {
-		console.error("Decryption failed:", error);
-		return text; // Fallback to raw text if decryption fails
-	}
-}
+	if (!text) return text ?? null;
 
-/**
- * Deterministic Encryption
- * Uses AES-256-CBC with a static IV.
- * Best for: emails, or fields you need to query exactly using WHERE email = ?
- * Two identical plaintexts will yield the SAME ciphertext.
- */
-export function deterministicEncrypt(text: string | null | undefined): string | null {
-	if (!text) return text as any;
-	
-	const cipher = crypto.createCipheriv("aes-256-cbc", key as any, DETERMINISTIC_IV as any);
-	let encrypted = cipher.update(text, "utf8", "hex");
-	encrypted += cipher.final("hex");
-	
-	// Format: det:encryptedData
-	return `det:${encrypted}`;
-}
+	const parts = text.split(":");
+	if (parts.length !== 3) return text;
 
-/**
- * Deterministic Decryption
- */
-export function deterministicDecrypt(text: string | null | undefined): string | null {
-	if (!text) return text as any;
-	
-	if (!text.startsWith("det:")) return text;
-	
 	try {
-		const encryptedText = text.replace("det:", "");
-		const decipher = crypto.createDecipheriv("aes-256-cbc", key as any, DETERMINISTIC_IV as any);
-		
-		let decrypted = decipher.update(encryptedText, "hex", "utf8");
-		decrypted += decipher.final("utf8");
-		
-		return decrypted;
-	} catch (error) {
-		console.error("Deterministic decryption failed:", error);
+		const decipher = crypto.createDecipheriv(
+			"aes-256-gcm",
+			getKey(),
+			new Uint8Array(Buffer.from(parts[0], "hex")),
+		);
+		decipher.setAuthTag(new Uint8Array(Buffer.from(parts[1], "hex")));
+
+		return Buffer.concat([
+			new Uint8Array(
+				decipher.update(new Uint8Array(Buffer.from(parts[2], "hex"))),
+			),
+			new Uint8Array(decipher.final()),
+		]).toString("utf8");
+	} catch {
+		// A value that looks encrypted but will not decrypt means the key has
+		// changed. Returning the raw string keeps the page rendering; the operator
+		// sees ciphertext, which is the visible symptom of a key mismatch.
 		return text;
 	}
 }

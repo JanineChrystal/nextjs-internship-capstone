@@ -1,5 +1,5 @@
 import type { DbComment } from "@/lib/types/activity";
-import { decrypt, deterministicDecrypt } from "@/lib/utils/encryption";
+import { decrypt } from "@/lib/utils/encryption";
 
 export interface CommentOutputDTO {
 	id: string;
@@ -23,10 +23,10 @@ function toAuthorName(author: {
 	lastName: string | null;
 	email: string;
 }): string {
-	const fullName = [decrypt(author.firstName) || author.firstName, decrypt(author.lastName) || author.lastName]
+	const fullName = [author.firstName, author.lastName]
 		.filter(Boolean)
 		.join(" ");
-	return fullName || deterministicDecrypt(author.email) || author.email;
+	return fullName || author.email;
 }
 
 export function toCommentDTO(

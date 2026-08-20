@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { activityLogs, notifications } from "@/lib/db/schema";
 import type { NewDbActivityLog } from "@/lib/types/activity";
+import { encrypt } from "@/lib/utils/encryption";
 
 /**
  * Who should be told about an event, and what they should read.
@@ -58,7 +59,9 @@ export async function recordActivity(
 			workspaceId: params.workspaceId,
 			actorId: params.actorId,
 			actionType: params.actionType,
-			details: params.details,
+			// Encrypted: a log line quotes what changed, e.g. the old and new task
+			// name, so the feed carries real content rather than just an event type.
+			details: encrypt(params.details),
 			projectId: params.projectId ?? null,
 			taskId: params.taskId ?? null,
 			targetUserId: params.targetUserId ?? null,
@@ -79,7 +82,9 @@ export async function recordActivity(
 				projectId: params.projectId ?? null,
 				taskId: params.taskId ?? null,
 				actionType: params.actionType,
-				message: recipient.message,
+				// Encrypted for the same reason: a mention notification quotes the
+				// comment that triggered it.
+				message: encrypt(recipient.message),
 			})),
 		);
 	} catch (error) {

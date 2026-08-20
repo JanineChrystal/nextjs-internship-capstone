@@ -1,5 +1,4 @@
 import type { DbUser } from "@/lib/types/user";
-import { decrypt, deterministicDecrypt } from "@/lib/utils/encryption";
 
 export interface UserOutputDTO {
 	id: string;
@@ -14,9 +13,9 @@ export interface UserOutputDTO {
 export function toUserDTO(user: DbUser): UserOutputDTO {
 	return {
 		id: user.id,
-		email: deterministicDecrypt(user.email) || user.email,
-		firstName: decrypt(user.firstName) || user.firstName,
-		lastName: decrypt(user.lastName) || user.lastName,
+		email: user.email,
+		firstName: user.firstName,
+		lastName: user.lastName,
 		imageUrl: user.imageUrl,
 		createdAt: user.createdAt,
 		updatedAt: user.updatedAt,
