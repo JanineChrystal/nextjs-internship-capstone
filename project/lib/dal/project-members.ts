@@ -8,7 +8,7 @@ import {
 } from "@/lib/dal/pending-invites";
 import { linkWorkspaceDirectoriesInDB } from "@/lib/dal/workspaces";
 import { db } from "@/lib/db";
-import { projectMembers, projects, projectTeams, users } from "@/lib/db/schema";
+import { projectMembers, projects, projectTeams, teamMembers, teams, users } from "@/lib/db/schema";
 import {
 	type ProjectMemberDetailedOutputDTO,
 	type ProjectMemberOutputDTO,
@@ -150,6 +150,19 @@ export async function getProjectMembersDAL(
 				),
 			);
 
+		const teamMemberRows = await db
+			.select({ user: users })
+			.from(projectTeams)
+			.innerJoin(teamMembers, eq(projectTeams.teamId, teamMembers.teamId))
+			.innerJoin(teams, eq(projectTeams.teamId, teams.id))
+			.innerJoin(users, eq(teamMembers.userId, users.id))
+			.where(
+				and(
+					eq(projectTeams.projectId, projectId),
+					isNull(teams.deletedAt),
+				),
+			);
+
 		const members: ProjectMemberOutputDTO[] = [];
 		if (owner) {
 			members.push({
@@ -160,6 +173,15 @@ export async function getProjectMembersDAL(
 			});
 		}
 		for (const { user: member } of memberRows) {
+			if (members.some((m) => m.userId === member.id)) continue;
+			members.push({
+				userId: member.id,
+				name: toMemberName(member),
+				email: member.email,
+				avatarUrl: member.imageUrl ?? "",
+			});
+		}
+		for (const { user: member } of teamMemberRows) {
 			if (members.some((m) => m.userId === member.id)) continue;
 			members.push({
 				userId: member.id,

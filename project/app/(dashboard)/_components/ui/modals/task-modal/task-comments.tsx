@@ -207,7 +207,6 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 					);
 				})}
 			</div>
-
 			<div className="p-4 border-t border-outline-variant mt-auto shrink-0">
 				{replyingTo && (
 					<div className="flex items-center justify-between mb-2 px-2 py-1 rounded-md bg-primary/10 text-xs text-primary">
@@ -224,7 +223,15 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 						</Button>
 					</div>
 				)}
-				<div className="relative border border-outline-variant rounded-lg overflow-hidden bg-surface focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+				{/* Two nested boxes on purpose. The outer one is the positioning
+				    context for the suggestion list; the inner one keeps overflow-hidden
+				    so the textarea's corners stay inside the rounded border.
+
+				    They cannot be the same element. The list is positioned with
+				    bottom-full, which places it entirely above its parent's box, and
+				    overflow-hidden on that parent then clips it away completely - it
+				    rendered, with the right suggestions in it, and was invisible. */}
+				<div className="relative">
 					{/* The suggestion list sits ABOVE the box: the composer is at the
 					    bottom of a scrolling panel, so a dropdown below it would open
 					    off-screen. */}
@@ -258,45 +265,46 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 							))}
 						</ul>
 					)}
-					<textarea
-						ref={mentions.inputRef}
-						placeholder={
-							replyingTo
-								? `Reply to ${replyingTo.authorName}...`
-								: "Write a comment... use @ to mention someone"
-						}
-						value={newComment}
-						onChange={(e) => {
-							setNewComment(e.target.value);
-							mentions.syncCaret(e.currentTarget);
-						}}
-						onClick={(e) => mentions.syncCaret(e.currentTarget)}
-						onKeyUp={(e) => mentions.syncCaret(e.currentTarget)}
-						onKeyDown={(e) => {
-							// The suggestion list gets first refusal on the keys it
-							// uses, so Enter accepts a mention instead of posting a
-							// half-typed comment.
-							if (mentions.handleKeyDown(e)) return;
-							if (e.key === "Enter" && !e.shiftKey) {
-								e.preventDefault();
-								handleSubmitComment();
+					<div className="relative border border-outline-variant rounded-lg overflow-hidden bg-surface focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+						<textarea
+							ref={mentions.inputRef}
+							placeholder={
+								replyingTo
+									? `Reply to ${replyingTo.authorName}...`
+									: "Write a comment... use @ to mention someone"
 							}
-						}}
-						className="w-full min-h-20 p-3 text-sm bg-transparent border-none focus:outline-none resize-y pb-12"
-					/>
-					<div className="absolute bottom-2 right-2">
-						<Button
-							type="button"
-							size="icon-sm"
-							className="h-8 w-8 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-							onClick={handleSubmitComment}
-						>
-							<Send className="h-4 w-4" />
-						</Button>
+							value={newComment}
+							onChange={(e) => {
+								setNewComment(e.target.value);
+								mentions.syncCaret(e.currentTarget);
+							}}
+							onClick={(e) => mentions.syncCaret(e.currentTarget)}
+							onKeyUp={(e) => mentions.syncCaret(e.currentTarget)}
+							onKeyDown={(e) => {
+								// The suggestion list gets first refusal on the keys it
+								// uses, so Enter accepts a mention instead of posting a
+								// half-typed comment.
+								if (mentions.handleKeyDown(e)) return;
+								if (e.key === "Enter" && !e.shiftKey) {
+									e.preventDefault();
+									handleSubmitComment();
+								}
+							}}
+							className="w-full min-h-20 p-3 text-sm bg-transparent border-none focus:outline-none resize-y pb-12"
+						/>
+						<div className="absolute bottom-2 right-2">
+							<Button
+								type="button"
+								size="icon-sm"
+								className="h-8 w-8 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+								onClick={handleSubmitComment}
+							>
+								<Send className="h-4 w-4" />
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>
-
 			{/* Reports what already happened, so there is nothing to cancel. The
 			    same dialog covers English and Filipino hits, because both verdicts
 			    are now in hand before the response is sent. */}
@@ -310,6 +318,7 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 				message={COMMENT_MODERATION_DIALOG.message}
 				confirmText={COMMENT_MODERATION_DIALOG.confirmText}
 			/>
+			;
 		</div>
 	);
 }
