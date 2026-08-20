@@ -1,11 +1,8 @@
 "use server";
 
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { db } from "@/lib/db";
-import { projects, workspaces } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { sendNotification } from "@/lib/email/send-notification";
 import { ProjectInviteEmail } from "@/app/(dashboard)/notifications/_components/email/project-invite-email";
 import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
@@ -20,7 +17,11 @@ import {
 	updateMemberRoleInDB,
 } from "@/lib/dal/project-members";
 import { findUserIdByEmailDAL } from "@/lib/dal/users";
+import { db } from "@/lib/db";
+import { projects, workspaces } from "@/lib/db/schema";
 import type { ProjectMemberDetailedOutputDTO } from "@/lib/dtos/project-member-dto";
+import { sendNotification } from "@/lib/email/send-notification";
+import { getAppBaseUrl } from "@/lib/utils/app-url";
 
 /**
  * Server actions for project membership, mirroring the lib/dal/project-members
@@ -58,7 +59,7 @@ export async function inviteUserToProjectAction(
 		// covered by INVITE_ACCEPTED when they eventually sign up.
 		const actor = await getCurrentUser();
 		let invitedUserId: string | null = null;
-		
+
 		if (actor && outcome === "invited") {
 			invitedUserId = await findUserIdByEmailDAL(email);
 			await recordActivity({
@@ -89,29 +90,32 @@ export async function inviteUserToProjectAction(
 				try {
 					if (!actor) return;
 					const [project] = await db
-						.select({ 
-							projectName: projects.name, 
-							workspaceName: workspaces.name 
+						.select({
+							projectName: projects.name,
+							workspaceName: workspaces.name,
 						})
 						.from(projects)
 						.innerJoin(workspaces, eq(projects.workspaceId, workspaces.id))
 						.where(eq(projects.id, projectId));
-						
+
 					if (!project) return;
-					
-					const invitedBy = actor.firstName 
-						? `${actor.firstName} ${actor.lastName || ""}`.trim() 
+
+					const invitedBy = actor.firstName
+						? `${actor.firstName} ${actor.lastName || ""}`.trim()
 						: actor.email;
-						
-					const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/sign-up`;
-					
+
+					const inviteUrl = `${getAppBaseUrl()}/sign-up`;
+
 					// We don't have the user ID for a pending invite, so we cannot check their DB preferences.
 					// We'll pass a dummy userId for now or skip checking for pending invites if we adjust sendNotification.
-					// Actually, getNotificationSettings expects a real user ID. 
+					// Actually, getNotificationSettings expects a real user ID.
 					// For invites to non-users, they definitely want the email. We can bypass preference check or pass a flag.
 					// Let's modify sendNotification to skip preference check if userId is empty.
 					await sendNotification({
-						userId: outcome === "invited" && invitedUserId ? invitedUserId : "pending-user", 
+						userId:
+							outcome === "invited" && invitedUserId
+								? invitedUserId
+								: "pending-user",
 						to: email,
 						subject: `You've been invited to ${project.projectName}`,
 						type: "emailProjectInvites",
@@ -120,7 +124,7 @@ export async function inviteUserToProjectAction(
 							projectName: project.projectName,
 							workspaceName: project.workspaceName,
 							inviteUrl,
-						})
+						}),
 					});
 				} catch (error) {
 					console.error("Failed to send invite email:", error);

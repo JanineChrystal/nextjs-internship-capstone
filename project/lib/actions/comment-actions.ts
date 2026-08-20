@@ -1,7 +1,9 @@
 "use server";
 
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
+import { CommentMentionEmail } from "@/app/(dashboard)/notifications/_components/email/comment-mention-email";
 import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import { resolveProjectWorkspaceIdDAL } from "@/lib/dal/categories";
@@ -22,17 +24,16 @@ import {
 } from "@/lib/dal/comments";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import { getTaskAssigneesByTaskIds } from "@/lib/dal/task-assignees";
+import { db } from "@/lib/db";
+import { tasks, users } from "@/lib/db/schema";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
+import { sendNotification } from "@/lib/email/send-notification";
 import { detectProfanity } from "@/lib/profanity";
+import { getAppBaseUrl } from "@/lib/utils/app-url";
 import {
 	CreateCommentSchema,
 	UpdateCommentSchema,
 } from "@/lib/validations/comment-schema";
-import { sendNotification } from "@/lib/email/send-notification";
-import { CommentMentionEmail } from "@/app/(dashboard)/notifications/_components/email/comment-mention-email";
-import { db } from "@/lib/db";
-import { tasks, users } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
 
 export async function getCommentsAction(
 	taskId: string,
@@ -154,17 +155,24 @@ export async function createCommentAction(
 				try {
 					const mentionedUserIds = mentioned.map((m) => m.userId);
 					const [taskResult, mentionedUsers] = await Promise.all([
-						db.select({ name: tasks.name }).from(tasks).where(eq(tasks.id, taskId)).limit(1),
-						db.select({ id: users.id, email: users.email }).from(users).where(inArray(users.id, mentionedUserIds))
+						db
+							.select({ name: tasks.name })
+							.from(tasks)
+							.where(eq(tasks.id, taskId))
+							.limit(1),
+						db
+							.select({ id: users.id, email: users.email })
+							.from(users)
+							.where(inArray(users.id, mentionedUserIds)),
 					]);
-					
+
 					const taskName = taskResult[0]?.name || "a task";
-					const mentionedBy = user.firstName 
-						? `${user.firstName} ${user.lastName || ""}`.trim() 
+					const mentionedBy = user.firstName
+						? `${user.firstName} ${user.lastName || ""}`.trim()
 						: user.email;
 
 					// E.g. https://yourdomain.com/projects/[projectId]?task=[taskId]
-					const taskUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/projects/${projectId}?task=${taskId}`;
+					const taskUrl = `${getAppBaseUrl()}/projects/${projectId}?task=${taskId}`;
 
 					for (const mentionedUser of mentionedUsers) {
 						await sendNotification({
@@ -177,7 +185,7 @@ export async function createCommentAction(
 								taskName,
 								commentBody: validationResult.data.body,
 								taskUrl,
-							})
+							}),
 						});
 					}
 				} catch (error) {

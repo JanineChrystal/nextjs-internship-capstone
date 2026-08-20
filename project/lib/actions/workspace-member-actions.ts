@@ -2,21 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { sendNotification } from "@/lib/email/send-notification";
 import { ProjectInviteEmail } from "@/app/(dashboard)/notifications/_components/email/project-invite-email";
 import {
 	PENDING_INVITE_MESSAGE,
 	WORKSPACE_MEMBER_USER_FACING_ERRORS,
 } from "@/lib/constants/action-errors";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
-import { resolveActiveWorkspaceDAL } from "@/lib/dal/workspaces";
 import {
 	getWorkspaceDirectoryDAL,
 	inviteToWorkspaceInDB,
 	removeWorkspaceMembersDAL,
 } from "@/lib/dal/workspace-members";
+import { resolveActiveWorkspaceDAL } from "@/lib/dal/workspaces";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
+import { sendNotification } from "@/lib/email/send-notification";
 import { toUserFacingError } from "@/lib/utils/action-error";
+import { getAppBaseUrl } from "@/lib/utils/app-url";
 
 export async function getWorkspaceDirectoryAction(
 	workspaceId?: string,
@@ -72,7 +73,7 @@ export async function inviteToWorkspaceAction(
 					const invitedBy = user.firstName
 						? `${user.firstName} ${user.lastName || ""}`.trim()
 						: user.email;
-					const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/sign-up`;
+					const inviteUrl = `${getAppBaseUrl()}/sign-up`;
 
 					await sendNotification({
 						userId:

@@ -28,7 +28,8 @@
 		"db:studio": "drizzle-kit studio",
 		"db:seed": "tsx --env-file=.env.local lib/db/seed.ts",
 		"check:notifiers": "tsx --env-file=.env.local scripts/check-notifiers.ts",
-		"check:profanity": "tsx --env-file=.env.local scripts/check-profanity.ts"
+		"check:profanity": "tsx --env-file=.env.local scripts/check-profanity.ts",
+		"db:migrate:preview": "drizzle-kit migrate --config=drizzle.preview.config.ts"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.7.0",
