@@ -1,4 +1,5 @@
 import { FLAGGED_SNIPPET_LENGTH } from "@/lib/constants/profanity";
+import { decrypt } from "@/lib/utils/encryption";
 
 /** One flagged comment, as the moderation table renders it. */
 export interface FlaggedCommentDTO {
@@ -42,10 +43,15 @@ export function toFlaggedCommentDTO(row: {
 	flagReason: string | null;
 	createdAt: Date;
 }): FlaggedCommentDTO {
+	// Decrypted before truncating, not after. Comment bodies are stored
+	// encrypted, and slicing ciphertext would hand the moderator 160 characters
+	// of hex to judge - which is exactly what this table used to show.
+	const plain = decrypt(row.body) ?? row.body;
+
 	const snippet =
-		row.body.length > FLAGGED_SNIPPET_LENGTH
-			? `${row.body.slice(0, FLAGGED_SNIPPET_LENGTH)}...`
-			: row.body;
+		plain.length > FLAGGED_SNIPPET_LENGTH
+			? `${plain.slice(0, FLAGGED_SNIPPET_LENGTH)}...`
+			: plain;
 
 	return {
 		commentId: row.commentId,

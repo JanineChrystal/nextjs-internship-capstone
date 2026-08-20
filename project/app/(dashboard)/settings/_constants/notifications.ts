@@ -40,14 +40,14 @@ export const NOTIFICATION_TOGGLES: NotificationToggleConfig[] = [
 		key: "emailCommentMentions",
 		label: "Comment mentions",
 		description: "Someone writes your name in a comment on a task.",
-		pendingNote: "Starts sending once @ mentions ship in Phase 6.",
 	},
 	{
 		key: "emailCommentViolations",
 		label: "Comment violations",
 		description:
 			"A comment of yours is flagged by the language filter, or - if you own the project - someone else's is.",
-		pendingNote: "Starts sending once comment moderation ships in Phase 6.",
+		pendingNote:
+			"Comments are being checked and flagged now, but this email is not sent yet - flagged comments appear in Project Settings for the owner to review.",
 	},
 	{
 		key: "emailProjectOverdue",

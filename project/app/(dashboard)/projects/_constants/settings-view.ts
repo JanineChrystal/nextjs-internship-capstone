@@ -38,10 +38,13 @@ export const TEAM_ACCESS_COLUMNS: ColumnDef[] = [
 ];
 
 export const COMMENT_MODERATION_COLUMNS: ColumnDef[] = [
-	{ key: "author", title: "Author", className: "w-44" },
+	// Wide enough for a full name, and the cell truncates rather than
+	// overflowing - a long name used to run straight over the comment column.
+	{ key: "author", title: "Author", className: "w-52" },
 	{ key: "comment", title: "Comment", className: "flex-1 min-w-[250px]" },
 	{ key: "task", title: "Task", className: "w-40" },
 	{ key: "reason", title: "Flag Reason", className: "w-48" },
+	{ key: "flaggedAt", title: "Flagged", className: "w-40" },
 	{
 		key: "actions",
 		title: "Actions",

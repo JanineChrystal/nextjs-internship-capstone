@@ -13,6 +13,14 @@ interface WarningModalProps {
 	confirmText?: string;
 	cancelText?: string;
 	variant?: "danger" | "warning" | "info";
+	/**
+	 * Drops the cancel button, turning the dialog into an acknowledgement.
+	 *
+	 * Some of these dialogs report something that has already happened rather
+	 * than asking permission for something about to happen. Offering "Cancel"
+	 * there implies the action can still be called off, which it cannot.
+	 */
+	hideCancel?: boolean;
 }
 
 export function WarningModal({
@@ -24,6 +32,7 @@ export function WarningModal({
 	confirmText = "Confirm",
 	cancelText = "Cancel",
 	variant = "danger",
+	hideCancel = false,
 }: WarningModalProps) {
 	const config = WARNING_MODAL_CONFIG[variant];
 	const Icon = config.icon;
@@ -43,9 +52,11 @@ export function WarningModal({
 				</div>
 
 				<div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
-					<Button variant="outline" onClick={onClose}>
-						{cancelText}
-					</Button>
+					{!hideCancel && (
+						<Button variant="outline" onClick={onClose}>
+							{cancelText}
+						</Button>
+					)}
 					<Button
 						variant={config.confirmVariant}
 						onClick={() => {

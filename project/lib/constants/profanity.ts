@@ -30,12 +30,19 @@ export const PROFANITY_API_BASE_URL =
  *     warm requests          449-642ms
  *     observed spikes       6536ms, 6908ms
  *
- * A two-second budget - the obvious choice, and the one originally planned -
- * would have aborted almost every cold start. Filipino detection would then be
- * silently off for exactly the first comment after a quiet period, which is a
- * failure nobody would ever notice.
+ * The budget is a compromise, and worth naming as one. This wait now sits in
+ * front of the insert, so every second here is a second the author spends
+ * watching a spinner - which argues for a small number. But a cold start takes
+ * 4.5s, so a small number aborts exactly the first comment after a quiet
+ * period, when Filipino detection is most likely to be needed.
+ *
+ * Three seconds covers every warm request with room to spare and gives a cold
+ * start a chance, while capping the worst case at something a person will sit
+ * through. A comment that does time out is not lost or unchecked: it is marked
+ * pendingProfanityCheck and re-examined by the retry, so the cost of the cap is
+ * a delayed verdict rather than a missed one.
  */
-export const PROFANITY_API_TIMEOUT_MS = 8000;
+export const PROFANITY_API_TIMEOUT_MS = 3000;
 
 /**
  * Flag reasons, as stored on the comment row.

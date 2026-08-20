@@ -29,6 +29,7 @@ import { tasks, users } from "@/lib/db/schema";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
 import { sendNotification } from "@/lib/email/send-notification";
 import { detectProfanity } from "@/lib/profanity";
+import type { CreateCommentResult } from "@/lib/types/comment";
 import { getAppBaseUrl } from "@/lib/utils/app-url";
 import {
 	CreateCommentSchema,
@@ -67,7 +68,7 @@ export async function createCommentAction(
 	projectId: string,
 	body: string,
 	parentId?: string,
-): Promise<{ success: boolean; data?: CommentOutputDTO; error?: string }> {
+): Promise<CreateCommentResult> {
 	try {
 		const user = await getCurrentUser();
 		if (!user)
@@ -94,6 +95,20 @@ export async function createCommentAction(
 			}
 		}
 
+		// Moderation runs BEFORE the insert, and covers every detector at once.
+		//
+		// An earlier version checked only the in-process word list here and left
+		// the API call for after(). That was faster, but it gave English and
+		// Filipino profanity two visibly different behaviours: one warned the
+		// author immediately, the other flagged the comment silently some seconds
+		// later. Same offence, same system, two different experiences.
+		//
+		// Waiting for both costs about 400ms against a warm API and is capped by
+		// PROFANITY_API_TIMEOUT_MS. A detector that fails or times out is recorded
+		// in failedDetectors and the comment is re-examined by the retry, so the
+		// price of the cap is a late verdict rather than a missed one.
+		const verdict = await detectProfanity(validationResult.data.body);
+
 		const comment = await createCommentInDB(
 			taskId,
 			projectId,
@@ -101,6 +116,19 @@ export async function createCommentAction(
 			validationResult.data.body,
 			validationResult.data.parentId,
 		);
+
+		// The verdict is already in hand, so it lands on the row before the
+		// response goes out: the moderation queue is accurate the moment anyone
+		// looks, and the composer can tell the author in the same breath.
+		if (verdict.isFlagged) {
+			await applyModerationVerdictDAL(comment.id, true, verdict.reason);
+		}
+
+		// A detector that could not answer leaves the comment provisionally
+		// unjudged rather than provisionally innocent - the retry picks it up.
+		if (verdict.failedDetectors && verdict.failedDetectors.length > 0) {
+			await markCommentForProfanityRetryDAL(comment.id);
+		}
 
 		// The people working on the task are the ones who need to know it was
 		// commented on. recordActivity drops the author if they are among them, so
@@ -194,38 +222,8 @@ export async function createCommentAction(
 			});
 		}
 
-		// Moderation runs AFTER the response, not in front of the insert.
-		//
-		// The plan called for checking before storing, on the reasoning that a
-		// comment must never be stored unflagged and then flagged later. Measuring
-		// the live API changed that: it answers in 450-650ms warm but takes 4.5s
-		// cold and was seen at 6.9s, and every one of those seconds would be spent
-		// with the author watching a spinner.
-		//
-		// It is safe to move because this system FLAGS rather than BLOCKS - the
-		// comment is visible either way, so the only thing that arrives late is a
-		// row in the moderation queue. Nobody sees a difference; the author gets
-		// their comment instantly instead.
-		after(async () => {
-			try {
-				const verdict = await detectProfanity(validationResult.data.body);
-
-				if (verdict.failedDetectors && verdict.failedDetectors.length > 0) {
-					await markCommentForProfanityRetryDAL(comment.id);
-				}
-
-				if (!verdict.isFlagged) return;
-
-				await applyModerationVerdictDAL(comment.id, true, verdict.reason);
-			} catch (error) {
-				// Never rethrown: the response has already gone, and a moderation
-				// failure must not cost anyone their comment.
-				console.error("Comment moderation failed:", error);
-			}
-		});
-
 		revalidatePath(`/projects/${projectId}`);
-		return { success: true, data: comment };
+		return { success: true, data: comment, underReview: verdict.isFlagged };
 	} catch (error) {
 		console.error("createCommentAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };

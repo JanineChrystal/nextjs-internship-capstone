@@ -70,14 +70,20 @@ export function CommentModerationSection({
 				)}
 				renderRow={(comment) => (
 					<>
-						<div className="w-44 whitespace-nowrap">
-							<div className="flex items-center gap-2">
+						<div className="w-52">
+							{/* min-w-0 on the flex child is what actually lets truncate
+							    work here - without it the span refuses to shrink below
+							    its content and spills into the comment column. */}
+							<div className="flex items-center gap-2 min-w-0">
 								<MemberAvatar
 									name={comment.authorName}
 									avatarUrl={comment.authorAvatar}
 									size="xs"
 								/>
-								<span className="font-medium text-on-surface text-sm">
+								<span
+									className="font-medium text-on-surface text-sm truncate min-w-0"
+									title={comment.authorName}
+								>
 									{comment.authorName}
 								</span>
 							</div>
@@ -104,6 +110,9 @@ export function CommentModerationSection({
 							<span className="bg-error/10 text-error text-xs font-semibold px-2 py-1 rounded inline-block">
 								{comment.flagReason}
 							</span>
+						</div>
+						<div className="w-40 text-sm text-secondary whitespace-nowrap">
+							{new Date(comment.flaggedAt).toLocaleString()}
 						</div>
 						<div className="w-28 flex justify-end gap-2 whitespace-nowrap">
 							<Button

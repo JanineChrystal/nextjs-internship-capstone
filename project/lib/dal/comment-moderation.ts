@@ -94,6 +94,11 @@ export async function resolveFlaggedCommentDAL(
 				moderatedById: user.id,
 				moderatedAt: now,
 				updatedAt: now,
+				// A person has ruled on this comment, so the machine queue is done with
+				// it. Leaving this true is what let a later retry silently re-flag a
+				// dismissal - invisibly, since the review queue filters on moderatedAt
+				// and would never show it again.
+				pendingProfanityCheck: false,
 				// Dismissing clears the flag as well as stamping it, so the comment
 				// reads as ordinary everywhere else.
 				...(decision === "dismiss"
@@ -149,6 +154,11 @@ export async function getCommentsPendingProfanityCheckDAL(
 			and(
 				eq(tasks.projectId, projectId),
 				eq(comments.pendingProfanityCheck, true),
+				// Never re-judge a comment a moderator has already decided on. Without
+				// this, dismissing a flagged comment left pendingProfanityCheck set,
+				// and the next retry re-flagged it - invisibly, because the review
+				// queue filters on moderatedAt and would no longer show it.
+				isNull(comments.moderatedAt),
 				isNull(comments.deletedAt),
 			),
 		);

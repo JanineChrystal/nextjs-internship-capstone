@@ -56,5 +56,7 @@ export interface ProfanityDetector {
 export interface ModerationVerdict {
 	isFlagged: boolean;
 	reason: string | null;
+	/** Names of the detectors that fired, so two tiers can be merged exactly. */
+	hits?: string[];
 	failedDetectors?: string[];
 }

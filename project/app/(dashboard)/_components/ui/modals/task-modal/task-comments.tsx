@@ -1,15 +1,17 @@
 "use client";
 
-import { Send, Trash2, X } from "lucide-react";
+import { Send, ShieldAlert, Trash2, X } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/buttons/button";
 import { MentionText } from "@/components/ui/mention-text";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
 import { toMentionHandle } from "@/lib/utils/mentions";
+import { COMMENT_MODERATION_DIALOG } from "../../../../projects/_constants/comments";
 import { useMentionAutocomplete } from "../../../../projects/_hooks/use-mention-autocomplete";
 import { useTaskComments } from "../../../../projects/_hooks/use-task-comments";
 import { MemberAvatarChip } from "../../avatars/member-avatar-chip";
+import { WarningModal } from "../warning-modal";
 
 interface TaskCommentsProps {
 	taskId: string | undefined;
@@ -29,6 +31,11 @@ function CommentRow({
 	onDelete: (id: string) => void;
 	mentionMembers: Map<string, { userId: string; label: string }>;
 }) {
+	// Replying to or deleting a comment only makes sense while its text is
+	// actually present - a withheld or removed comment has nothing to act on.
+	const isActionable =
+		!comment.isDeleted && !comment.isUnderReview && !comment.isRejected;
+
 	return (
 		<div className="flex gap-3 group">
 			<MemberAvatarChip
@@ -41,10 +48,27 @@ function CommentRow({
 					<p className="text-sm font-medium text-foreground truncate">
 						{comment.authorName}
 					</p>
-					{comment.isDeleted ? (
+					{comment.isRejected ? (
+						// Says what happened without saying who did it. The moderator's
+						// identity is on the row for the audit trail, but publishing it
+						// back into the thread would turn a moderation decision into a
+						// confrontation between two members.
+						<span className="inline-flex items-center gap-1.5 rounded-full bg-error/10 px-3 py-1 text-xs text-error italic">
+							<ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+							This comment was rejected
+						</span>
+					) : comment.isDeleted ? (
 						<p className="text-sm text-secondary italic">
 							{comment.authorName} deleted a comment
 						</p>
+					) : comment.isUnderReview ? (
+						// A pill rather than the text. The comment exists and its author
+						// is still named - hiding that would make the thread lie about
+						// what happened - but the words wait for a moderator.
+						<span className="inline-flex items-center gap-1.5 rounded-full bg-surface-container-highest px-3 py-1 text-xs text-secondary italic">
+							<ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+							This comment is under review
+						</span>
 					) : (
 						// overflow-wrap:anywhere (rather than break-word) so a single
 						// very long unbroken string also shrinks this flex item's
@@ -54,18 +78,18 @@ function CommentRow({
 						</p>
 					)}
 				</div>
-				{!comment.isDeleted && (
-					<div className="flex items-center gap-3 mt-1 px-1 text-xs text-secondary">
-						{!isReply && (
-							<button
-								type="button"
-								className="font-medium hover:text-primary"
-								onClick={() => onReply(comment)}
-							>
-								Reply
-							</button>
-						)}
-						<span>{new Date(comment.createdAt).toLocaleString()}</span>
+				<div className="flex items-center gap-3 mt-1 px-1 text-xs text-secondary">
+					{isActionable && !isReply && (
+						<button
+							type="button"
+							className="font-medium hover:text-primary"
+							onClick={() => onReply(comment)}
+						>
+							Reply
+						</button>
+					)}
+					<span>{new Date(comment.createdAt).toLocaleString()}</span>
+					{isActionable && (
 						<button
 							type="button"
 							className="ml-auto opacity-0 group-hover:opacity-100 hover:text-error transition-opacity"
@@ -74,8 +98,8 @@ function CommentRow({
 						>
 							<Trash2 className="h-3 w-3" />
 						</button>
-					</div>
-				)}
+					)}
+				</div>
 			</div>
 		</div>
 	);
@@ -95,6 +119,8 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 		replyingTo,
 		handleReply,
 		cancelReply,
+		underReviewNotice,
+		dismissUnderReviewNotice,
 	} = useTaskComments(taskId, isOpen);
 
 	const params = useParams();
@@ -270,6 +296,20 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 					</div>
 				</div>
 			</div>
+
+			{/* Reports what already happened, so there is nothing to cancel. The
+			    same dialog covers English and Filipino hits, because both verdicts
+			    are now in hand before the response is sent. */}
+			<WarningModal
+				isOpen={underReviewNotice}
+				onClose={dismissUnderReviewNotice}
+				onConfirm={dismissUnderReviewNotice}
+				variant="info"
+				hideCancel
+				title={COMMENT_MODERATION_DIALOG.title}
+				message={COMMENT_MODERATION_DIALOG.message}
+				confirmText={COMMENT_MODERATION_DIALOG.confirmText}
+			/>
 		</div>
 	);
 }
