@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { CommentViolationEmail } from "@/app/(dashboard)/notifications/_components/email/comment-violation-email";
 import { PROFANITY_RETRY_BATCH_SIZE } from "@/lib/constants/profanity";
 import { recordActivity } from "@/lib/dal/activity-recorder";
@@ -150,15 +151,17 @@ export async function retryPendingProfanityChecksAction(
 		// This is the case the composer dialog cannot cover. When both detectors
 		// answer in time the author is told on the spot; a verdict that arrives on
 		// a retry finds them long gone, so it is delivered as a notification.
+		//
+		// Deferred to after(), like every other sender. Awaiting it here would add
+		// up to ten activity writes and ten Resend calls to a request that the
+		// batching above exists to keep short - undoing that work to deliver mail
+		// the moderator is not waiting for.
 		if (newlyFlagged.length > 0) {
-			await notifyFlaggedAuthors(
-				projectId,
-				user.id,
-				newlyFlagged.map((outcome) => ({
-					comment: outcome.comment,
-					reason: outcome.reason,
-				})),
-			);
+			const toNotify = newlyFlagged.map((outcome) => ({
+				comment: outcome.comment,
+				reason: outcome.reason,
+			}));
+			after(() => notifyFlaggedAuthors(projectId, user.id, toNotify));
 		}
 
 		const remaining = await countCommentsPendingProfanityCheckDAL(projectId);
@@ -198,14 +201,10 @@ async function notifyFlaggedAuthors(
 		const workspaceId = await resolveProjectWorkspaceIdDAL(projectId);
 
 		for (const { comment, reason } of items) {
-			await recordActivity({
+			const recorded = await recordActivity({
 				workspaceId,
 				actorId,
-				// Reusing COMMENT_ADDED rather than adding an enum value, which would
-				// mean an ALTER TYPE migration across four database branches. The feed
-				// reads from `details`, so the sentence is accurate either way - see
-				// the note in the accompanying commit.
-				actionType: "COMMENT_ADDED",
+				actionType: "COMMENT_FLAGGED",
 				details: "A comment was flagged by the language filter",
 				projectId,
 				taskId: comment.taskId,
@@ -213,15 +212,18 @@ async function notifyFlaggedAuthors(
 					{
 						recipientId: comment.authorId,
 						message: "A comment of yours was flagged and is under review",
+						emailPreference: "emailCommentViolations" as const,
 					},
 				],
 			});
 
 			await sendNotification({
-				userId: comment.authorId,
+				shouldSend: recorded.some(
+					(entry) =>
+						entry.recipientId === comment.authorId && entry.shouldSendEmail,
+				),
 				to: comment.authorEmail,
 				subject: "A comment of yours is under review",
-				type: "emailCommentViolations",
 				template: CommentViolationEmail({
 					taskName: comment.taskName,
 					commentBody: comment.body,

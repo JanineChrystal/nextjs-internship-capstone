@@ -7,6 +7,7 @@ import {
 	PENDING_INVITE_MESSAGE,
 	WORKSPACE_MEMBER_USER_FACING_ERRORS,
 } from "@/lib/constants/action-errors";
+import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	getWorkspaceDirectoryDAL,
@@ -18,6 +19,10 @@ import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
 import { sendNotification } from "@/lib/email/send-notification";
 import { toUserFacingError } from "@/lib/utils/action-error";
 import { getAppBaseUrl } from "@/lib/utils/app-url";
+import {
+	INVITE_RATE_LIMIT_MESSAGE,
+	isWithinInviteRateLimit,
+} from "@/lib/utils/invite-rate-limit";
 
 export async function getWorkspaceDirectoryAction(
 	workspaceId?: string,
@@ -62,11 +67,52 @@ export async function inviteToWorkspaceAction(
 			return { success: false, error: "Email is required" };
 		}
 
+		// Checked before the write, not after: the point is to stop the outbound
+		// email, and by the time the membership row exists the invitation has
+		// effectively happened.
+		if (!(await isWithinInviteRateLimit(user.id))) {
+			return { success: false, error: INVITE_RATE_LIMIT_MESSAGE };
+		}
+
 		const result = await inviteToWorkspaceInDB(email, workspaceId);
 
 		revalidatePath("/team");
 
 		if (result.outcome === "pending" || result.outcome === "invited") {
+			// An address with no account has no settings row and has not had the
+			// chance to opt out of the message telling them they were invited.
+			let mayEmailInvitee = true;
+			const invitedMemberId =
+				result.outcome === "invited" ? result.member?.id : undefined;
+
+			if (invitedMemberId) {
+				// The invitee gets an in-app notification as well as the email. They
+				// previously got only the email, which made the directory the one
+				// invite that never appeared on the Notifications page.
+				//
+				// No projectId is passed, and that is load-bearing: it is what makes
+				// toEmailPreferenceKey resolve this to emailWorkspaceInvites rather
+				// than emailProjectInvites, without needing a second action type.
+				const workspace = await resolveActiveWorkspaceDAL(workspaceId);
+				const recorded = await recordActivity({
+					workspaceId: workspace.id,
+					actorId: user.id,
+					actionType: "INVITE_SENT",
+					details: `Invited ${email} to the directory`,
+					notify: [
+						{
+							recipientId: invitedMemberId,
+							message: "You were added to a people directory",
+						},
+					],
+				});
+
+				mayEmailInvitee = recorded.some(
+					(entry) =>
+						entry.recipientId === invitedMemberId && entry.shouldSendEmail,
+				);
+			}
+
 			after(async () => {
 				try {
 					const activeWorkspace = await resolveActiveWorkspaceDAL(workspaceId);
@@ -76,13 +122,9 @@ export async function inviteToWorkspaceAction(
 					const inviteUrl = `${getAppBaseUrl()}/sign-up`;
 
 					await sendNotification({
-						userId:
-							result.outcome === "invited" && result.member
-								? result.member.id
-								: "pending-user",
 						to: email,
 						subject: `You've been invited to ${activeWorkspace.name}`,
-						type: "emailWorkspaceInvites",
+						shouldSend: mayEmailInvitee,
 						template: ProjectInviteEmail({
 							invitedBy,
 							projectName: "the directory",

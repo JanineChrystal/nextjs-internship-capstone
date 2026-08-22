@@ -20,6 +20,7 @@ export const updateNotificationSettingsSchema = z
 		emailCommentViolations: z.boolean(),
 		emailProjectOverdue: z.boolean(),
 		emailTaskCompletions: z.boolean(),
+		emailProjectCompletions: z.boolean(),
 	})
 	.partial()
 	.strict();

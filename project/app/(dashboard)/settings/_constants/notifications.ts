@@ -50,6 +50,17 @@ export const NOTIFICATION_TOGGLES: NotificationToggleConfig[] = [
 			"Comments are being checked and flagged now, but this email is not sent yet - flagged comments appear in Project Settings for the owner to review.",
 	},
 	{
+		key: "emailTaskCompletions",
+		label: "Task completions",
+		description:
+			"Someone marks a task you are assigned to as complete. You are never emailed about your own.",
+	},
+	{
+		key: "emailProjectCompletions",
+		label: "Project completions",
+		description: "A project you are part of is marked complete.",
+	},
+	{
 		key: "emailProjectOverdue",
 		label: "Project overdue",
 		description: "A project you are part of passes its due date.",

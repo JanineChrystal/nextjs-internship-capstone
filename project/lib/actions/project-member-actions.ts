@@ -22,6 +22,10 @@ import { projects, workspaces } from "@/lib/db/schema";
 import type { ProjectMemberDetailedOutputDTO } from "@/lib/dtos/project-member-dto";
 import { sendNotification } from "@/lib/email/send-notification";
 import { getAppBaseUrl } from "@/lib/utils/app-url";
+import {
+	INVITE_RATE_LIMIT_MESSAGE,
+	isWithinInviteRateLimit,
+} from "@/lib/utils/invite-rate-limit";
 
 /**
  * Server actions for project membership, mirroring the lib/dal/project-members
@@ -47,6 +51,14 @@ export async function inviteUserToProjectAction(
 			return { success: false, error: await getSessionFailureReason() };
 		}
 
+		// Checked before the write, not after: the point is to stop the outbound
+		// email, and by the time the membership row exists the invitation has
+		// effectively happened.
+		const limitActor = await getCurrentUser();
+		if (limitActor && !(await isWithinInviteRateLimit(limitActor.id))) {
+			return { success: false, error: INVITE_RATE_LIMIT_MESSAGE };
+		}
+
 		const outcome = await inviteUserToProjectInDB(
 			projectId,
 			email,
@@ -59,10 +71,14 @@ export async function inviteUserToProjectAction(
 		// covered by INVITE_ACCEPTED when they eventually sign up.
 		const actor = await getCurrentUser();
 		let invitedUserId: string | null = null;
+		// Nobody to consult for a pending invite: there is no settings row, and
+		// someone has not had the chance to opt out of the message telling them
+		// they were invited.
+		let mayEmailInvitee = true;
 
 		if (actor && outcome === "invited") {
 			invitedUserId = await findUserIdByEmailDAL(email);
-			await recordActivity({
+			const recorded = await recordActivity({
 				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
 				actorId: actor.id,
 				actionType: "PROJECT_MEMBER_ADDED",
@@ -78,6 +94,13 @@ export async function inviteUserToProjectAction(
 						]
 					: [],
 			});
+
+			if (invitedUserId) {
+				mayEmailInvitee = recorded.some(
+					(entry) =>
+						entry.recipientId === invitedUserId && entry.shouldSendEmail,
+				);
+			}
 		}
 
 		revalidatePath(`/projects/${projectId}`);
@@ -106,19 +129,10 @@ export async function inviteUserToProjectAction(
 
 					const inviteUrl = `${getAppBaseUrl()}/sign-up`;
 
-					// We don't have the user ID for a pending invite, so we cannot check their DB preferences.
-					// We'll pass a dummy userId for now or skip checking for pending invites if we adjust sendNotification.
-					// Actually, getNotificationSettings expects a real user ID.
-					// For invites to non-users, they definitely want the email. We can bypass preference check or pass a flag.
-					// Let's modify sendNotification to skip preference check if userId is empty.
 					await sendNotification({
-						userId:
-							outcome === "invited" && invitedUserId
-								? invitedUserId
-								: "pending-user",
 						to: email,
 						subject: `You've been invited to ${project.projectName}`,
-						type: "emailProjectInvites",
+						shouldSend: mayEmailInvitee,
 						template: ProjectInviteEmail({
 							invitedBy,
 							projectName: project.projectName,

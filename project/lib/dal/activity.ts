@@ -23,6 +23,8 @@ import type {
 	NewDbNotification,
 	NotificationsPageResult,
 } from "@/lib/types/activity";
+import type { NotificationSettingKey } from "@/lib/types/notification-settings";
+
 import { decrypt } from "@/lib/utils/encryption";
 
 export async function createActivityLogDAL(
@@ -48,30 +50,34 @@ export async function createActivityLogDAL(
  */
 function toEmailPreferenceKey(
 	data: NewDbNotification,
-):
-	| "emailProjectInvites"
-	| "emailWorkspaceInvites"
-	| "emailTaskCompletions"
-	| "emailCommentMentions"
-	| null {
+): NotificationSettingKey | null {
 	switch (data.actionType) {
 		case "INVITE_SENT":
 		case "PROJECT_MEMBER_ADDED":
 			return data.projectId ? "emailProjectInvites" : "emailWorkspaceInvites";
 		case "TASK_COMPLETED":
 			return "emailTaskCompletions";
+		case "PROJECT_COMPLETED":
+			return "emailProjectCompletions";
+		case "COMMENT_FLAGGED":
+			return "emailCommentViolations";
 		case "COMMENT_ADDED":
-			return "emailCommentMentions";
+			// Deliberately null rather than emailCommentMentions. COMMENT_ADDED
+			// covers two different events - a comment on a task you are assigned to,
+			// and a mention - and only the second has a switch. The mention site
+			// passes emailCommentMentions explicitly; the assignee notice has no
+			// switch, so it must not borrow one.
+			return null;
 		default:
-			// Comment violations and overdue projects will map here once Phase 6 and
-			// an overdue check exist to raise them. Their columns are already stored
-			// and editable; nothing raises the event yet.
+			// Overdue projects will map here once something checks a due date. The
+			// column is already stored and editable; nothing raises the event yet.
 			return null;
 	}
 }
 
 export async function createNotificationDAL(
 	data: NewDbNotification,
+	explicitPreference?: NotificationSettingKey | null,
 ): Promise<{ notification: NotificationDTO; shouldSendEmail: boolean }> {
 	try {
 		const result = await db.insert(notifications).values(data).returning();
@@ -88,7 +94,13 @@ export async function createNotificationDAL(
 				),
 			);
 
-		const preferenceKey = toEmailPreferenceKey(data);
+		// An explicit key wins, including an explicit null. `undefined` is the only
+		// value that means "you decide" - which is what lets a caller say "no
+		// switch governs this" and have it respected rather than re-derived.
+		const preferenceKey =
+			explicitPreference !== undefined
+				? explicitPreference
+				: toEmailPreferenceKey(data);
 
 		if (settings) {
 			// An event with no preference governing it stays off rather than

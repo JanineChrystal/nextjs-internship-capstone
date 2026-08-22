@@ -8,7 +8,14 @@ import {
 } from "@/lib/dal/pending-invites";
 import { linkWorkspaceDirectoriesInDB } from "@/lib/dal/workspaces";
 import { db } from "@/lib/db";
-import { projectMembers, projects, projectTeams, teamMembers, teams, users } from "@/lib/db/schema";
+import {
+	projectMembers,
+	projects,
+	projectTeams,
+	teamMembers,
+	teams,
+	users,
+} from "@/lib/db/schema";
 import {
 	type ProjectMemberDetailedOutputDTO,
 	type ProjectMemberOutputDTO,
@@ -157,10 +164,7 @@ export async function getProjectMembersDAL(
 			.innerJoin(teams, eq(projectTeams.teamId, teams.id))
 			.innerJoin(users, eq(teamMembers.userId, users.id))
 			.where(
-				and(
-					eq(projectTeams.projectId, projectId),
-					isNull(teams.deletedAt),
-				),
+				and(eq(projectTeams.projectId, projectId), isNull(teams.deletedAt)),
 			);
 
 		const members: ProjectMemberOutputDTO[] = [];

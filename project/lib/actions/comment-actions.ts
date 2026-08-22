@@ -157,6 +157,10 @@ export async function createCommentAction(
 			notify: assignees.map((assignee) => ({
 				recipientId: assignee.userId,
 				message: "New comment on a task assigned to you",
+				// No switch governs this one. It is deliberately not the mentions
+				// preference: someone who turned mentions off has said nothing about
+				// wanting mail every time a colleague comments on a shared task.
+				emailPreference: null,
 			})),
 		});
 
@@ -175,7 +179,7 @@ export async function createCommentAction(
 				mentioned.map((mention) => mention.userId),
 			);
 
-			await recordActivity({
+			const recorded = await recordActivity({
 				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
 				actorId: user.id,
 				actionType: "COMMENT_ADDED",
@@ -187,8 +191,16 @@ export async function createCommentAction(
 				notify: mentioned.map((mention) => ({
 					recipientId: mention.userId,
 					message: "You were mentioned in a comment",
+					emailPreference: "emailCommentMentions" as const,
 				})),
 			});
+
+			// Who may be emailed, decided once by the DAL that read their settings.
+			const mayEmail = new Set(
+				recorded
+					.filter((entry) => entry.shouldSendEmail)
+					.map((entry) => entry.recipientId),
+			);
 
 			after(async () => {
 				try {
@@ -215,10 +227,9 @@ export async function createCommentAction(
 
 					for (const mentionedUser of mentionedUsers) {
 						await sendNotification({
-							userId: mentionedUser.id,
 							to: mentionedUser.email,
 							subject: `${mentionedBy} mentioned you on a task`,
-							type: "emailCommentMentions",
+							shouldSend: mayEmail.has(mentionedUser.id),
 							template: CommentMentionEmail({
 								mentionedBy,
 								taskName,

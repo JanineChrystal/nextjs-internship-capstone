@@ -1,6 +1,10 @@
 "use server";
 
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { ProjectCompletedEmail } from "@/app/(dashboard)/notifications/_components/email/project-completed-email";
+import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	upsertProjectCategoryDAL,
@@ -10,6 +14,7 @@ import {
 	getEffectiveProjectRoleDAL,
 	verifyProjectPermissionDAL,
 } from "@/lib/dal/permissions";
+import { getProjectMembersDAL } from "@/lib/dal/project-members";
 import {
 	bulkArchiveProjectsInDB,
 	bulkCompleteProjectsInDB,
@@ -18,7 +23,11 @@ import {
 	deleteProjectInDB,
 	updateProjectInDB,
 } from "@/lib/dal/projects";
+import { db } from "@/lib/db";
+import { projects, users } from "@/lib/db/schema";
 import type { ProjectOutputDTO } from "@/lib/dtos/project-dto";
+import { sendNotification } from "@/lib/email/send-notification";
+import { getAppBaseUrl } from "@/lib/utils/app-url";
 import {
 	createProjectSchema,
 	editProjectSchema,
@@ -260,10 +269,99 @@ export async function bulkCompleteProjectsAction(
 		}
 
 		await bulkCompleteProjectsInDB(projectIds);
+
+		// The activity write lives here rather than in the DAL because the DAL
+		// takes only ids - the workspace and the member list are reachable from
+		// the action, and a DAL function that starts resolving them is doing the
+		// action's job.
+		const user = await getCurrentUser();
+		if (user) {
+			for (const projectId of projectIds) {
+				await recordProjectCompletion(projectId, user);
+			}
+		}
+
 		revalidatePath("/projects");
 		return { success: true };
 	} catch (error) {
 		console.error("bulkCompleteProjectsAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+/**
+ * Records one project's completion and emails the members it concerns.
+ *
+ * Wider reach than the task equivalent, deliberately: a task closing concerns
+ * the people working on it, while a project closing concerns everyone on it.
+ *
+ * Never throws. Completion is already committed by the time this runs, and a
+ * notification failure must not turn a finished bulk operation into an error.
+ */
+async function recordProjectCompletion(
+	projectId: string,
+	actor: {
+		id: string;
+		firstName: string | null;
+		lastName: string | null;
+		email: string;
+	},
+): Promise<void> {
+	try {
+		const [project] = await db
+			.select({ name: projects.name, workspaceId: projects.workspaceId })
+			.from(projects)
+			.where(eq(projects.id, projectId));
+
+		if (!project) return;
+
+		const members = await getProjectMembersDAL(projectId);
+
+		const recorded = await recordActivity({
+			workspaceId: project.workspaceId,
+			actorId: actor.id,
+			actionType: "PROJECT_COMPLETED",
+			details: `Marked "${project.name}" complete`,
+			projectId,
+			notify: members.map((member) => ({
+				recipientId: member.userId,
+				message: `A project you are part of was completed`,
+			})),
+		});
+
+		const mayEmail = recorded.filter((entry) => entry.shouldSendEmail);
+		if (mayEmail.length === 0) return;
+
+		const recipients = await db
+			.select({ email: users.email })
+			.from(users)
+			.where(
+				inArray(
+					users.id,
+					mayEmail.map((entry) => entry.recipientId),
+				),
+			);
+
+		const completedBy = actor.firstName
+			? `${actor.firstName} ${actor.lastName || ""}`.trim()
+			: actor.email;
+
+		after(async () => {
+			for (const recipient of recipients) {
+				await sendNotification({
+					to: recipient.email,
+					subject: `${project.name} was marked complete`,
+					// Already decided by recordActivity; these are the ones that passed.
+					shouldSend: true,
+					template: ProjectCompletedEmail({
+						completedBy,
+						projectName: project.name,
+						projectUrl: `${getAppBaseUrl()}/projects/${projectId}`,
+					}),
+				});
+			}
+		});
+	} catch (error) {
+		console.error("Failed to record project completion:", error);
 	}
 }

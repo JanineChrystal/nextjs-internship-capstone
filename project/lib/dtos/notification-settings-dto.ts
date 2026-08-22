@@ -15,6 +15,7 @@ export interface NotificationSettingsDTO {
 	emailCommentViolations: boolean;
 	emailProjectOverdue: boolean;
 	emailTaskCompletions: boolean;
+	emailProjectCompletions: boolean;
 }
 
 export function toNotificationSettingsDTO(
@@ -27,6 +28,7 @@ export function toNotificationSettingsDTO(
 		emailCommentViolations: row.emailCommentViolations,
 		emailProjectOverdue: row.emailProjectOverdue,
 		emailTaskCompletions: row.emailTaskCompletions,
+		emailProjectCompletions: row.emailProjectCompletions,
 	};
 }
 
@@ -45,4 +47,5 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettingsDTO = {
 	emailCommentViolations: true,
 	emailProjectOverdue: true,
 	emailTaskCompletions: true,
+	emailProjectCompletions: true,
 };

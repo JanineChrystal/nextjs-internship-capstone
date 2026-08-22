@@ -22,6 +22,30 @@ export const actionRateLimiter = new Ratelimit({
 	prefix: "@upstash/ratelimit",
 });
 
+/**
+ * Invitations: 10 per minute, per account.
+ *
+ * A looser window than the contact form on purpose. That form is anonymous and
+ * public, so it is limited by IP and tuned tight. An invite is authenticated,
+ * and the thing being limited is a person adding their own colleagues - so the
+ * window has to clear a realistic burst. Ten in a minute lets someone onboard a
+ * whole team in one sitting while still stopping a script.
+ *
+ * Keyed by user id rather than IP: two colleagues behind one office connection
+ * are not one abuser, and limiting them together would make the app feel broken
+ * for the second person to try.
+ *
+ * This exists because an invite is the one path where a signed-in user chooses
+ * the recipient of an outbound email, which is the ingredient an open relay
+ * needs.
+ */
+export const inviteRateLimiter = new Ratelimit({
+	redis: redis,
+	limiter: Ratelimit.slidingWindow(10, "60 s"),
+	analytics: true,
+	prefix: "@upstash/ratelimit/invite",
+});
+
 // 3. Create the global sliding window rate limiter (100 requests per 10 seconds)
 export const globalRateLimiter = new Ratelimit({
 	redis: redis,

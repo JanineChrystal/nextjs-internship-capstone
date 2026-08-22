@@ -59,6 +59,15 @@ export const actionTypeEnum = pgEnum("ActionType", [
 	"TASK_ASSIGNED",
 	"TASK_COMPLETED",
 	"COMMENT_ADDED",
+	// A project reaching "completed". Needed as its own value because
+	// emailProjectCompletions has to be governed by something, and no existing
+	// value describes it.
+	"PROJECT_COMPLETED",
+	// A comment the language filter flagged. Previously recorded as
+	// COMMENT_ADDED, which meant one action type covered three unrelated events -
+	// a comment on your task, a mention, and a violation - and no email
+	// preference could tell them apart.
+	"COMMENT_FLAGGED",
 ]);
 
 export const categoryTypeEnum = pgEnum("CategoryType", ["project", "task"]);

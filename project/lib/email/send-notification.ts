@@ -1,39 +1,51 @@
 import "server-only";
 import { render } from "@react-email/render";
 import type { ReactElement } from "react";
-import { getUserNotificationSettingsForWorkerDAL } from "@/lib/dal/notification-settings";
-import type { NotificationSettingKey } from "@/lib/types/notification-settings";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const NOTIFIER_TIMEOUT_MS = 10000;
 
 interface SendNotificationOptions {
-	/** The ID of the user receiving the notification */
-	userId: string;
 	/** The email address to send to */
 	to: string;
 	/** The subject of the email */
 	subject: string;
 	/** The React Email component to render */
 	template: ReactElement;
-	/** The type of notification to check preferences against */
-	type: NotificationSettingKey;
+	/**
+	 * Whether this recipient's preferences allow the email.
+	 *
+	 * Supplied by the caller from `recordActivity`, which gets it from
+	 * `createNotificationDAL` - the one place that reads a settings row. This
+	 * function used to look the preference up itself, which meant two
+	 * implementations of the same rule, and the one that ran was not the one that
+	 * looked authoritative.
+	 *
+	 * An invited address with no account yet passes `true`: there is no settings
+	 * row to consult, and someone being invited has not had the chance to opt out
+	 * of the message that tells them they were invited.
+	 */
+	shouldSend: boolean;
 	/** Optional reply-to address */
 	replyTo?: string;
 }
 
 /**
- * Checks a user's notification preferences and sends an email if they have it enabled.
- * Uses Resend via pure fetch to avoid SDK dependencies, matching the existing ResendNotifier.
+ * Sends one notification email through Resend.
+ *
+ * Uses pure fetch rather than the SDK, matching the existing ResendNotifier.
+ * Never throws: the caller has already completed the thing this email is about,
+ * and a mail failure must not undo it.
  */
 export async function sendNotification({
-	userId,
 	to,
 	subject,
 	template,
-	type,
+	shouldSend,
 	replyTo,
 }: SendNotificationOptions): Promise<boolean> {
+	if (!shouldSend) return false;
+
 	// 1. Check if we have an API key and sending address
 	const apiKey = process.env.RESEND_API_KEY;
 	const from = process.env.CONTACT_EMAIL_FROM;
@@ -43,21 +55,7 @@ export async function sendNotification({
 		return false;
 	}
 
-	// 2. Check user preferences (skip if it's a pending user invite)
-	if (userId !== "pending-user") {
-		try {
-			const preferences = await getUserNotificationSettingsForWorkerDAL(userId);
-			if (!preferences[type]) {
-				console.info(`Skipping notification: user disabled ${type}`);
-				return false;
-			}
-		} catch (error) {
-			console.error("Failed to check preferences, defaulting to false:", error);
-			return false;
-		}
-	}
-
-	// 3. Render the email
+	// 2. Render the email
 	let html: string;
 	try {
 		html = await render(template);
@@ -66,7 +64,7 @@ export async function sendNotification({
 		return false;
 	}
 
-	// 4. Send using pure fetch (matching ResendNotifier)
+	// 3. Send using pure fetch (matching ResendNotifier)
 	try {
 		const response = await fetch(RESEND_ENDPOINT, {
 			method: "POST",

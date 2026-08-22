@@ -1,12 +1,16 @@
 "use server";
 
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import type { z } from "zod";
+import { TaskCompletedEmail } from "@/app/(dashboard)/notifications/_components/email/task-completed-email";
 import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import { resolveProjectWorkspaceIdDAL } from "@/lib/dal/categories";
 import { upsertProjectCategoryDAL } from "@/lib/dal/category-mutations";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
+import { getTaskAssigneesByTaskIds } from "@/lib/dal/task-assignees";
 import {
 	bulkCompleteTasksInDB,
 	bulkDeleteTasksInDB,
@@ -18,11 +22,15 @@ import {
 	reorderTasksInDB,
 	updateTaskInDB,
 } from "@/lib/dal/tasks";
+import { db } from "@/lib/db";
+import { projects, users } from "@/lib/db/schema";
 import type {
 	TaskOutputDTO,
 	TaskWithBoardOutputDTO,
 } from "@/lib/dtos/task-dto";
+import { sendNotification } from "@/lib/email/send-notification";
 import type { CreateTaskInput, NewDbTask } from "@/lib/types/task";
+import { getAppBaseUrl } from "@/lib/utils/app-url";
 import {
 	bulkUpdateTaskStatusSchema,
 	insertTaskDbSchema,
@@ -217,14 +225,40 @@ export async function updateTaskAction(
 			// line, because Phase 4 counts completions and a free-text sentence is
 			// not something you can aggregate.
 			if (validationResult.data.isCompleted === true) {
-				await recordActivity({
+				// The people who were working on it are the ones this concerns.
+				// recordActivity drops the actor, so completing your own solo task
+				// notifies nobody.
+				const assigneesByTask = await getTaskAssigneesByTaskIds([taskId]);
+				const assignees = assigneesByTask.get(taskId) ?? [];
+
+				const recorded = await recordActivity({
 					workspaceId,
 					actorId: user.id,
 					actionType: "TASK_COMPLETED",
 					details: `Marked "${updatedTask.name}" complete`,
 					projectId,
 					taskId,
+					notify: assignees.map((assignee) => ({
+						recipientId: assignee.userId,
+						message: `A task assigned to you was completed`,
+					})),
 				});
+
+				const mayEmail = recorded.filter((entry) => entry.shouldSendEmail);
+
+				if (mayEmail.length > 0) {
+					after(() =>
+						sendTaskCompletedEmails({
+							recipientIds: mayEmail.map((entry) => entry.recipientId),
+							taskName: updatedTask.name,
+							projectId,
+							taskId,
+							completedBy: user.firstName
+								? `${user.firstName} ${user.lastName || ""}`.trim()
+								: user.email,
+						}),
+					);
+				}
 			}
 		}
 
@@ -358,5 +392,56 @@ export async function reorderTasksAction(
 	} catch (error) {
 		console.error("reorderTasksAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+/**
+ * Emails the assignees a completed task concerns.
+ *
+ * Separated from the action because it runs in `after()` - the response has
+ * already gone, so this reads what it needs itself rather than holding a
+ * closure over the request. Never throws: the task is already complete, and a
+ * mail failure must not surface as a failed save.
+ *
+ * The preference was already decided by recordActivity; the ids arriving here
+ * are only the people who may be emailed.
+ */
+async function sendTaskCompletedEmails(params: {
+	recipientIds: string[];
+	taskName: string;
+	projectId: string;
+	taskId: string;
+	completedBy: string;
+}): Promise<void> {
+	try {
+		const [recipients, [project]] = await Promise.all([
+			db
+				.select({ email: users.email })
+				.from(users)
+				.where(inArray(users.id, params.recipientIds)),
+			db
+				.select({ name: projects.name })
+				.from(projects)
+				.where(eq(projects.id, params.projectId)),
+		]);
+
+		const taskUrl = `${getAppBaseUrl()}/projects/${params.projectId}?task=${params.taskId}`;
+
+		for (const recipient of recipients) {
+			await sendNotification({
+				to: recipient.email,
+				subject: `${params.completedBy} completed ${params.taskName}`,
+				// Already decided upstream - these ids are the ones that passed.
+				shouldSend: true,
+				template: TaskCompletedEmail({
+					completedBy: params.completedBy,
+					taskName: params.taskName,
+					projectName: project?.name ?? "a project",
+					taskUrl,
+				}),
+			});
+		}
+	} catch (error) {
+		console.error("Failed to send task completion emails:", error);
 	}
 }
