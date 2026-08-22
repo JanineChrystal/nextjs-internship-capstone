@@ -26,7 +26,7 @@ export interface ContactNotification {
  * This is the same shape the profanity detector will take in Phase 6, and it is
  * where object-oriented design actually earns its place in this codebase rather
  * than being applied for its own sake. Email and Telegram have nothing in common
- * internally - one posts to Resend with an HTML body, the other posts to the
+ * internally - one posts to SendGrid with an HTML body, the other posts to the
  * Telegram Bot API with its own markup dialect and a length cap - but the caller
  * needs exactly one thing from both: "announce this, and tell me if you could
  * not."

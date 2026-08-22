@@ -4,7 +4,7 @@ import type {
 	ContactNotifier,
 	DeliveryOutcome,
 } from "@/lib/types/notifier";
-import { ResendNotifier } from "./resend-notifier";
+import { SendGridNotifier } from "./sendgrid-notifier";
 import { TelegramNotifier } from "./telegram-notifier";
 
 /**
@@ -19,7 +19,7 @@ import { TelegramNotifier } from "./telegram-notifier";
  * Order matters only for the log: the outcomes come back in this order.
  */
 const NOTIFIERS: ContactNotifier[] = [
-	new ResendNotifier(),
+	new SendGridNotifier(),
 	new TelegramNotifier(),
 ];
 
@@ -34,7 +34,7 @@ const NOTIFIERS: ContactNotifier[] = [
  * safely in the database would be a lie that makes them submit it again.
  *
  * **It does not stop at the first failure.** `Promise.allSettled`, not
- * `Promise.all`: the two channels are independent, and Resend being down is not
+ * `Promise.all`: the two channels are independent, and SendGrid being down is not
  * a reason to skip the Telegram alert that would have reached you anyway. With
  * `Promise.all` one rejection would abandon the other channel's result even
  * though its request had already been sent.

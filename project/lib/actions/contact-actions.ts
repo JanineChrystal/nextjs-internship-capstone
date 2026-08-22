@@ -82,9 +82,9 @@ async function isWithinRateLimit(identifier: string): Promise<boolean> {
  *     inline await                        after()
  *     ─────────────────────────────       ─────────────────────────────
  *     save row                            save row
- *     await Resend      (up to 8s)        respond "sent"  ← user is done
+ *     await SendGrid    (up to 8s)        respond "sent"  ← user is done
  *     await Telegram    (up to 8s)        ...response flushed...
- *     respond "sent"    ← after 16s       Resend + Telegram in parallel
+ *     respond "sent"    ← after 16s       SendGrid + Telegram in parallel
  *                                         stamp notifiedAt
  *
  * The sender is waiting on a spinner, and nothing they need depends on the

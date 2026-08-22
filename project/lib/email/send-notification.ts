@@ -1,9 +1,7 @@
 import "server-only";
 import { render } from "@react-email/render";
 import type { ReactElement } from "react";
-
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
-const NOTIFIER_TIMEOUT_MS = 10000;
+import { type EmailResult, sendEmail } from "@/lib/email/send-email";
 
 interface SendNotificationOptions {
 	/** The email address to send to */
@@ -31,9 +29,10 @@ interface SendNotificationOptions {
 }
 
 /**
- * Sends one notification email through Resend.
+ * Sends one notification email, honouring the recipient's preference.
  *
- * Uses pure fetch rather than the SDK, matching the existing ResendNotifier.
+ * Transport lives in lib/email/send-email.ts; this adds the preference gate
+ * and the template render on top of it.
  * Never throws: the caller has already completed the thing this email is about,
  * and a mail failure must not undo it.
  */
@@ -43,53 +42,32 @@ export async function sendNotification({
 	template,
 	shouldSend,
 	replyTo,
-}: SendNotificationOptions): Promise<boolean> {
-	if (!shouldSend) return false;
-
-	// 1. Check if we have an API key and sending address
-	const apiKey = process.env.RESEND_API_KEY;
-	const from = process.env.CONTACT_EMAIL_FROM;
-
-	if (!apiKey || !from) {
-		console.warn("Skipping email notification: Resend is not configured.");
-		return false;
+}: SendNotificationOptions): Promise<EmailResult> {
+	if (!shouldSend) {
+		return { status: "skipped", reason: "recipient has this email turned off" };
 	}
 
-	// 2. Render the email
 	let html: string;
 	try {
 		html = await render(template);
 	} catch (error) {
-		console.error("Failed to render React Email template:", error);
-		return false;
+		return {
+			status: "failed",
+			reason: `template render failed: ${error instanceof Error ? error.message : String(error)}`,
+		};
 	}
 
-	// 3. Send using pure fetch (matching ResendNotifier)
-	try {
-		const response = await fetch(RESEND_ENDPOINT, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${apiKey}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				from,
-				to: [to],
-				subject,
-				reply_to: replyTo,
-				html,
-			}),
-			signal: AbortSignal.timeout(NOTIFIER_TIMEOUT_MS),
-		});
+	const result = await sendEmail({ to, subject, html, replyTo });
 
-		if (!response.ok) {
-			const detail = await response.text().catch(() => "");
-			throw new Error(`Resend responded ${response.status}: ${detail}`);
-		}
-
-		return true;
-	} catch (error) {
-		console.error("Failed to send notification via Resend:", error);
-		return false;
+	// Logged at the level the outcome deserves. A skip is normal - somebody
+	// turned an email off, or no key is configured yet - while a failure means
+	// the provider rejected something and a person is not getting mail they
+	// expect. Logging both as errors is how the real one gets ignored.
+	if (result.status === "failed") {
+		console.error(`Email to ${to} failed: ${result.reason}`);
+	} else if (result.status === "skipped") {
+		console.info(`Email to ${to} skipped: ${result.reason}`);
 	}
+
+	return result;
 }

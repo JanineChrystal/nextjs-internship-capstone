@@ -153,7 +153,7 @@ export async function retryPendingProfanityChecksAction(
 		// a retry finds them long gone, so it is delivered as a notification.
 		//
 		// Deferred to after(), like every other sender. Awaiting it here would add
-		// up to ten activity writes and ten Resend calls to a request that the
+		// up to ten activity writes and ten email calls to a request that the
 		// batching above exists to keep short - undoing that work to deliver mail
 		// the moderator is not waiting for.
 		if (newlyFlagged.length > 0) {

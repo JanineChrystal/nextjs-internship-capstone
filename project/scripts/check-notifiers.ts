@@ -48,6 +48,8 @@ const note = (message: string) =>
  * different questions, and only the first needs asking repeatedly. Running the
  * full check five times while fixing a config mails yourself five times.
  */
+const SENDGRID_ENDPOINT = "https://api.sendgrid.com/v3/mail/send";
+
 const NO_SEND = process.argv.includes("--no-send");
 
 function heading(title: string) {
@@ -59,7 +61,7 @@ function reportEnv() {
 	heading("Environment");
 
 	const vars = [
-		"RESEND_API_KEY",
+		"SENDGRID_API_KEY",
 		"CONTACT_EMAIL_FROM",
 		"CONTACT_EMAIL_TO",
 		"TELEGRAM_BOT_TOKEN",
@@ -196,10 +198,10 @@ async function testTelegram(): Promise<void> {
 	ok("Test message sent - check Telegram.");
 }
 
-async function testResend(): Promise<void> {
-	heading("Resend");
+async function testSendGrid(): Promise<void> {
+	heading("SendGrid");
 
-	const apiKey = process.env.RESEND_API_KEY;
+	const apiKey = process.env.SENDGRID_API_KEY;
 	const from = process.env.CONTACT_EMAIL_FROM;
 	const to = (process.env.CONTACT_EMAIL_TO ?? "")
 		.split(",")
@@ -207,25 +209,21 @@ async function testResend(): Promise<void> {
 		.filter(Boolean);
 
 	if (!apiKey || !from || to.length === 0) {
-		skip("RESEND_API_KEY, CONTACT_EMAIL_FROM or CONTACT_EMAIL_TO missing.");
-		note("Get a key at https://resend.com/api-keys");
-		note(
-			'For testing, CONTACT_EMAIL_FROM can be "Takda PH <onboarding@resend.dev>"',
-		);
-		note("but that sender can ONLY deliver to your own Resend account email.");
+		skip("SENDGRID_API_KEY, CONTACT_EMAIL_FROM or CONTACT_EMAIL_TO missing.");
+		note("Create a key at https://app.sendgrid.com/settings/api_keys");
+		note("Restricted Access with only Mail Send enabled is enough.");
+		note("CONTACT_EMAIL_FROM must match a verified sender exactly.");
 		return;
 	}
 
-	// The auth probe always runs. It posts a deliberately invalid body, so
-	// validation fails before any mail is queued and nothing is sent - but the
-	// status still separates "key rejected" (401) from "key fine, payload bad"
-	// (422).
+	// The auth probe posts a deliberately invalid body, so validation fails
+	// before any mail is queued and nothing is sent - but the status still
+	// separates "key rejected" (401) from "key fine, payload bad" (400).
 	//
-	// This exists because the obvious read-only check, GET /domains, returns 401
-	// for a perfectly valid "Sending access" key, which cannot read the domain
-	// list. Judging a key by that reports a working key as broken and sends you
-	// off to regenerate one that was never the problem.
-	const probe = await fetch("https://api.resend.com/emails", {
+	// A read-only endpoint would be the obvious check, but a Mail Send-only key
+	// is forbidden from every one of them, so judging the key that way reports a
+	// working key as broken - the same trap the Resend version documented.
+	const probe = await fetch(SENDGRID_ENDPOINT, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${apiKey}`,
@@ -238,62 +236,70 @@ async function testResend(): Promise<void> {
 		bad("Key rejected - it has been revoked, or belongs to another account.");
 		return;
 	}
-	ok("Key authenticates.");
-
-	// resend.dev is Resend's OWN domain, and onboarding@ is the only mailbox on
-	// it that anyone may send from. Inventing another address there looks
-	// plausible and fails on every send, so it is called out as an error rather
-	// than a note - it is the single easiest way to misconfigure this.
-	if (from.includes("@resend.dev") && !from.includes("onboarding@resend.dev")) {
-		bad(`Invalid sender: ${from}`);
-		note("resend.dev belongs to Resend. The ONLY address you may send from");
-		note(
-			'there is "onboarding@resend.dev" - you cannot invent a mailbox on it,',
-		);
-		note("and it cannot be verified at resend.com/domains because it is not");
-		note(
-			"yours. Either use CONTACT_EMAIL_FROM='Takda PH <onboarding@resend.dev>'",
-		);
-		note("(which can only deliver to your own Resend account address), or add");
-		note("a domain you own at resend.com/domains and send from that.");
+	if (probe.status === 403) {
+		bad("Key authenticates but lacks Mail Send permission.");
+		note("Edit the key at app.sendgrid.com/settings/api_keys and enable it.");
 		return;
 	}
+	ok("Key authenticates.");
 
-	if (!from.includes("@resend.dev")) {
-		note(`Sending from a custom domain (${from}).`);
-		note("That domain must be verified at resend.com/domains, or every send");
-		note("fails with a domain-is-not-verified error.");
-	}
+	// The single most common misconfiguration on this setup. Single Sender
+	// Verification proves ONE address, and SendGrid matches it exactly - a
+	// different address, or a typo in the display name's address, is a 403 on
+	// every send while looking perfectly reasonable in the environment file.
+	note(`Sending as ${from}`);
+	note(
+		"This must match a verified sender at Settings > Sender Authentication,",
+	);
+	note(
+		"or every send fails with a does-not-match-a-verified-Sender-Identity error.",
+	);
 
 	if (NO_SEND) {
 		skip("--no-send given, not sending a test email.");
 		return;
 	}
 
-	const response = await fetch("https://api.resend.com/emails", {
+	const response = await fetch(SENDGRID_ENDPOINT, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${apiKey}`,
 			"Content-Type": "application/json",
 		},
 		body: JSON.stringify({
-			from,
-			to,
+			personalizations: to.map((address) => ({ to: [{ email: address }] })),
+			from: parseSender(from),
 			subject: "[Takda PH] Contact notifications are wired up",
-			text: "This is a test from pnpm check:notifiers. Nothing to action.",
+			content: [
+				{
+					type: "text/plain",
+					value: "This is a test from pnpm check:notifiers. Nothing to action.",
+				},
+			],
 		}),
 	});
 
+	// 202 Accepted, not 200: SendGrid queues rather than delivering inline.
 	if (!response.ok) {
 		const detail = await response.text().catch(() => "");
-		bad(`Resend responded ${response.status}: ${detail}`);
-		if (detail.includes("domain")) {
-			note("Unverified domain: either verify yours at resend.com/domains,");
-			note('or use "onboarding@resend.dev" and send only to your own address.');
+		bad(`SendGrid responded ${response.status}: ${detail.slice(0, 300)}`);
+		if (detail.includes("Sender Identity")) {
+			note("CONTACT_EMAIL_FROM does not match a verified sender.");
+			note("Check the exact address at Settings > Sender Authentication.");
 		}
 		return;
 	}
+
 	ok(`Test email accepted for ${to.join(", ")} - check the inbox.`);
+	note("Single-sender mail is not DKIM-aligned, so check spam as well.");
+}
+
+/** Splits "Takda PH <a@b.com>" into SendGrid's object form. */
+function parseSender(value: string): { email: string; name?: string } {
+	const match = value.match(/^\s*(.*?)\s*<\s*(.+?)\s*>\s*$/);
+	if (!match) return { email: value.trim() };
+	const [, name, email] = match;
+	return name ? { email, name } : { email };
 }
 
 async function main() {
@@ -302,7 +308,7 @@ async function main() {
 	// Sequential, not Promise.all: the output is a setup checklist meant to be
 	// read top to bottom, and interleaved results from two services would be
 	// harder to follow than the second or so this costs.
-	await testResend();
+	await testSendGrid();
 	await testTelegram();
 	console.log("");
 }
