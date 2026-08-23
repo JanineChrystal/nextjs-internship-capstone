@@ -3,6 +3,7 @@
 import { DeadlineCard } from "@/app/(dashboard)/_components/ui/cards/deadline-card";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
+import { useRecordSkeletonCount } from "@/hooks/use-skeleton-count";
 import type { CalendarDeadlineItem } from "@/types/calendar";
 import { useCalendarSelection } from "./_hooks/use-calendar-selection";
 
@@ -43,6 +44,9 @@ export function CalendarSidePanel({
 		confirmAction,
 		closeConfirm,
 	} = useCalendarSelection(items);
+
+	// Feeds the side-panel skeleton in /calendar/loading.tsx.
+	useRecordSkeletonCount("calendar-deadlines", items.length);
 
 	return (
 		<div className="xl:col-span-1 bg-surface rounded-xl border border-outline-variant p-4 sm:p-6 h-100 sm:h-125 xl:h-187.5 relative flex flex-col">

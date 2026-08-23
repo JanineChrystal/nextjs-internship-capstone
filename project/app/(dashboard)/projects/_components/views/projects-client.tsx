@@ -8,6 +8,7 @@ import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-mo
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { TASK_PRIORITY_OPTIONS } from "@/app/(dashboard)/_constants/task";
 import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
+import { useRecordSkeletonCount } from "@/hooks/use-skeleton-count";
 import { applyArchiveOperationAction } from "@/lib/actions/archive-actions";
 import { TRASH_RETENTION_DAYS } from "@/lib/constants/archive";
 import { buildConfirmCopy } from "@/lib/constants/confirm-copy";
@@ -36,6 +37,12 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 	// 3. (Optional but recommended) Pass the initial data into your custom hook
 	// so it can use the server-fetched data as its starting state.
 	const { modals, selection, filters } = useProjectsClient(initialProjects);
+
+	// Lets /projects/loading.tsx draw one placeholder card per real project on
+	// the next visit instead of a hard-coded six. The UNFILTERED count, because
+	// filter state is local and resets on reload - recording a filtered 1 would
+	// mean one lonely placeholder before twenty cards arrived.
+	useRecordSkeletonCount("projects", initialProjects.length);
 	const router = useRouter();
 
 	/**

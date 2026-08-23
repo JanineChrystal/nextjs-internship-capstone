@@ -7,6 +7,7 @@ import { TeamToolbar } from "@/app/(dashboard)/team/_components/team-toolbar";
 import { BoardView } from "@/app/(dashboard)/team/_components/views/board-view";
 import { GridView } from "@/app/(dashboard)/team/_components/views/grid-view";
 import { PendingView } from "@/app/(dashboard)/team/_components/views/pending-view";
+import { useRecordSkeletonCount } from "@/hooks/use-skeleton-count";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
 import { useDirectorySelection } from "../_hooks/use-directory-selection";
 import { useWorkspaceDirectory } from "../_hooks/use-workspace-directory";
@@ -24,6 +25,8 @@ interface TeamPageClientProps {
 }
 
 export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
+	// Feeds /team/loading.tsx its row count on the next visit.
+	useRecordSkeletonCount("team-members", initialMembers.length);
 	const {
 		members,
 		removal,

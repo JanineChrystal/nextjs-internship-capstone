@@ -5,6 +5,7 @@ import { useState } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { Button } from "@/components/ui/buttons/button";
 import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
+import { useRecordSkeletonCount } from "@/hooks/use-skeleton-count";
 import type { NotificationFeedItemDTO } from "@/lib/dtos/activity-dto";
 import { useNotifications } from "../_hooks/use-notifications";
 import { NotificationRow } from "./notification-row";
@@ -30,6 +31,9 @@ export function NotificationsClient({
 		remove,
 		loadMore,
 	} = useNotifications(initialNotifications, initialHasMore);
+
+	// Feeds /notifications/loading.tsx its row count on the next visit.
+	useRecordSkeletonCount("notifications", notifications.length);
 
 	const [isConfirmingMarkAll, setIsConfirmingMarkAll] = useState(false);
 

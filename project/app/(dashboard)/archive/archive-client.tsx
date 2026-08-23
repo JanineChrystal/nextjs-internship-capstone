@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BaseCard } from "@/components/ui/cards/base-card";
+import { useRecordSkeletonCount } from "@/hooks/use-skeleton-count";
 import { TRASH_RETENTION_DAYS } from "@/lib/constants/archive";
 import type { ArchivePageDTO } from "@/lib/dtos/archive-dto";
 import { ViewTabs } from "../_components/ui/toolbar/view-tabs";
@@ -23,6 +24,10 @@ export function ArchiveClient({ initial }: ArchiveClientProps) {
 
 	const isArchiveTab = tab === "archive";
 	const items = isArchiveTab ? archived : trashed;
+
+	// The visible tab, not the sum: the skeleton stands in for one list, and the
+	// page always opens on Archive.
+	useRecordSkeletonCount("archive-items", archived.length);
 
 	return (
 		<BaseCard className="hover:scale-100 gap-4">
