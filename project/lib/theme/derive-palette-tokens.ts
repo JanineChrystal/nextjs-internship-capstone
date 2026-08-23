@@ -3,8 +3,13 @@ import {
 	adjustForContrast,
 	chroma,
 	contrastRatio,
+	DARK_INK,
+	LIGHT_INK,
+	lightnessOf,
 	MIN_TEXT_CONTRAST,
 	readableInkOn,
+	shiftLightness,
+	worstRampContrast,
 } from "./color";
 
 /**
@@ -32,7 +37,89 @@ export const PALETTE_TOKEN_NAMES = [
 	"--primary-container",
 	"--on-primary-container",
 	"--surface-tint",
+	"--gradient-from",
+	"--gradient-to",
+	"--on-gradient",
 ] as const;
+
+/**
+ * How far apart the two ends of a gradient must be in lightness.
+ *
+ * Below this the surface reads as a flat fill someone forgot to finish. It
+ * matters most on the low-chroma palettes - Dark Forest is grey at every step,
+ * so its gradient can only be told from a solid colour by how light each end is.
+ * The alternative considered was rendering those palettes flat; separating them
+ * is better, because a grey-to-grey ramp is still a gradient and still catches
+ * the light the way the reference design does.
+ */
+const MIN_GRADIENT_SEPARATION = 0.14;
+
+/**
+ * A gradient pair for one palette and mode, legible along its whole length.
+ *
+ * Three steps, in order:
+ *
+ * 1. **Take two steps from the palette itself**, so the surface keeps the
+ *    theme's character rather than being a tint of the derived accent.
+ * 2. **Push them apart** if they are too close to read as a ramp.
+ * 3. **Move both together** until the worst point of the ramp - not either end -
+ *    clears the text floor against whichever ink suits it better.
+ *
+ * Step 3 moves the pair rather than re-picking, so the separation established in
+ * step 2 survives; and it moves *both* ends by the same amount, so the ramp
+ * keeps its shape instead of one end sliding into the other.
+ */
+function deriveGradient(
+	swatches: ThemePalette["swatches"],
+	mode: ThemeMode,
+): { from: string; to: string; ink: string } {
+	let from = mode === "dark" ? swatches[0] : swatches[1];
+	let to = mode === "dark" ? swatches[2] : swatches[3];
+
+	// 2. Separation.
+	const gap = lightnessOf(to) - lightnessOf(from);
+	if (Math.abs(gap) < MIN_GRADIENT_SEPARATION) {
+		const push = (MIN_GRADIENT_SEPARATION - Math.abs(gap)) / 2;
+		from = shiftLightness(from, -push);
+		to = shiftLightness(to, push);
+	}
+
+	// 3. Legibility along the ramp.
+	const ink =
+		worstRampContrast(from, to, LIGHT_INK) >=
+		worstRampContrast(from, to, DARK_INK)
+			? LIGHT_INK
+			: DARK_INK;
+
+	// Away from the ink: darker under white text, lighter under dark text.
+	const direction = ink === LIGHT_INK ? -1 : 1;
+
+	// A linear walk rather than a binary search, because shifting the pair is not
+	// monotonic the way shifting one colour is - clamping at black or white can
+	// flatten the ramp and *reduce* contrast again. Stepping means the first
+	// passing value found is also the smallest one tried.
+	for (let step = 0; step <= 20; step += 1) {
+		const delta = direction * step * 0.05;
+		const candidateFrom = shiftLightness(from, delta);
+		const candidateTo = shiftLightness(to, delta);
+
+		if (
+			worstRampContrast(candidateFrom, candidateTo, ink) >= MIN_TEXT_CONTRAST
+		) {
+			return { from: candidateFrom, to: candidateTo, ink };
+		}
+	}
+
+	// Unreachable for any palette in this project - the loop reaches pure black or
+	// white, where one of the two inks always clears 4.5:1. Returned rather than
+	// thrown so a future palette that somehow defeated it would render a slightly
+	// low-contrast panel instead of taking down the page.
+	return {
+		from: shiftLightness(from, direction),
+		to: shiftLightness(to, direction),
+		ink,
+	};
+}
 
 /**
  * Below this, a swatch reads as off-white or grey rather than as a colour.
@@ -165,11 +252,16 @@ export function derivePaletteTokens(
 			? tintedInk
 			: readableInkOn(primaryContainer);
 
+	const gradient = deriveGradient(swatches, mode);
+
 	return {
 		"--primary": primary,
 		"--on-primary": readableInkOn(primary),
 		"--primary-container": primaryContainer,
 		"--on-primary-container": onPrimaryContainer,
+		"--gradient-from": gradient.from,
+		"--gradient-to": gradient.to,
+		"--on-gradient": gradient.ink,
 		// The tint is a wash used behind translucent surfaces rather than a
 		// foreground, so it takes a mid step and needs no contrast floor of its
 		// own - whatever sits on top is measured against the surface it lands on.

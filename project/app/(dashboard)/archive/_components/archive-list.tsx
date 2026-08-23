@@ -48,6 +48,7 @@ export function ArchiveList({
 	if (items.length === 0) {
 		return (
 			<EmptyState
+				subdued
 				icon={Inbox}
 				title={emptyTitle}
 				description={emptyDescription}

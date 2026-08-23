@@ -37,4 +37,8 @@ export interface PaletteTokens {
 	"--primary-container": string;
 	"--on-primary-container": string;
 	"--surface-tint": string;
+	/** The two ends of a gradient surface, and the ink that stays legible across it. */
+	"--gradient-from": string;
+	"--gradient-to": string;
+	"--on-gradient": string;
 }

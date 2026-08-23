@@ -85,6 +85,7 @@ export function UserProfileView({
 					</div>
 				) : (
 					<EmptyState
+						subdued
 						icon={FolderLock}
 						title="No shared projects"
 						description="You and this team member do not currently share any common projects."

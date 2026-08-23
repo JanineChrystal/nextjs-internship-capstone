@@ -5,12 +5,18 @@ import {
 	chroma,
 	contrastRatio,
 	hexToRgb,
+	lightnessOf,
 	MIN_TEXT_CONTRAST,
+	mixColors,
 	readableInkOn,
 	relativeLuminance,
 	rgbToHex,
+	worstRampContrast,
 } from "./color";
-import { derivePaletteTokens } from "./derive-palette-tokens";
+import {
+	derivePaletteTokens,
+	PALETTE_TOKEN_NAMES,
+} from "./derive-palette-tokens";
 import { DEFAULT_PALETTE_ID, THEME_PALETTES } from "./palettes";
 
 const LIGHT_SURFACE = "#f9f9f9";
@@ -171,6 +177,53 @@ describe("chroma", () => {
 	});
 });
 
+describe("mixColors", () => {
+	it("returns the endpoints at 0 and 1", () => {
+		expect(mixColors("#000000", "#ffffff", 0)).toBe("#000000");
+		expect(mixColors("#000000", "#ffffff", 1)).toBe("#ffffff");
+	});
+
+	it("interpolates in sRGB, matching what a CSS gradient draws", () => {
+		// Not a perceptual midpoint - deliberately. Measuring contrast from a
+		// nicer ramp than the browser paints would measure the wrong colours.
+		expect(mixColors("#000000", "#ffffff", 0.5)).toBe("#808080");
+	});
+});
+
+describe("worstRampContrast", () => {
+	it("catches a mid-ramp dip that both endpoints hide", () => {
+		// The failure this whole rule exists for, as a real pair. Dark ink clears
+		// 4.5:1 against BOTH ends of this ramp - 4.53 and 4.66 - and collapses to
+		// 2.52 across the middle, which is where a button label sits. Anyone
+		// checking the two colours they picked would call this palette fine.
+		const from = "#009900";
+		const to = "#ff0099";
+		const ink = "#1a1c1c";
+
+		expect(contrastRatio(ink, from)).toBeGreaterThan(MIN_TEXT_CONTRAST);
+		expect(contrastRatio(ink, to)).toBeGreaterThan(MIN_TEXT_CONTRAST);
+		expect(worstRampContrast(from, to, ink)).toBeLessThan(MIN_TEXT_CONTRAST);
+	});
+
+	it("is never kinder than the worse of the two endpoints", () => {
+		expect(
+			worstRampContrast("#003178", "#b0c6ff", "#ffffff"),
+		).toBeLessThanOrEqual(
+			Math.min(
+				contrastRatio("#ffffff", "#003178"),
+				contrastRatio("#ffffff", "#b0c6ff"),
+			),
+		);
+	});
+
+	it("equals the endpoint contrast when both ends are the same colour", () => {
+		expect(worstRampContrast("#003178", "#003178", "#ffffff")).toBeCloseTo(
+			contrastRatio("#ffffff", "#003178"),
+			5,
+		);
+	});
+});
+
 describe("THEME_PALETTES", () => {
 	it("holds exactly six parseable swatches per palette", () => {
 		// This is what guarantees hexToRgb's throw can never reach a browser.
@@ -238,10 +291,13 @@ describe("derivePaletteTokens", () => {
 		}
 	});
 
-	it("returns all five tokens as hex strings", () => {
+	it("returns every token as a hex string", () => {
 		const tokens = derivePaletteTokens(THEME_PALETTES[0], "light");
 
-		expect(Object.keys(tokens)).toHaveLength(5);
+		// Kept in step with PALETTE_TOKEN_NAMES, which the applier iterates to
+		// REMOVE the overrides when Default is chosen. If the two ever disagree,
+		// picking Default would leave some of them applied.
+		expect(Object.keys(tokens).sort()).toEqual([...PALETTE_TOKEN_NAMES].sort());
 		for (const value of Object.values(tokens)) {
 			expect(() => hexToRgb(value)).not.toThrow();
 		}
@@ -284,6 +340,45 @@ describe("derivePaletteTokens", () => {
 				chroma(dark["--primary"]),
 				`${palette.id}: dark accent has lost its colour`,
 			).toBeGreaterThanOrEqual(0.2);
+		}
+	});
+
+	it("keeps every gradient legible along its whole ramp", () => {
+		// Twenty-four gradients, each sampled at five points. The endpoints alone
+		// would pass for palettes that fail in the middle - see the
+		// worstRampContrast suite above for what that looks like.
+		for (const palette of THEME_PALETTES) {
+			for (const mode of MODES) {
+				const tokens = derivePaletteTokens(palette, mode);
+
+				expect(
+					worstRampContrast(
+						tokens["--gradient-from"],
+						tokens["--gradient-to"],
+						tokens["--on-gradient"],
+					),
+					`${palette.id} / ${mode}: worst point of the gradient`,
+				).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
+			}
+		}
+	});
+
+	it("keeps the two ends of every gradient far enough apart to read as one", () => {
+		// The low-chroma palettes are why this exists. Dark Forest is grey at
+		// every step, so its ramp can only be told from a flat fill by lightness.
+		for (const palette of THEME_PALETTES) {
+			for (const mode of MODES) {
+				const tokens = derivePaletteTokens(palette, mode);
+				const separation = Math.abs(
+					lightnessOf(tokens["--gradient-from"]) -
+						lightnessOf(tokens["--gradient-to"]),
+				);
+
+				expect(
+					separation,
+					`${palette.id} / ${mode}: gradient ends are too close`,
+				).toBeGreaterThan(0.1);
+			}
 		}
 	});
 

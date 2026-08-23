@@ -34,6 +34,7 @@ export function RecentProjectsPanel({ projects }: RecentProjectsPanelProps) {
 
 			{projects.length === 0 ? (
 				<EmptyState
+					subdued
 					icon={FolderOpen}
 					title="No projects yet"
 					description="Create your first project and its progress will appear here."

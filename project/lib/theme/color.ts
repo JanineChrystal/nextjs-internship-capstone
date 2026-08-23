@@ -19,9 +19,15 @@
 /** WCAG AA for normal-size text. Also what this app uses for icon-sized marks. */
 export const MIN_TEXT_CONTRAST = 4.5;
 
-/** The two inks a derived colour can carry, matching globals.css. */
-const LIGHT_INK = "#ffffff";
-const DARK_INK = "#1a1c1c";
+/**
+ * The two inks a derived colour can carry, matching globals.css.
+ *
+ * Exported because the gradient derivation picks between them too, and a second
+ * copy of `#1a1c1c` in another file is one that would not be updated when the
+ * design system's dark ink changes.
+ */
+export const LIGHT_INK = "#ffffff";
+export const DARK_INK = "#1a1c1c";
 
 type Rgb = readonly [number, number, number];
 type Hsl = readonly [number, number, number];
@@ -181,6 +187,70 @@ function hslToRgb([h, s, l]: Hsl): Rgb {
 	)[sector];
 
 	return [(r + match) * 255, (g + match) * 255, (b + match) * 255];
+}
+
+/** A colour's HSL lightness, 0 to 1. */
+export function lightnessOf(hex: string): number {
+	return rgbToHsl(hexToRgb(hex))[2];
+}
+
+/** The same colour at a different lightness, hue and saturation kept. */
+export function withLightness(hex: string, lightness: number): string {
+	const [hue, saturation] = rgbToHsl(hexToRgb(hex));
+	return rgbToHex(
+		hslToRgb([hue, saturation, Math.min(1, Math.max(0, lightness))]),
+	);
+}
+
+/** Moves a colour up or down its lightness axis by `delta`. */
+export function shiftLightness(hex: string, delta: number): string {
+	return withLightness(hex, lightnessOf(hex) + delta);
+}
+
+/**
+ * A colour `t` of the way from `from` to `to`.
+ *
+ * Interpolated in plain sRGB because that is what a CSS `linear-gradient`
+ * without an explicit colour space does. Mixing in a perceptual space here would
+ * be a nicer ramp and would describe a gradient the browser is not drawing - so
+ * the contrast measured from it would be measured from the wrong colours.
+ */
+export function mixColors(from: string, to: string, t: number): string {
+	const a = hexToRgb(from);
+	const b = hexToRgb(to);
+	return rgbToHex([
+		a[0] + (b[0] - a[0]) * t,
+		a[1] + (b[1] - a[1]) * t,
+		a[2] + (b[2] - a[2]) * t,
+	]);
+}
+
+/** Where along a gradient the contrast is sampled. */
+const RAMP_SAMPLES = [0, 0.25, 0.5, 0.75, 1];
+
+/**
+ * The contrast of `ink` against the *worst* point of a gradient.
+ *
+ * ## Why the endpoints are not enough
+ *
+ * A gradient from a dark blue to a light amber can clear 4.5:1 at both ends and
+ * pass through a mid-tone in the middle where white text measures 2:1 and black
+ * text measures 2.5:1 - neither works, and that band is usually right where the
+ * label sits. Checking only the two ends is the standard way a gradient button
+ * ships unreadable across its middle third, and it is invisible in review
+ * because both the colours you *chose* are fine.
+ *
+ * Five samples rather than two: enough to catch a mid-ramp dip, cheap enough to
+ * run for twelve palettes in both modes inside a test.
+ */
+export function worstRampContrast(
+	from: string,
+	to: string,
+	ink: string,
+): number {
+	return Math.min(
+		...RAMP_SAMPLES.map((t) => contrastRatio(ink, mixColors(from, to, t))),
+	);
 }
 
 /**

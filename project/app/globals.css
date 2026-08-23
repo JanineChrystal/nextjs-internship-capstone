@@ -203,6 +203,14 @@
 		   unmistakably red instead of becoming pale pink in dark mode, which is
 		   what --error would have given.
 		   White labels on all three, measured: 5.6:1, 5.0:1, 5.9:1. */
+		/* The two ends of a gradient surface, and the ink that stays legible
+		   across the whole ramp rather than only at the two ends. Derived by
+		   lib/theme/derive-palette-tokens.ts for every other palette; these are the
+		   Default values, hand-authored to match what that rule produces. */
+		--gradient-from: #003178;
+		--gradient-to: #2b5bb5;
+		--on-gradient: #ffffff;
+
 		--danger-solid: #c62828;
 		--on-danger-solid: #ffffff;
 		--warning-solid: #b45309;
@@ -306,6 +314,10 @@
 		--on-error: #690005;
 		--error-container: #93000a;
 		--on-error-container: #ffdad6;
+
+		--gradient-from: #001945;
+		--gradient-to: #0d47a1;
+		--on-gradient: #ffffff;
 
 		/* Status tones, dark. Not an inversion of the light set: the container
 		   becomes a deep, desaturated version of the hue so it sits on #121212

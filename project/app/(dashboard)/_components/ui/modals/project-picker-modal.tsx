@@ -129,6 +129,7 @@ export function ProjectPickerModal({
 
 				{projects.length === 0 ? (
 					<EmptyState
+						subdued
 						icon={FolderOpen}
 						title="No projects yet"
 						description="Create a project first, then you can add tasks and members to it."
@@ -138,12 +139,14 @@ export function ProjectPickerModal({
 					   the top is clearer than leaving someone to work it out from a
 					   list where every row happens to be greyed. */
 					<EmptyState
+						subdued
 						icon={Lock}
 						title="No project you can do this on"
 						description={`You have access to ${projects.length} ${projects.length === 1 ? "project" : "projects"}, but not at a level that allows this.`}
 					/>
 				) : visible.length === 0 ? (
 					<EmptyState
+						subdued
 						icon={Search}
 						title="No match"
 						description={`Nothing matches "${query.trim()}".`}
