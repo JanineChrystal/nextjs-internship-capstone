@@ -91,19 +91,56 @@ export const clerkAuthAppearance: ClerkAppearance = {
 /**
  * The account panel embedded in Settings.
  *
- * Clerk ships its own card chrome - a border, a shadow and a background. All
- * three are stripped because the panel already sits inside one of our cards,
- * and two borders around the same content reads as a rendering bug rather than
- * as depth.
+ * ## One container, not three
+ *
+ * `<UserProfile>` ships a complete page of its own: a card with a border, a
+ * shadow and a background, and inside it a left column carrying a heading and a
+ * Profile/Security nav. Dropped unaltered into a settings page that already has
+ * a card and already has a sidebar, that produced three nested containers and
+ * two navigations for the same four destinations. Everything below exists to
+ * strip Clerk back to its content so our card is the only card.
+ *
+ * ## Why the navbar goes
+ *
+ * The app sidebar's Settings menu already lists Account and Security, and
+ * `routing="hash"` means Clerk reads which of its screens to show straight off
+ * the URL fragment. So the menu we already have can drive Clerk's screens
+ * directly, and Clerk's own copy of that menu is redundant - a second control
+ * for one decision, which is how two navigations drift out of step.
+ *
+ * `navbarMobileMenuRow` goes with it. Below Clerk's own breakpoint the navbar
+ * collapses into a hamburger row instead of disappearing, so hiding only
+ * `navbar` would remove the menu on a desktop and leave a button opening it on
+ * a phone.
+ *
+ * Hiding the navbar also hides the heading that sits inside it, which is the
+ * only thing that said whether you were on Profile or Security. `AccountSection`
+ * puts that back by reading the same fragment Clerk reads.
+ *
+ * ## Why these are style objects, not class strings
+ *
+ * The same cascade problem as the auth widget: Clerk injects its stylesheet at
+ * runtime, after ours, so `display: none` from a Tailwind class and
+ * `display: flex` from Clerk's own rule have equal specificity and the later
+ * one wins. An inline style is not in the cascade at all. The class-string form
+ * happened to work for the transparent-background overrides and never worked for
+ * `footer: "hidden"` - which is a confusing pair of behaviours to leave in one
+ * object, so all of them are styles now.
  */
 export const clerkUserProfileAppearance: ClerkAppearance = {
 	...clerkAppearance,
 	elements: {
-		rootBox: "w-full",
-		cardBox: "w-full border-none shadow-none bg-transparent",
-		card: "bg-transparent shadow-none",
-		navbar: "border-r border-border rounded-none",
+		rootBox: { width: "100%" },
+		cardBox: {
+			width: "100%",
+			border: "none",
+			boxShadow: "none",
+			background: "transparent",
+		},
+		card: { background: "transparent", boxShadow: "none" },
+		navbar: { display: "none" },
+		navbarMobileMenuRow: { display: "none" },
 		// Vendor branding inside what reads as our own settings page.
-		footer: "hidden",
+		footer: { display: "none" },
 	},
 };

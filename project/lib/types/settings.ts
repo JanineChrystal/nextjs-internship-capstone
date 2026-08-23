@@ -15,3 +15,13 @@ export type SettingsSectionDomId =
 	| "settings-account"
 	| "settings-notifications"
 	| "settings-appearance";
+
+/**
+ * Which screen Clerk's `<UserProfile>` is showing.
+ *
+ * A narrower type than `SettingsNavId` on purpose: those four are our menu
+ * entries, and only two of them are screens Clerk owns. Reusing the wider type
+ * would let `"appearance"` be passed to something that can only ever answer
+ * Profile or Security.
+ */
+export type ClerkProfileScreen = "account" | "security";

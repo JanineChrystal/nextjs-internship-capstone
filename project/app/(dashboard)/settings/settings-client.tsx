@@ -7,7 +7,6 @@ import type { NotificationSettingsDTO } from "@/lib/dtos/notification-settings-d
 import { useSettingsNavStore } from "@/stores/use-settings-nav-store";
 import { AppearanceSection } from "./_components/appearance-section";
 import { NotificationsSection } from "./_components/notifications-section";
-import { SettingsNavCard } from "./_components/settings-nav-card";
 import { useSettingsScroll } from "./_hooks/use-settings-scroll";
 
 /**
@@ -49,14 +48,17 @@ export function SettingsClient({ notificationSettings }: SettingsClientProps) {
 	useEffect(() => reset, [reset]);
 
 	return (
-		<div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
-			<SettingsNavCard />
-
-			<div className="flex flex-col gap-6 min-w-0">
-				<AccountSection />
-				<NotificationsSection initialSettings={notificationSettings} />
-				<AppearanceSection />
-			</div>
+		// A single column, full width. There used to be a sticky menu card in a
+		// 220px track beside these sections, listing the same four entries the app
+		// sidebar already lists. It was justified while the sidebar could be closed
+		// entirely - but two controls for one decision is a redundancy the reader
+		// has to resolve, and the one that stays is the one present on every page.
+		// The sections get the whole width back, which the Clerk panel in
+		// particular needed.
+		<div className="flex flex-col gap-6 min-w-0">
+			<AccountSection />
+			<NotificationsSection initialSettings={notificationSettings} />
+			<AppearanceSection />
 		</div>
 	);
 }

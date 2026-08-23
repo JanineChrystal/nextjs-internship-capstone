@@ -25,7 +25,7 @@ export default async function SettingsPage() {
 		<div className="flex flex-col gap-6 w-full max-w-7xl mx-auto pb-8">
 			<PageHeader
 				title="Settings"
-				description="Manage your account and application preferences. Everything lives on this page - the menu jumps you to a section."
+				description="Manage your account and application preferences. Everything lives on this page - the Settings menu in the sidebar jumps you to a section."
 			/>
 
 			<SettingsClient notificationSettings={notificationSettings} />
