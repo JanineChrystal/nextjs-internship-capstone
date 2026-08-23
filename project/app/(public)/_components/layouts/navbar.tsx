@@ -26,6 +26,7 @@ import {
 	LANDING_SECTIONS,
 	OBSERVED_SECTION_IDS,
 } from "../../_constants/nav";
+import { useSectionLink } from "../../_hooks/use-section-link";
 import { useSectionSpy } from "../../_hooks/use-section-spy";
 
 /**
@@ -39,14 +40,16 @@ import { useSectionSpy } from "../../_hooks/use-section-spy";
  */
 export function Navbar() {
 	const { activeId, scrollToSection } = useSectionSpy(OBSERVED_SECTION_IDS);
+	const { hrefFor, handleAnchor: onAnchor } = useSectionLink(scrollToSection);
 	const [isMobileOpen, setIsMobileOpen] = useState(false);
 
+	// Closing the mobile sheet happens either way: on the landing page the scroll
+	// is about to run underneath it, and off it the page is about to change.
 	const handleAnchor = (
 		event: React.MouseEvent<HTMLAnchorElement>,
 		sectionId: string,
 	) => {
-		event.preventDefault();
-		scrollToSection(sectionId);
+		onAnchor(event, sectionId);
 		setIsMobileOpen(false);
 	};
 
@@ -79,7 +82,7 @@ export function Navbar() {
 										<li key={entry.label}>
 											<NavigationMenuLink asChild>
 												<a
-													href={`#${entry.sectionId}`}
+													href={hrefFor(entry.sectionId)}
 													onClick={(event) =>
 														handleAnchor(event, entry.sectionId)
 													}
@@ -111,7 +114,7 @@ export function Navbar() {
 							<NavigationMenuItem key={entry.sectionId}>
 								<NavigationMenuLink asChild>
 									<a
-										href={`#${entry.sectionId}`}
+										href={hrefFor(entry.sectionId)}
 										onClick={(event) => handleAnchor(event, entry.sectionId)}
 										className={cn(
 											"inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium transition-colors hover:bg-muted",
@@ -158,7 +161,7 @@ export function Navbar() {
 								{LANDING_NAV.map((entry) => (
 									<a
 										key={entry.sectionId}
-										href={`#${entry.sectionId}`}
+										href={hrefFor(entry.sectionId)}
 										onClick={(event) => handleAnchor(event, entry.sectionId)}
 										className={cn(
 											"rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted",

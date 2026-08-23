@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/buttons/button";
 import { useLandingUiStore } from "@/stores/use-landing-ui-store";
 import { FOOTER_COLUMNS } from "../../_constants/landing";
+import { useSectionLink } from "../../_hooks/use-section-link";
 import { useSectionSpy } from "../../_hooks/use-section-spy";
 
 /**
@@ -27,15 +28,21 @@ const NO_OBSERVED_SECTIONS: string[] = [];
 
 export function Footer() {
 	const { scrollToSection } = useSectionSpy(NO_OBSERVED_SECTIONS);
+	const { hrefFor, handleAnchor: onAnchor } = useSectionLink(scrollToSection);
 	const openContact = useLandingUiStore((state) => state.openContact);
+
+	// The configured hrefs are a mix: section anchors like "#pricing" and, in
+	// principle, real paths. Only the anchors are rewritten - a real path is
+	// already correct from any page.
+	const resolveHref = (href: string) =>
+		href.startsWith("#") ? hrefFor(href.slice(1)) : href;
 
 	const handleAnchor = (
 		event: React.MouseEvent<HTMLAnchorElement>,
 		href: string,
 	) => {
 		if (!href.startsWith("#")) return;
-		event.preventDefault();
-		scrollToSection(href.slice(1));
+		onAnchor(event, href.slice(1));
 	};
 
 	return (
@@ -81,7 +88,7 @@ export function Footer() {
 								{column.links.map((link) => (
 									<li key={link.label}>
 										<a
-											href={link.href}
+											href={resolveHref(link.href)}
 											onClick={(event) => handleAnchor(event, link.href)}
 											className="text-sm text-secondary transition-colors hover:text-primary"
 										>
@@ -99,7 +106,23 @@ export function Footer() {
 						&copy; {new Date().getFullYear()} Takda PH. Built as a capstone
 						project.
 					</p>
-					<p>Made in the Philippines.</p>
+					{/* Real routes, not section anchors like the columns above - which
+					    is why these are `Link` and skip the anchor handler. */}
+					<nav aria-label="Legal" className="flex items-center gap-4">
+						<Link
+							href="/privacy"
+							className="transition-colors hover:text-primary"
+						>
+							Privacy
+						</Link>
+						<Link
+							href="/terms"
+							className="transition-colors hover:text-primary"
+						>
+							Terms
+						</Link>
+						<span>Made in the Philippines.</span>
+					</nav>
 				</div>
 			</div>
 		</footer>

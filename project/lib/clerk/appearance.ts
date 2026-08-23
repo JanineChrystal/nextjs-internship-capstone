@@ -48,6 +48,47 @@ export const clerkAppearance: ClerkAppearance = {
 };
 
 /**
+ * The `SignIn` and `SignUp` widgets on the auth pages.
+ *
+ * ## Clerk's card IS the card
+ *
+ * Unlike the Settings panel, nothing here strips Clerk's chrome. The auth pages
+ * wrap the widget in nothing of their own, so its border, radius and shadow are
+ * the page's only container. An earlier version put our own panel around it and
+ * produced two nested cards with two headings - a container inside a container,
+ * which reads as a rendering bug rather than as depth.
+ *
+ * ## Why these are style objects, not class strings
+ *
+ * `footer: "hidden"` looks like it should work and does not. Clerk injects its
+ * own stylesheet at runtime, after ours, so its `.cl-footer { display: flex }`
+ * and Tailwind's `.hidden { display: none }` have identical specificity and the
+ * later one wins. An inline style is not in the cascade at all and beats both
+ * without needing `!important` anywhere.
+ *
+ * ## What hiding the footer costs
+ *
+ * Clerk's footer carries two things at once - its "Secured by Clerk" branding
+ * and the link that switches between signing in and signing up. Hiding it
+ * removes both, so the auth pages must render that switch themselves. Losing it
+ * silently would strand someone with no account on a form they cannot leave,
+ * which is why `AuthShell` requires `switchHref` rather than defaulting it.
+ *
+ * The orange "Development mode" strip is not part of this. It comes from using
+ * a development Clerk instance and disappears on production keys; hiding it
+ * would mean losing the one visible signal that you are pointed at the dev
+ * instance.
+ */
+export const clerkAuthAppearance: ClerkAppearance = {
+	...clerkAppearance,
+	elements: {
+		rootBox: { width: "100%" },
+		cardBox: { width: "100%" },
+		footer: { display: "none" },
+	},
+};
+
+/**
  * The account panel embedded in Settings.
  *
  * Clerk ships its own card chrome - a border, a shadow and a background. All
