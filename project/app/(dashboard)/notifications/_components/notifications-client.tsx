@@ -1,8 +1,10 @@
 "use client";
 
 import { BellOff, CheckCheck } from "lucide-react";
+import { useState } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { Button } from "@/components/ui/buttons/button";
+import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
 import type { NotificationFeedItemDTO } from "@/lib/dtos/activity-dto";
 import { useNotifications } from "../_hooks/use-notifications";
 import { NotificationRow } from "./notification-row";
@@ -29,6 +31,8 @@ export function NotificationsClient({
 		loadMore,
 	} = useNotifications(initialNotifications, initialHasMore);
 
+	const [isConfirmingMarkAll, setIsConfirmingMarkAll] = useState(false);
+
 	return (
 		<div className="flex flex-col gap-6 w-full mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
 			<div className="flex flex-wrap items-start justify-between gap-4">
@@ -45,7 +49,7 @@ export function NotificationsClient({
 					<Button
 						type="button"
 						variant="outline"
-						onClick={markAllRead}
+						onClick={() => setIsConfirmingMarkAll(true)}
 						disabled={isBusy}
 						className="gap-2 shrink-0"
 					>
@@ -54,6 +58,24 @@ export function NotificationsClient({
 					</Button>
 				)}
 			</div>
+
+			{/* Confirmed because it is bulk and cannot be undone - there is no
+			    "mark unread", so a mis-click silently clears every badge in the app.
+			    Dismissing a single row is left unconfirmed on purpose: it affects
+			    one item, the result is visible immediately, and a dialog on every
+			    dismissal would make clearing a backlog unbearable. */}
+			<ConfirmDialog
+				isOpen={isConfirmingMarkAll}
+				onClose={() => setIsConfirmingMarkAll(false)}
+				onConfirm={() => {
+					setIsConfirmingMarkAll(false);
+					markAllRead();
+				}}
+				tone="info"
+				title={`Mark ${unreadCount} ${unreadCount === 1 ? "notification" : "notifications"} as read?`}
+				description="They stay on this page, but the unread badge clears everywhere. This cannot be undone."
+				confirmLabel="Mark all as read"
+			/>
 
 			{notifications.length === 0 ? (
 				<div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest py-16 text-center">

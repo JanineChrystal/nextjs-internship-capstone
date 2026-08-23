@@ -7,8 +7,10 @@ import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header
 import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { TASK_PRIORITY_OPTIONS } from "@/app/(dashboard)/_constants/task";
-import { ActionConfirmModal } from "@/components/modals/action-confirm-modal";
+import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
 import { applyArchiveOperationAction } from "@/lib/actions/archive-actions";
+import { TRASH_RETENTION_DAYS } from "@/lib/constants/archive";
+import { buildConfirmCopy } from "@/lib/constants/confirm-copy";
 import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import type { Project } from "@/lib/validations/project-schema";
 import { useProjectsClient } from "../../_hooks/use-projects-client";
@@ -144,14 +146,22 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 				onClose={() => modals.create.setIsOpen(false)}
 			/>
 
-			<ActionConfirmModal
+			{/* Wording comes from buildConfirmCopy rather than a template string, so
+			    the single and bulk cases read as English - "this project" and
+			    "3 projects" - instead of the "project(s)" this used to render. */}
+			<ConfirmDialog
 				isOpen={modals.delete.isOpen}
 				onClose={modals.delete.close}
-				onConfirm={selection.confirmDelete}
-				title={isSingleDelete ? "Delete Project" : "Delete Projects"}
-				description={`Are you sure you want to delete ${deleteCount} selected project(s)? This action cannot be undone.`}
-				confirmText={isSingleDelete ? "Delete Project" : "Delete Projects"}
-				isDestructive={true}
+				onConfirm={() => {
+					selection.confirmDelete();
+					modals.delete.close();
+				}}
+				tone="danger"
+				{...buildConfirmCopy({
+					action: "delete",
+					subject: "project",
+					count: deleteCount,
+				})}
 			/>
 
 			<WarningModal
@@ -167,7 +177,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 				}
 				message={
 					modals.warning.actionType === "delete"
-						? "This project has ongoing tasks. Are you sure you want to delete it? This action cannot be undone."
+						? `This project has ongoing tasks. Are you sure you want to delete it? It moves to the trash, and is deleted permanently after ${TRASH_RETENTION_DAYS} days.`
 						: modals.warning.actionType === "archive"
 							? "There are still ongoing tasks in this project. Are you sure you want to archive it?"
 							: "There are still ongoing tasks in this project. Are you sure you want to set it as completed?"

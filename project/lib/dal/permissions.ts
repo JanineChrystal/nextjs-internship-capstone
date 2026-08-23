@@ -4,6 +4,7 @@ import { unionAll } from "drizzle-orm/pg-core";
 import { cache } from "react";
 import { hasPermission, resolveEffectiveRole } from "@/lib/config/permissions";
 import { getCurrentUser } from "@/lib/dal/auth";
+import type { ProjectScope } from "@/lib/dal/projects";
 import { db } from "@/lib/db";
 import {
 	projectMembers,
@@ -34,13 +35,41 @@ import type { Permission, RoleAccess } from "@/lib/types/member";
  * exist - both are indistinguishable to the caller by design, so a probe cannot
  * confirm whether another tenant's project exists.
  *
+ * ## The scope argument, and the bug it fixes
+ *
+ * "live" is right for every normal screen: a trashed project should answer like
+ * one that was never there. But that made restoring impossible. Every branch
+ * below filtered on `isNull(projects.deletedAt)`, so once a project was in the
+ * trash the resolver reported no role, and `restore` and `purge` - the two
+ * operations that exist *because* the row is deleted - were refused as
+ * "You do not have permission to do that".
+ *
+ * `getAllUserProjectsDAL` had already met this and grown the same escape hatch;
+ * the archive page passes "all" there to list trashed rows at all. The
+ * permission check simply never got the matching change, so the page could show
+ * you an item and then refuse to act on it.
+ *
+ * A string rather than an options object, matching `ProjectScope`: cache() keys
+ * an object argument by reference, so every call would miss and re-run the
+ * union.
+ *
  * Cached per request so the many permission checks a single action performs
  * collapse to one query.
  */
 export const getEffectiveProjectRoleDAL = cache(
-	async (projectId: string): Promise<RoleAccess | null> => {
+	async (
+		projectId: string,
+		scope: ProjectScope = "live",
+	): Promise<RoleAccess | null> => {
 		const user = await getCurrentUser();
 		if (!user) return null;
+
+		// Undefined for "all", which drizzle drops from the AND. Only the project's
+		// own deletedAt is relaxed: a removed membership and a deleted team must
+		// still stop granting access in every scope, because those are revocations
+		// rather than a state the item can be recovered from.
+		const projectVisibility =
+			scope === "live" ? isNull(projects.deletedAt) : undefined;
 
 		const ownerBranch = db
 			.select({ role: sql<string>`'owner'`.as("role") })
@@ -49,7 +78,7 @@ export const getEffectiveProjectRoleDAL = cache(
 				and(
 					eq(projects.id, projectId),
 					eq(projects.ownerId, user.id),
-					isNull(projects.deletedAt),
+					projectVisibility,
 				),
 			);
 
@@ -62,7 +91,7 @@ export const getEffectiveProjectRoleDAL = cache(
 					eq(projectMembers.projectId, projectId),
 					eq(projectMembers.userId, user.id),
 					isNull(projectMembers.deletedAt),
-					isNull(projects.deletedAt),
+					projectVisibility,
 				),
 			);
 
@@ -80,7 +109,7 @@ export const getEffectiveProjectRoleDAL = cache(
 					eq(projectTeams.projectId, projectId),
 					eq(teamMembers.userId, user.id),
 					isNull(teams.deletedAt),
-					isNull(projects.deletedAt),
+					projectVisibility,
 				),
 			);
 
@@ -184,11 +213,17 @@ export const getEffectiveProjectRolesDAL = cache(
 	},
 );
 
+/**
+ * `scope` is passed straight through. Leave it alone for anything that acts on
+ * a live project; pass "all" only where the row being acted on is expected to
+ * be archived or trashed, which today means the archive operations.
+ */
 export async function verifyProjectPermissionDAL(
 	projectId: string,
 	permission: Permission,
+	scope: ProjectScope = "live",
 ): Promise<boolean> {
-	const role = await getEffectiveProjectRoleDAL(projectId);
+	const role = await getEffectiveProjectRoleDAL(projectId, scope);
 	return role ? hasPermission(role, permission) : false;
 }
 

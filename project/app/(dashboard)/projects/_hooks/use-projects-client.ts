@@ -6,7 +6,7 @@ import {
 	bulkDeleteProjectsAction,
 	deleteProjectAction,
 } from "@/lib/actions/project-actions";
-import { reportActionError } from "@/lib/utils/toast";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import type { Project } from "@/lib/validations/project-schema";
 import { useProjectStore } from "@/stores/use-project-store";
 
@@ -96,12 +96,17 @@ export function useProjectsClient(initialProjects: Project[]) {
 			try {
 				const result = await deleteProjectAction(projectToDelete);
 				if (!result?.success) throw new Error(result?.error || "Failed");
+				reportActionSuccess("Project deleted");
 			} catch (e) {
 				useProjectStore.getState().setProjects(previousProjects);
 				reportActionError("Could not delete project", e);
 			}
 			setProjectToDelete(null);
 		} else {
+			// Captured before the selection is cleared below, so the toast can say
+			// how many went. Reading it afterwards would always report zero.
+			const deletedCount = selectedProjectIds.size;
+
 			deleteProjects(selectedProjectIds);
 			setIsDeleteModalOpen(false);
 
@@ -110,6 +115,9 @@ export function useProjectsClient(initialProjects: Project[]) {
 					Array.from(selectedProjectIds),
 				);
 				if (!result?.success) throw new Error(result?.error || "Failed");
+				reportActionSuccess(
+					`${deletedCount} ${deletedCount === 1 ? "project" : "projects"} deleted`,
+				);
 			} catch (e) {
 				useProjectStore.getState().setProjects(previousProjects);
 				reportActionError("Could not delete the selected projects", e);
@@ -134,6 +142,9 @@ export function useProjectsClient(initialProjects: Project[]) {
 			try {
 				const result = await bulkArchiveProjectsAction(ids);
 				if (!result?.success) throw new Error(result?.error || "Failed");
+				reportActionSuccess(
+					`${ids.length} ${ids.length === 1 ? "project" : "projects"} archived`,
+				);
 			} catch (e) {
 				useProjectStore.getState().setProjects(previousProjects);
 				reportActionError("Could not archive the selected projects", e);
@@ -164,6 +175,9 @@ export function useProjectsClient(initialProjects: Project[]) {
 			try {
 				const result = await bulkCompleteProjectsAction(ids);
 				if (!result?.success) throw new Error(result?.error || "Failed");
+				reportActionSuccess(
+					`${ids.length} ${ids.length === 1 ? "project" : "projects"} marked complete`,
+				);
 			} catch (e) {
 				useProjectStore.getState().setProjects(previousProjects);
 				reportActionError("Could not complete the selected projects", e);

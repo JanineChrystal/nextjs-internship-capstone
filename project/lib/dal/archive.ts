@@ -289,7 +289,21 @@ export async function applyArchiveOperationDAL(
 		projectId = task.projectId;
 	}
 
-	const allowed = await verifyProjectPermissionDAL(projectId, permission);
+	// "all", not the default "live" - the same reason loadAccessibleProjectIds
+	// needs it above. Every operation here acts on a row that is archived or
+	// trashed, and the live scope treats a trashed project as though it does not
+	// exist. Under the default, restore and purge could never succeed on a
+	// trashed project: the page listed the item, then refused to act on it with
+	// "You do not have permission to do that".
+	//
+	// This widens WHERE the role is looked for, not WHO gets one. The user must
+	// still hold delete_project (or delete_task) on the row - a stranger is
+	// refused exactly as before.
+	const allowed = await verifyProjectPermissionDAL(
+		projectId,
+		permission,
+		"all",
+	);
 	if (!allowed) throw new Error("Unauthorized");
 
 	const stamps = OPERATION_STAMPS[operation];

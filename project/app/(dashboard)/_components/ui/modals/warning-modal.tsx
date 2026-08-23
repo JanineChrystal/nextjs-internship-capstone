@@ -1,8 +1,7 @@
 "use client";
 
-import { BaseModal } from "@/components/modals/base-modal";
-import { Button } from "@/components/ui/buttons/button";
-import { WARNING_MODAL_CONFIG } from "../../../_constants/warning-modal";
+import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
+import type { ConfirmTone } from "@/lib/types/feedback";
 
 interface WarningModalProps {
 	isOpen: boolean;
@@ -23,6 +22,19 @@ interface WarningModalProps {
 	hideCancel?: boolean;
 }
 
+/**
+ * Compatibility wrapper over `ConfirmDialog`.
+ *
+ * This was the app's second confirmation design, rendered through `BaseModal`
+ * with an icon bubble and colours taken from raw Tailwind palette classes
+ * (`text-red-600`, `text-amber-600`) rather than design tokens - so it did not
+ * follow the theme and would not have followed the Phase 7 palettes either.
+ *
+ * It now delegates to the shared dialog, which keeps its eleven call sites
+ * working untouched while leaving exactly one component that actually renders a
+ * confirmation. Migrate those call sites to `ConfirmDialog` directly as the
+ * polish pass reaches each screen, then delete this file.
+ */
 export function WarningModal({
 	isOpen,
 	onClose,
@@ -34,40 +46,22 @@ export function WarningModal({
 	variant = "danger",
 	hideCancel = false,
 }: WarningModalProps) {
-	const config = WARNING_MODAL_CONFIG[variant];
-	const Icon = config.icon;
-
 	return (
-		<BaseModal isOpen={isOpen} onClose={onClose} title={title} maxWidth="md">
-			<div className="p-6 space-y-6">
-				<div className="flex items-start gap-4">
-					<div className="p-3 bg-muted rounded-full shrink-0">
-						<Icon className={`h-6 w-6 ${config.iconClass}`} />
-					</div>
-					<div className="space-y-1">
-						<p className="text-sm text-muted-foreground leading-relaxed">
-							{message}
-						</p>
-					</div>
-				</div>
-
-				<div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
-					{!hideCancel && (
-						<Button variant="outline" onClick={onClose}>
-							{cancelText}
-						</Button>
-					)}
-					<Button
-						variant={config.confirmVariant}
-						onClick={() => {
-							onConfirm();
-							onClose();
-						}}
-					>
-						{confirmText}
-					</Button>
-				</div>
-			</div>
-		</BaseModal>
+		<ConfirmDialog
+			isOpen={isOpen}
+			onClose={onClose}
+			// Preserves the old behaviour of closing once confirmed. ConfirmDialog
+			// leaves that to the caller so a pending mutation can hold it open.
+			onConfirm={() => {
+				onConfirm();
+				onClose();
+			}}
+			title={title}
+			description={message}
+			confirmLabel={confirmText}
+			cancelLabel={cancelText}
+			tone={variant satisfies ConfirmTone}
+			hideCancel={hideCancel}
+		/>
 	);
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import { useMemberStore } from "@/stores/use-member-store";
 import { useWorkspaceMemberStore } from "@/stores/use-workspace-member-store";
 
@@ -19,10 +20,7 @@ export function useWorkspaceDirectory(
 	initialMembers: WorkspaceMemberOutputDTO[],
 ) {
 	const members = useWorkspaceMemberStore((state) => state.members);
-	const error = useWorkspaceMemberStore((state) => state.error);
 	const setMembers = useWorkspaceMemberStore((state) => state.setMembers);
-	const setError = useWorkspaceMemberStore((state) => state.setError);
-	const clearError = useWorkspaceMemberStore((state) => state.clearError);
 	const refreshMembers = useWorkspaceMemberStore(
 		(state) => state.refreshMembers,
 	);
@@ -56,27 +54,48 @@ export function useWorkspaceDirectory(
 	const confirmRemoval = useCallback(
 		async (selectedIds: Set<string>) => {
 			const targets = removal.userIds ?? selectedIds;
+			// Counted before the store filters them out, so the toast can say how
+			// many went rather than reporting on an already-emptied set.
+			const count = targets.size;
+
 			setRemoval(CLOSED_REMOVAL);
-			return removeMembers(targets);
+			const removed = await removeMembers(targets);
+
+			if (removed) {
+				reportActionSuccess(
+					`${count} ${count === 1 ? "member" : "members"} removed`,
+				);
+			} else {
+				// The store writes the reason to `error` on the way out. It is read
+				// back here, reported as a toast like every other failure in the app,
+				// and then cleared - because with the page banner gone there is
+				// nothing left to render it, and a value nobody reads would sit in
+				// the store forever and suppress nothing.
+				const reason = useWorkspaceMemberStore.getState().error;
+				reportActionError("Could not remove members", reason);
+				useWorkspaceMemberStore.getState().clearError();
+			}
+
+			return removed;
 		},
 		[removal.userIds, removeMembers],
 	);
 
 	// Called when the add-member modal closes. Invites are sent by the member
 	// store, so this hook has to pull the resulting directory changes in, and
-	// surface any invite failures through the same banner as removals.
+	// report any invite failure the same way removals now do.
 	const handleInvitesSettled = useCallback(async () => {
 		const inviteError = useMemberStore.getState().inviteError;
-		setError(inviteError);
+		if (inviteError) {
+			reportActionError("Could not send every invitation", inviteError);
+		}
 		useMemberStore.setState({ inviteError: null });
 		setPendingRefreshKey((key) => key + 1);
 		await refreshMembers();
-	}, [refreshMembers, setError]);
+	}, [refreshMembers]);
 
 	return {
 		members,
-		error,
-		clearError,
 		removal,
 		pendingRefreshKey,
 		requestRemoveMember,

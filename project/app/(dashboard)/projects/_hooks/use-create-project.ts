@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { createProjectAction } from "@/lib/actions/project-actions";
-import { reportActionError } from "@/lib/utils/toast";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import {
 	type CreateProjectFormValues,
 	createProjectSchema,
@@ -97,6 +97,7 @@ export function useCreateProject({
 						...result.data,
 						id: result.data.id,
 					} as unknown as Project);
+					reportActionSuccess("Project created");
 				} else {
 					const deleteProjects = useProjectStore.getState().deleteProjects;
 					deleteProjects(new Set([tempId]));

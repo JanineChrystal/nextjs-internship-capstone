@@ -11,6 +11,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { TRASH_RETENTION_DAYS } from "@/lib/constants/archive";
 import { useDeleteProjectModal } from "../../../_hooks/use-delete-project-modal";
 
 interface DeleteProjectModalProps {
@@ -18,6 +19,18 @@ interface DeleteProjectModalProps {
 	onOpenChange: (open: boolean) => void;
 	projectName: string;
 	onConfirmDelete: () => void;
+	/**
+	 * Shown when the project still has unfinished tasks.
+	 *
+	 * Folded in here rather than raised as a separate dialog first. The old flow
+	 * stacked a warning dialog in front of this one, so deleting a busy project
+	 * meant answering two questions in a row about the same thing - and the
+	 * second one already asks the reader to type the project's name, which is a
+	 * far stronger check than the first was.
+	 */
+	openTaskWarning?: boolean;
+	/** Disables the controls while the delete is in flight. */
+	isDeleting?: boolean;
 }
 
 export function DeleteProjectModal({
@@ -25,6 +38,8 @@ export function DeleteProjectModal({
 	onOpenChange,
 	projectName,
 	onConfirmDelete,
+	openTaskWarning = false,
+	isDeleting = false,
 }: DeleteProjectModalProps) {
 	const {
 		confirmationText,
@@ -45,11 +60,19 @@ export function DeleteProjectModal({
 						</DialogTitle>
 					</div>
 					<DialogDescription className="text-on-surface">
-						This action cannot be undone. This will permanently delete the{" "}
-						<span className="font-semibold">{projectName}</span> project, tasks,
-						comments, and remove all member associations.
+						This moves the <span className="font-semibold">{projectName}</span>{" "}
+						project to the trash, along with its tasks, comments and member
+						associations. You can restore it from the archive for{" "}
+						{TRASH_RETENTION_DAYS} days, after which it is deleted permanently.
 					</DialogDescription>
 				</DialogHeader>
+
+				{openTaskWarning && (
+					<p className="rounded-lg border border-warning/40 bg-warning-container px-3 py-2 text-sm text-on-warning-container">
+						This project still has unfinished tasks. They go to the trash with
+						it.
+					</p>
+				)}
 
 				<div className="flex flex-col gap-3 py-4">
 					<label
@@ -74,6 +97,7 @@ export function DeleteProjectModal({
 						type="button"
 						variant="outline"
 						onClick={() => handleOpenChange(false)}
+						disabled={isDeleting}
 						className="border-outline-variant text-secondary"
 					>
 						Cancel
@@ -81,11 +105,14 @@ export function DeleteProjectModal({
 					<Button
 						type="button"
 						variant="destructive"
-						disabled={!isConfirmed}
+						disabled={!isConfirmed || isDeleting}
 						onClick={handleConfirm}
-						className="bg-error text-error-foreground hover:bg-error/90 disabled:opacity-50"
+						// Matches the confirm button in ConfirmDialog: the solid fill
+						// carries a white label, rather than --error-foreground, which
+						// resolves to a dark red on the pale --error of dark mode.
+						className="bg-danger-solid text-on-danger-solid hover:bg-danger-solid/90 disabled:opacity-50"
 					>
-						Delete Project
+						{isDeleting ? "Deleting…" : "Delete Project"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

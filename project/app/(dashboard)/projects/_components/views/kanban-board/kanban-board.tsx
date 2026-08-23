@@ -13,9 +13,9 @@ import {
 } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
-import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { Button } from "@/components/ui/buttons/button";
+import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
 import { useKanbanBoard } from "../../../_hooks/use-kanban-board";
 import { Column } from "./column";
 
@@ -43,6 +43,7 @@ export function KanbanBoard({
 		initiateBulkComplete,
 		confirmWarningAction,
 		closeWarningModal,
+		confirmCopy,
 		addColumn,
 		handleDragStart,
 		handleDragOver,
@@ -110,24 +111,13 @@ export function KanbanBoard({
 				onComplete={initiateBulkComplete}
 			/>
 
-			<WarningModal
+			{/* Same dialog and same wording as the grid view, both sourced from
+			    useTaskBulkActions - the copy used to be duplicated in each. */}
+			<ConfirmDialog
 				isOpen={warningModal.isOpen}
 				onClose={closeWarningModal}
 				onConfirm={confirmWarningAction}
-				variant={warningModal.actionType === "delete" ? "danger" : "warning"}
-				title={
-					warningModal.actionType === "delete"
-						? "Delete tasks with unfinished checklist items?"
-						: "Complete tasks with unfinished checklist items?"
-				}
-				message={
-					warningModal.actionType === "delete"
-						? "One or more selected tasks still have unchecked checklist items. Deleting them will also remove those items."
-						: "One or more selected tasks still have unchecked checklist items. Marking them complete won't check those items off."
-				}
-				confirmText={
-					warningModal.actionType === "delete" ? "Delete" : "Complete"
-				}
+				{...confirmCopy}
 			/>
 		</div>
 	);

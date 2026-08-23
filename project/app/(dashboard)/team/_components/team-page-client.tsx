@@ -1,6 +1,5 @@
 "use client";
 
-import { AlertCircle, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
@@ -8,7 +7,6 @@ import { TeamToolbar } from "@/app/(dashboard)/team/_components/team-toolbar";
 import { BoardView } from "@/app/(dashboard)/team/_components/views/board-view";
 import { GridView } from "@/app/(dashboard)/team/_components/views/grid-view";
 import { PendingView } from "@/app/(dashboard)/team/_components/views/pending-view";
-import { Button } from "@/components/ui/buttons/button";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
 import { useDirectorySelection } from "../_hooks/use-directory-selection";
 import { useWorkspaceDirectory } from "../_hooks/use-workspace-directory";
@@ -28,8 +26,6 @@ interface TeamPageClientProps {
 export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 	const {
 		members,
-		error,
-		clearError,
 		removal,
 		pendingRefreshKey,
 		requestRemoveMember,
@@ -71,22 +67,11 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 				description="Manage workspace members and their roles across all projects."
 			/>
 
-			{error && (
-				<div className="p-3 bg-error/10 border border-error/20 rounded-md flex items-start gap-3">
-					<AlertCircle className="w-5 h-5 text-error shrink-0 mt-0.5" />
-					<p className="text-sm text-error flex-1">{error}</p>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon-sm"
-						onClick={clearError}
-						className="h-5 w-5 text-error/70 hover:text-error"
-						aria-label="Dismiss error"
-					>
-						<X className="w-4 h-4" />
-					</Button>
-				</div>
-			)}
+			{/* The error banner that used to sit here is gone. Removal and invite
+			    failures are reported as toasts now, the same as every other failure
+			    in the app - a page that reports its own errors one way while the
+			    rest of the product uses another makes the reader learn two habits,
+			    and the banner also pushed the whole directory down when it appeared. */}
 
 			<div className="flex-1 overflow-auto">
 				<TeamToolbar

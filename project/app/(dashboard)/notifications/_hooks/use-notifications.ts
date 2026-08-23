@@ -9,7 +9,11 @@ import {
 } from "@/lib/actions/notification-actions";
 import type { NotificationFeedItemDTO } from "@/lib/dtos/activity-dto";
 import { groupByDay } from "@/lib/utils/date";
-import { reportActionError } from "@/lib/utils/toast";
+import {
+	notify,
+	reportActionError,
+	reportActionSuccess,
+} from "@/lib/utils/toast";
 import { NOTIFICATIONS_PAGE_SIZE } from "../_constants/notifications";
 
 /**
@@ -73,6 +77,10 @@ export function useNotifications(
 		if (!result.success) {
 			setNotifications(previous);
 			reportActionError("Could not mark all as read", result.error);
+		} else {
+			reportActionSuccess(
+				`${unreadCount} ${unreadCount === 1 ? "notification" : "notifications"} marked as read`,
+			);
 		}
 		setIsBusy(false);
 	};
@@ -87,6 +95,11 @@ export function useNotifications(
 		if (!result.success) {
 			setNotifications(previous);
 			reportActionError("Could not remove notification", result.error);
+		} else {
+			// A fixed id rather than a fresh toast each time. Clearing a backlog is
+			// half a dozen dismissals in a few seconds, and without this the
+			// receipts would stack up and bury the page they are reporting on.
+			notify.success("Notification removed", { id: "notification-removed" });
 		}
 	};
 
