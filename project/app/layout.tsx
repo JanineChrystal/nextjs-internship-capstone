@@ -24,7 +24,13 @@ export const metadata: Metadata = {
 		default: "Takda PH",
 	},
 	description: "Team collaboration and project management platform",
-	generator: "v0.dev",
+	// No `icons` block on purpose. `app/icon.tsx` draws the tab icon and Next
+	// emits the link tag for it automatically - declaring `icons` here would
+	// override that file convention and the generated icon would never be used.
+	//
+	// Was also `generator: "v0.dev"`, left over from the scaffold - a meta tag
+	// telling every visitor the site was generated, on a project that has since
+	// been written by hand.
 };
 
 export default function RootLayout({

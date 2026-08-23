@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, Rocket } from "lucide-react";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/buttons/button";
@@ -60,8 +60,11 @@ export function Navbar() {
 					href="/"
 					className="flex items-center gap-2 font-semibold text-on-surface"
 				>
-					<Rocket className="h-5 w-5 text-primary" aria-hidden="true" />
-					<span>Takda PH</span>
+					{/* Wordmark only, no tile. The public pages are the product's
+					    front door and can afford to let the name carry itself; the
+					    marked version is for the app, where the sidebar collapses to a
+					    rail and something has to survive at 32 pixels. */}
+					<span className="text-base">Takda PH</span>
 				</Link>
 
 				{/* Desktop navigation */}

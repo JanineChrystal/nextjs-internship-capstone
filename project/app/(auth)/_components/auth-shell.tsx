@@ -1,6 +1,6 @@
-import { KanbanSquare } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BrandMark } from "@/components/ui/brand-mark";
 
 /**
  * One of the two legal links under the card.
@@ -70,9 +70,9 @@ export function AuthShell({
 				href="/"
 				className="mb-8 flex items-center gap-2 rounded-lg text-on-surface transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
 			>
-				<span className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground">
-					<KanbanSquare aria-hidden="true" className="size-5" />
-				</span>
+				{/* Same mark as the dashboard sidebar, one size larger. Someone who
+				    signs in should meet the identical brand on the other side. */}
+				<BrandMark className="size-9" letterClassName="text-xl" />
 				<span className="text-lg font-semibold tracking-tight">Takda PH</span>
 			</Link>
 

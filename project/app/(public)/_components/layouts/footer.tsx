@@ -1,6 +1,5 @@
 "use client";
 
-import { Rocket } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/buttons/button";
 import { useLandingUiStore } from "@/stores/use-landing-ui-store";
@@ -57,7 +56,7 @@ export function Footer() {
 							href="/"
 							className="flex items-center gap-2 font-semibold text-on-surface"
 						>
-							<Rocket className="h-5 w-5 text-primary" aria-hidden="true" />
+							{/* Wordmark only, matching the navbar above it. */}
 							Takda PH
 						</Link>
 						<p className="max-w-xs text-sm text-secondary">

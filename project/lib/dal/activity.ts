@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { db } from "@/lib/db";
@@ -355,6 +355,43 @@ export async function deleteNotificationDAL(
 			);
 	} catch (error) {
 		throw new Error("Failed to delete notification", { cause: error });
+	}
+}
+
+/**
+ * How many unread notifications the current user has.
+ *
+ * A `count(*)` rather than fetching rows and measuring the array. The sidebar
+ * badge needs one number, and the feed query it would otherwise reuse joins
+ * users and tasks and decrypts message bodies - all of it thrown away to read a
+ * length. This touches one index and returns one integer.
+ *
+ * Returns 0 rather than throwing when there is no session. The badge is chrome
+ * on a page that is already rendering; a signed-out reader should see no badge,
+ * not a broken layout.
+ */
+export async function countUnreadNotificationsDAL(): Promise<number> {
+	const user = await getCurrentUser();
+	if (!user) return 0;
+
+	try {
+		const [row] = await db
+			.select({ value: count() })
+			.from(notifications)
+			.where(
+				and(
+					eq(notifications.recipientId, user.id),
+					eq(notifications.isRead, false),
+					isNull(notifications.deletedAt),
+				),
+			);
+
+		return row?.value ?? 0;
+	} catch (error) {
+		// Deliberately swallowed. A failed count must not take the whole dashboard
+		// shell down with it - the worst acceptable outcome is a missing badge.
+		console.error("countUnreadNotificationsDAL failed:", error);
+		return 0;
 	}
 }
 

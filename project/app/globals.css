@@ -83,6 +83,22 @@
 	--color-info-solid: var(--info-solid);
 	--color-on-info-solid: var(--on-info-solid);
 
+	/* The shadcn sidebar's own token family.
+	   These were missing entirely, which is not a cosmetic gap: `bg-sidebar`
+	   compiles to `background-color: var(--sidebar)`, an undefined variable
+	   makes the whole declaration invalid, and the element renders TRANSPARENT.
+	   On desktop that was invisible - the sidebar sits on a page of nearly the
+	   same colour - but the mobile sheet floats over the content, so the page
+	   showed straight through it. */
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
+
 	/* Data visualisation palette. Validated for colour-vision deficiency and
 	   for contrast against the card surface in BOTH themes - see
 	   app/(dashboard)/_constants/analytics.ts for the rules these obey. */
@@ -207,6 +223,24 @@
 		--border: var(--outline-variant);
 		--input: var(--outline-variant);
 		--ring: var(--primary);
+
+		/* Defined once, in terms of tokens that are themselves redefined under
+		   `.dark`. That is the whole reason for the indirection: the sidebar
+		   follows light and dark - and, later, the Phase 7 palettes - without a
+		   second set of values here that could fall out of step.
+
+		   The surface is deliberately one step away from the page rather than
+		   equal to it: `surface-container-lowest` is lighter than the page in
+		   light mode and darker in dark mode, so the sidebar reads as its own
+		   plane in both without needing a heavier border. */
+		--sidebar: var(--surface-container-lowest);
+		--sidebar-foreground: var(--on-surface);
+		--sidebar-primary: var(--primary);
+		--sidebar-primary-foreground: var(--on-primary);
+		--sidebar-accent: var(--surface-container);
+		--sidebar-accent-foreground: var(--on-surface);
+		--sidebar-border: var(--outline-variant);
+		--sidebar-ring: var(--primary);
 
 		/* Categorical series (identity). Fixed slot order - a series keeps its
 		   colour when the chart is filtered, so hue never means "rank". */

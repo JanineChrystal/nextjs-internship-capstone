@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+	countUnreadNotificationsDAL,
 	deleteNotificationDAL,
 	getUserNotificationsDAL,
 	markAllNotificationsAsReadDAL,
@@ -95,4 +96,18 @@ export async function deleteNotificationAction(
 		console.error("deleteNotificationAction error:", error);
 		return { success: false, error: "Could not remove that notification" };
 	}
+}
+
+/**
+ * The unread count behind the sidebar badge.
+ *
+ * Returns a bare number rather than the usual `{ success, error }` envelope.
+ * Every other action here reports failure so the UI can roll back an optimistic
+ * update, but there is nothing to roll back: the DAL already swallows its own
+ * errors and answers 0, and a badge that cannot be counted should be absent, not
+ * an error state. Handing callers a discriminated union would make them write a
+ * failure branch that can never run.
+ */
+export async function getUnreadNotificationCountAction(): Promise<number> {
+	return countUnreadNotificationsDAL();
 }

@@ -44,11 +44,25 @@ export default async function DashboardLayout({
 
 	return (
 		<TooltipProvider>
+			{/* Collapsed to the icon rail on every screen size, every load.
+			    An earlier version expanded it on wide viewports from the client,
+			    which meant the sidebar visibly widened a moment after the page
+			    appeared - and it overrode a preference the reader had not been
+			    asked about. Starting narrow is quiet: nothing moves, the content
+			    gets the width, and one click opens it for anyone who wants it. */}
 			<SidebarProvider defaultOpen={false}>
 				<AppSidebar />
-				<SidebarInset className="flex flex-col min-h-screen bg-background overflow-hidden">
+				<SidebarInset className="flex min-h-screen flex-col overflow-hidden bg-background">
 					<TopBar />
-					<main className="flex-1 overflow-y-auto p-4 md:p-8">{children}</main>
+					{/* Capped and centred rather than full-bleed. Dashboard content is
+					    mostly text and tables, and a line of task titles stretched
+					    across a 27-inch monitor is unreadable for the same reason a
+					    newspaper uses columns. */}
+					<main className="flex-1 overflow-y-auto">
+						<div className="mx-auto w-full max-w-container-max p-4 md:p-6 lg:p-8">
+							{children}
+						</div>
+					</main>
 				</SidebarInset>
 				{/* Mounted once here so every dashboard route can report a failed
 				    server action instead of silently rolling its UI back. */}

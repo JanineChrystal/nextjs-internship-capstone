@@ -22,6 +22,28 @@ export interface NavItem {
 	icon?: LucideIcon;
 	current?: boolean;
 	subItems?: NavSubItem[];
+	/**
+	 * Which live counter, if any, this entry shows as a badge.
+	 *
+	 * A key rather than a number: the constants file is static and imported by
+	 * server code, so it cannot hold a value that changes per request. The
+	 * sidebar resolves the key against counts it fetches itself, which keeps the
+	 * navigation shape declarative and the data loading in one place.
+	 */
+	badge?: "unreadNotifications";
+}
+
+/**
+ * A labelled run of nav entries.
+ *
+ * The sidebar was a single flat list of seven items, which is past the point
+ * where a reader scans and into where they read every line. Grouping gives the
+ * eye somewhere to land, and the label is what makes the grouping mean
+ * something rather than looking like arbitrary gaps.
+ */
+export interface NavGroup {
+	label: string;
+	items: NavItem[];
 }
 
 /**
