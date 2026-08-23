@@ -23,10 +23,11 @@ import { useLandingUiStore } from "@/stores/use-landing-ui-store";
  * of the screen rather than the middle of it.
  *
  * The palette grid is the *same component* the Settings > Appearance section
- * renders, imported from components/ui rather than copied. That is what the
- * request for "the same as the appearance in settings" has to mean in practice:
- * when Phase 7 makes the cards clickable, both surfaces gain the behaviour from
- * one edit, and neither can drift from the other.
+ * renders, imported from components/ui rather than copied, and it reads and
+ * writes through the shared `usePalette` hook. That is what the request for "the
+ * same as the appearance in settings" has to mean in practice: making the cards
+ * clickable was one edit that both surfaces gained at once, and a palette chosen
+ * here is already selected when the reader next opens Settings.
  */
 
 const MODES = [
@@ -50,8 +51,8 @@ export function AppearanceDrawer() {
 				<SheetHeader className="border-b border-border p-4 sm:p-6">
 					<SheetTitle>Appearance</SheetTitle>
 					<SheetDescription>
-						Switch between light and dark now. The colour themes below are the
-						palettes the app is being built around.
+						Switch between light and dark, and pick the colour theme the app
+						uses. Both are remembered in this browser.
 					</SheetDescription>
 				</SheetHeader>
 
@@ -101,9 +102,8 @@ export function AppearanceDrawer() {
 								Colour themes
 							</h3>
 							<p className="text-xs text-secondary">
-								Not selectable yet - these are the twelve palettes the picker
-								will offer, shown so they can be reviewed before the switching
-								logic is built.
+								Changes the accent colour - buttons, links and focus rings. Page
+								backgrounds stay neutral. Remembered in this browser.
 							</p>
 						</div>
 

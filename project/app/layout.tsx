@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import type React from "react";
 import "./globals.css";
+import { PaletteEffect } from "@/components/palette-effect";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +50,13 @@ export default function RootLayout({
 				className={cn("font-sans", geist.variable, geistMono.variable)}
 			>
 				<body className={inter.className} suppressHydrationWarning>
-					<ThemeProvider>{children}</ThemeProvider>
+					<ThemeProvider>
+						{/* Inside the provider because the palette derives different
+						    values for light and dark, so it has to read the current mode.
+						    Renders nothing - it only writes custom properties to <html>. */}
+						<PaletteEffect />
+						{children}
+					</ThemeProvider>
 				</body>
 			</html>
 		</ClerkProvider>

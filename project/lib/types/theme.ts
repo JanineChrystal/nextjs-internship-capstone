@@ -12,3 +12,29 @@ export interface ThemePalette {
 	name: string;
 	swatches: readonly [string, string, string, string, string, string];
 }
+
+/**
+ * Light or dark, which a palette derives differently.
+ *
+ * The same six swatches produce different tokens per mode - light mode takes its
+ * accent from the dark end of the ramp and dark mode from the light end - so
+ * every derivation has to be told which one it is deriving for.
+ */
+export type ThemeMode = "light" | "dark";
+
+/**
+ * The custom properties a palette overrides, as a CSS-property-name map.
+ *
+ * Keyed by the literal token names rather than by camel-case identifiers so the
+ * applier can pass a key straight to `setProperty` with no translation step -
+ * one that would be another place for `--on-primary` to be mistyped as
+ * `--onPrimary` and fail silently, because setting an unknown custom property
+ * is not an error.
+ */
+export interface PaletteTokens {
+	"--primary": string;
+	"--on-primary": string;
+	"--primary-container": string;
+	"--on-primary-container": string;
+	"--surface-tint": string;
+}
