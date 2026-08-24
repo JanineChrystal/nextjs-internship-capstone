@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { changePasswordSchema, userSchema } from "@/lib/validations/user-schema";
+import {
+	changePasswordSchema,
+	userSchema,
+} from "@/lib/validations/user-schema";
 
 describe("userSchema", () => {
 	it("rejects non-gmail emails", () => {

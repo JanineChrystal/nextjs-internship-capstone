@@ -6,7 +6,9 @@ import {
 
 describe("CreateChecklistItemSchema", () => {
 	it("accepts an empty title (by design for in-place creation)", () => {
-		expect(CreateChecklistItemSchema.safeParse({ title: "" }).success).toBe(true);
+		expect(CreateChecklistItemSchema.safeParse({ title: "" }).success).toBe(
+			true,
+		);
 	});
 
 	it("trims whitespace from title", () => {
@@ -20,7 +22,9 @@ describe("CreateChecklistItemSchema", () => {
 
 describe("UpdateChecklistItemSchema", () => {
 	it("rejects empty title when updating", () => {
-		expect(UpdateChecklistItemSchema.safeParse({ title: "" }).success).toBe(false);
+		expect(UpdateChecklistItemSchema.safeParse({ title: "" }).success).toBe(
+			false,
+		);
 	});
 
 	it("trims whitespace from title", () => {

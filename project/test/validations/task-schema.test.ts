@@ -36,9 +36,9 @@ describe("updateTaskSchema", () => {
 
 describe("moveTaskSchema", () => {
 	it("requires taskId and newBoardId", () => {
-		expect(moveTaskSchema.safeParse({ taskId: "t1", newBoardId: "b2" }).success).toBe(
-			true,
-		);
+		expect(
+			moveTaskSchema.safeParse({ taskId: "t1", newBoardId: "b2" }).success,
+		).toBe(true);
 		expect(moveTaskSchema.safeParse({ taskId: "t1" }).success).toBe(false);
 		expect(moveTaskSchema.safeParse({ newBoardId: "b2" }).success).toBe(false);
 	});

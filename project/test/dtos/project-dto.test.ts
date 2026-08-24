@@ -1,11 +1,12 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from "vitest";
 import { toProjectDTO, toProjectUI } from "@/lib/dtos/project-dto";
+import type { DbProject } from "@/lib/types/project";
 
 describe("toProjectDTO", () => {
 	it("maps all fields 1:1", () => {
 		const date = new Date("2026-01-01T00:00:00Z");
-		const dbProject: any = {
+		const dbProject: Partial<DbProject> = {
 			id: "p1",
 			workspaceId: "w1",
 			ownerId: "u1",
@@ -19,20 +20,20 @@ describe("toProjectDTO", () => {
 			createdAt: date,
 			updatedAt: date,
 		};
-		expect(toProjectDTO(dbProject)).toEqual(dbProject);
+		expect(toProjectDTO(dbProject as unknown as DbProject)).toEqual(dbProject);
 	});
 });
 
 describe("toProjectUI", () => {
 	it("normalises invalid status to default 'active'", () => {
-		const dto: any = { status: "unknown" };
-		const ui = toProjectUI(dto);
+		const dto = { status: "unknown" };
+		const ui = toProjectUI(dto as unknown as Parameters<typeof toProjectUI>[0]);
 		expect(ui.status).toBe("active");
 	});
 
 	it("normalises invalid priority to default 'low'", () => {
-		const dto: any = { priority: "critical", status: "active" };
-		const ui = toProjectUI(dto);
+		const dto = { priority: "critical", status: "active" };
+		const ui = toProjectUI(dto as unknown as Parameters<typeof toProjectUI>[0]);
 		expect(ui.priority).toBe("low");
 	});
 
@@ -41,13 +42,17 @@ describe("toProjectUI", () => {
 		const nextWeek = new Date(now);
 		nextWeek.setDate(now.getDate() + 7);
 
-		const dto: any = {
+		const dto = {
 			status: "active",
 			priority: "high",
 			dueDate: nextWeek,
 		};
 		const stats = { taskCount: 10, completedTaskCount: 5, memberCount: 2 };
-		const ui = toProjectUI(dto, "u1", stats);
+		const ui = toProjectUI(
+			dto as unknown as Parameters<typeof toProjectUI>[0],
+			"u1",
+			stats,
+		);
 
 		expect(ui.daysLeft).toBeGreaterThanOrEqual(6);
 		expect(ui.daysLeft).toBeLessThanOrEqual(7);
@@ -56,16 +61,23 @@ describe("toProjectUI", () => {
 	});
 
 	it("sets isOwned correctly based on currentUserId", () => {
-		const dto: any = { ownerId: "u1", status: "active", priority: "high" };
-		const isOwned = toProjectUI(dto, "u1").isOwned;
-		const notOwned = toProjectUI(dto, "u2").isOwned;
+		const dto = { ownerId: "u1", status: "active", priority: "high" };
+		const isOwned = toProjectUI(
+			dto as unknown as Parameters<typeof toProjectUI>[0],
+			"u1",
+		).isOwned;
+		const notOwned = toProjectUI(
+			dto as unknown as Parameters<typeof toProjectUI>[0],
+			"u2",
+		).isOwned;
 		expect(isOwned).toBe(true);
 		expect(notOwned).toBe(false);
 	});
 
 	it("defaults to isOwned=true if currentUserId is omitted", () => {
-		const dto: any = { ownerId: "u1", status: "active", priority: "high" };
-		expect(toProjectUI(dto).isOwned).toBe(true);
+		const dto = { ownerId: "u1", status: "active", priority: "high" };
+		expect(
+			toProjectUI(dto as unknown as Parameters<typeof toProjectUI>[0]).isOwned,
+		).toBe(true);
 	});
 });
-

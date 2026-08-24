@@ -22,9 +22,9 @@ describe("ContactMessageSchema", () => {
 			website: "",
 		};
 		expect(ContactMessageSchema.safeParse(payload).success).toBe(false);
-		expect(ContactMessageSchema.safeParse({ ...payload, name: "  " }).success).toBe(
-			false,
-		);
+		expect(
+			ContactMessageSchema.safeParse({ ...payload, name: "  " }).success,
+		).toBe(false);
 	});
 
 	it("rejects invalid email", () => {

@@ -1,6 +1,10 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi } from "vitest";
-import { addScheduleRules, validateSchedule } from "@/lib/validations/date-rules";
+import type { z } from "zod";
+import {
+	addScheduleRules,
+	validateSchedule,
+} from "@/lib/validations/date-rules";
 
 describe("addScheduleRules", () => {
 	it("rejects due date before start date", () => {
@@ -9,7 +13,9 @@ describe("addScheduleRules", () => {
 			startDate: "2026-08-20T10:00:00Z",
 			dueDate: "2026-08-19T10:00:00Z",
 		};
-		addScheduleRules(data, ctx as any, { enforceNotPast: false });
+		addScheduleRules(data, ctx as unknown as z.RefinementCtx, {
+			enforceNotPast: false,
+		});
 		expect(ctx.addIssue).toHaveBeenCalledWith(
 			expect.objectContaining({ path: ["dueDate"] }),
 		);
@@ -21,7 +27,9 @@ describe("addScheduleRules", () => {
 			startDate: "2026-08-20T10:00:00Z",
 			dueDate: "2026-08-20T10:00:00Z",
 		};
-		addScheduleRules(data, ctx as any, { enforceNotPast: false });
+		addScheduleRules(data, ctx as unknown as z.RefinementCtx, {
+			enforceNotPast: false,
+		});
 		expect(ctx.addIssue).not.toHaveBeenCalled();
 	});
 
@@ -31,7 +39,9 @@ describe("addScheduleRules", () => {
 		past.setDate(past.getDate() - 1); // Yesterday
 
 		const data = { startDate: past.toISOString() };
-		addScheduleRules(data, ctx as any, { enforceNotPast: true });
+		addScheduleRules(data, ctx as unknown as z.RefinementCtx, {
+			enforceNotPast: true,
+		});
 		expect(ctx.addIssue).toHaveBeenCalledWith(
 			expect.objectContaining({ path: ["startDate"] }),
 		);
@@ -43,7 +53,9 @@ describe("addScheduleRules", () => {
 		past.setDate(past.getDate() - 1); // Yesterday
 
 		const data = { startDate: past.toISOString() };
-		addScheduleRules(data, ctx as any, { enforceNotPast: false });
+		addScheduleRules(data, ctx as unknown as z.RefinementCtx, {
+			enforceNotPast: false,
+		});
 		expect(ctx.addIssue).not.toHaveBeenCalled();
 	});
 });
@@ -84,4 +96,3 @@ describe("validateSchedule", () => {
 		expect(validateSchedule(merged, changed)).toBeNull();
 	});
 });
-

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { ThemeMode } from "@/lib/types/theme";
 import {
 	adjustForContrast,
 	chroma,
@@ -18,6 +17,7 @@ import {
 	PALETTE_TOKEN_NAMES,
 } from "@/lib/theme/derive-palette-tokens";
 import { DEFAULT_PALETTE_ID, THEME_PALETTES } from "@/lib/theme/palettes";
+import type { ThemeMode } from "@/lib/types/theme";
 
 const LIGHT_SURFACE = "#f9f9f9";
 const DARK_SURFACE = "#1a1c1c";

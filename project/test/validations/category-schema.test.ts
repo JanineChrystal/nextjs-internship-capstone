@@ -34,13 +34,15 @@ describe("EditCategorySchema", () => {
 	it("rejects name > 60 chars", () => {
 		const longName = "A".repeat(61);
 		expect(
-			EditCategorySchema.safeParse({ name: longName, color: "#ff0000" }).success,
+			EditCategorySchema.safeParse({ name: longName, color: "#ff0000" })
+				.success,
 		).toBe(false);
 	});
 
 	it("accepts valid category", () => {
 		expect(
-			EditCategorySchema.safeParse({ name: "Design", color: "#ff0000" }).success,
+			EditCategorySchema.safeParse({ name: "Design", color: "#ff0000" })
+				.success,
 		).toBe(true);
 	});
 });

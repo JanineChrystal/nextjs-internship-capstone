@@ -10,7 +10,10 @@ describe("toGroupDTO", () => {
 			description: "  Backend group  ",
 			createdAt: new Date("2026-01-01T00:00:00Z"),
 		};
-		const dto = toGroupDTO(dbTeam as unknown as Parameters<typeof toGroupDTO>[0], 5);
+		const dto = toGroupDTO(
+			dbTeam as unknown as Parameters<typeof toGroupDTO>[0],
+			5,
+		);
 		expect(dto.name).toBe("Engineers");
 		expect(dto.description).toBe("Backend group");
 		expect(dto.memberCount).toBe(5);
@@ -22,7 +25,10 @@ describe("toGroupDTO", () => {
 			name: "Eng",
 			createdAt: new Date("2026-01-01T00:00:00Z"),
 		};
-		const dto = toGroupDTO(dbTeam as unknown as Parameters<typeof toGroupDTO>[0], 0);
+		const dto = toGroupDTO(
+			dbTeam as unknown as Parameters<typeof toGroupDTO>[0],
+			0,
+		);
 		expect(dto.createdAt).toBe("2026-01-01T00:00:00.000Z");
 	});
 
@@ -33,7 +39,10 @@ describe("toGroupDTO", () => {
 			description: null,
 			createdAt: new Date(),
 		};
-		expect(toGroupDTO(dbTeam as unknown as Parameters<typeof toGroupDTO>[0], 0).description).toBeNull();
+		expect(
+			toGroupDTO(dbTeam as unknown as Parameters<typeof toGroupDTO>[0], 0)
+				.description,
+		).toBeNull();
 	});
 });
 
@@ -46,7 +55,9 @@ describe("toGroupMemberDTO", () => {
 			email: "alice@example.com",
 			imageUrl: null,
 		};
-		const dto = toGroupMemberDTO(dbUser as unknown as Parameters<typeof toGroupMemberDTO>[0]);
+		const dto = toGroupMemberDTO(
+			dbUser as unknown as Parameters<typeof toGroupMemberDTO>[0],
+		);
 		expect(dto.name).toBe("Alice Smith");
 	});
 
@@ -58,8 +69,9 @@ describe("toGroupMemberDTO", () => {
 			email: "bob.jones@example.com",
 			imageUrl: null,
 		};
-		const dto = toGroupMemberDTO(dbUser as unknown as Parameters<typeof toGroupMemberDTO>[0]);
+		const dto = toGroupMemberDTO(
+			dbUser as unknown as Parameters<typeof toGroupMemberDTO>[0],
+		);
 		expect(dto.name).toBe("bob.jones");
 	});
 });
-

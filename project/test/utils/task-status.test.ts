@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { deriveTaskStatus, isTaskOverdue, toStatusBucket } from "@/lib/utils/task-status";
+import {
+	deriveTaskStatus,
+	isTaskOverdue,
+	toStatusBucket,
+} from "@/lib/utils/task-status";
 
 describe("isTaskOverdue", () => {
 	it("returns false when the task is already completed", () => {
 		const pastDue = new Date();
 		pastDue.setDate(pastDue.getDate() - 1);
-		expect(
-			isTaskOverdue({ isCompleted: true, dueDate: pastDue }),
-		).toBe(false);
+		expect(isTaskOverdue({ isCompleted: true, dueDate: pastDue })).toBe(false);
 	});
 
 	it("returns false when there is no due date", () => {
@@ -17,17 +19,15 @@ describe("isTaskOverdue", () => {
 	it("returns false when the due date is in the future", () => {
 		const futureDue = new Date();
 		futureDue.setDate(futureDue.getDate() + 1);
-		expect(
-			isTaskOverdue({ isCompleted: false, dueDate: futureDue }),
-		).toBe(false);
+		expect(isTaskOverdue({ isCompleted: false, dueDate: futureDue })).toBe(
+			false,
+		);
 	});
 
 	it("returns true when the due date is in the past and task is not completed", () => {
 		const pastDue = new Date();
 		pastDue.setDate(pastDue.getDate() - 1);
-		expect(
-			isTaskOverdue({ isCompleted: false, dueDate: pastDue }),
-		).toBe(true);
+		expect(isTaskOverdue({ isCompleted: false, dueDate: pastDue })).toBe(true);
 	});
 });
 

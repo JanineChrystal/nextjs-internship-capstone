@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from "vitest";
 import {
 	DEFAULT_NOTIFICATION_SETTINGS,
@@ -7,7 +7,7 @@ import {
 
 describe("toNotificationSettingsDTO", () => {
 	it("maps boolean fields correctly", () => {
-		const dbSettings: any = {
+		const dbSettings = {
 			id: "s1",
 			userId: "u1",
 			emailWorkspaceInvites: true,
@@ -21,7 +21,9 @@ describe("toNotificationSettingsDTO", () => {
 			updatedAt: new Date(),
 		};
 
-		const dto = toNotificationSettingsDTO(dbSettings);
+		const dto = toNotificationSettingsDTO(
+			dbSettings as unknown as Parameters<typeof toNotificationSettingsDTO>[0],
+		);
 
 		expect(dto).toEqual({
 			emailWorkspaceInvites: true,
@@ -38,9 +40,8 @@ describe("toNotificationSettingsDTO", () => {
 
 describe("DEFAULT_NOTIFICATION_SETTINGS", () => {
 	it("has all fields set to true", () => {
-		expect(Object.values(DEFAULT_NOTIFICATION_SETTINGS).every((v) => v === true)).toBe(
-			true,
-		);
+		expect(
+			Object.values(DEFAULT_NOTIFICATION_SETTINGS).every((v) => v === true),
+		).toBe(true);
 	});
 });
-

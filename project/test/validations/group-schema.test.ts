@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { GroupNameSchema, SaveGroupSchema } from "@/lib/validations/group-schema";
+import {
+	GroupNameSchema,
+	SaveGroupSchema,
+} from "@/lib/validations/group-schema";
 
 describe("GroupNameSchema", () => {
 	it("rejects empty names", () => {
