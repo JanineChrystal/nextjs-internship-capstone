@@ -98,8 +98,7 @@ export function TaskCard({ task }: TaskCardProps) {
 				{task.name}
 			</button>
 
-			{/* Status is shown on the card because the column no longer implies it -
-			    a completed task can sit in any column, or in none in particular. */}
+			{/* independent status badge - displays the task status explicitly since columns no longer dictate or reflect workflow state. */}
 			{task.status && (
 				<div className="flex">
 					<StatusBadge status={task.status} className="text-[10px] py-0" />

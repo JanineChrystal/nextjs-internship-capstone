@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonPage, SkeletonText } from "@/components/ui/skeletons";
 
-/** Streamed while a profile fetches. */
+/** loading state - streamed during profile fetches. */
 export default function Loading() {
 	return (
 		<SkeletonPage>

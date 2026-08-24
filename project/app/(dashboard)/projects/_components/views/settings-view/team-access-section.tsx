@@ -49,9 +49,7 @@ export function TeamAccessSection({
 				</div>
 			)}
 
-			{/* Projects are invite-only. The public/restricted toggle that used to
-			    sit here was never persisted - it lived in local state and reset on
-			    refresh - and public sharing was cut from the scope. */}
+			{/* invite-only indicator - statically displays restricted access since public sharing has been removed from scope. */}
 			<div className="flex items-center gap-3 p-4 bg-surface-container-lowest border border-outline-variant rounded-lg">
 				<Lock className="text-secondary" size={24} />
 				<div>
@@ -164,9 +162,7 @@ export function TeamAccessSection({
 				}}
 			/>
 
-			{/* Invites addressed to people without an account yet. Shown even when
-			    empty for members who can manage, so it is discoverable rather than
-			    appearing out of nowhere the first time one is sent. */}
+			{/* pending invites visibility - ensures the invites section is discoverable for managers even when empty, rather than appearing conditionally. */}
 			{canManageMembers && (
 				<div className="flex flex-col gap-3">
 					<div>

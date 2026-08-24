@@ -6,17 +6,9 @@ import type { ActivityFeedItemDTO } from "@/lib/dtos/activity-dto";
 import { reportActionError } from "@/lib/utils/toast";
 
 /**
- * The history of one task, loaded when the Activity tab is actually opened.
- *
- * `isActive` gates the fetch rather than unmounting the tab when hidden: staying
- * mounted preserves scroll position when switching back and forth, but there is
- * no reason to query a tab nobody has looked at. Most people open a task to read
- * comments and never touch this tab, so loading eagerly would be a wasted round
- * trip on every task open.
- *
- * Loaded state is keyed to the task id rather than a plain boolean. The modal is
- * reused across tasks - it does not unmount between them - so a boolean flag
- * would leave the previous task's history on screen under the new task's name.
+ * use-task-activity hook - lazily loads task history only when the activity tab
+ * is viewed, keying state by task ID to prevent displaying stale history when
+ * the modal is reused for different tasks.
  */
 export function useTaskActivity(
 	taskId: string | undefined,
@@ -27,8 +19,7 @@ export function useTaskActivity(
 	const [loadedTaskId, setLoadedTaskId] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 
-	// Never show one task's rows while another task's id is open, even for the
-	// render between switching tasks and the new fetch resolving.
+	// cross-task pollution prevention - immediately hides existing rows when the selected task ID changes to avoid showing history for the wrong task while loading.
 	const isStale = loadedTaskId !== taskId;
 
 	useEffect(() => {
@@ -50,8 +41,7 @@ export function useTaskActivity(
 			setIsLoading(false);
 		});
 
-		// Guards against a slow response landing after the modal has moved on to
-		// a different task.
+		// stale response safeguard - aborts state updates if the user navigated to another task before the fetch completed.
 		return () => {
 			cancelled = true;
 		};

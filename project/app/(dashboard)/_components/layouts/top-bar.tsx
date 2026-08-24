@@ -11,12 +11,7 @@ import { bottomNavigation, mainNavigation } from "../../_constants/nav";
 import { GlobalSearchDialog } from "../ui/search/global-search-dialog";
 
 /**
- * Resolves the current route to the nav entry it belongs to.
- *
- * Longest match wins. `/projects/abc` and `/projects` both start with
- * `/projects`, but so would a future `/project-templates` under a naive
- * `startsWith` on the shorter of two candidates - sorting by length first means
- * the most specific entry answers.
+ * current section name - resolves the active route to its corresponding navigation entry by selecting the longest matching path for maximum specificity.
  */
 function currentSectionName(pathname: string): string | null {
 	const match = [...mainNavigation, ...bottomNavigation]
@@ -27,18 +22,7 @@ function currentSectionName(pathname: string): string | null {
 }
 
 /**
- * The dashboard header.
- *
- * ## What it is for now
- *
- * Tools, and only tools: the sidebar trigger, where you are, search, and the
- * theme. The account menu moved to the foot of the sidebar - it was sitting
- * beside Search and the theme toggle, which put "who am I" and "what can I do"
- * in the same corner and left the sidebar ending in dead space.
- *
- * The section name fills the gap that created. It matters more than it looks:
- * when the sidebar is collapsed to a rail, or is a closed Sheet on a phone,
- * nothing else on screen says which part of the app you are in.
+ * top bar component - provides a streamlined dashboard header focused solely on global tools (search, theme, navigation triggers) and clear section context.
  */
 export function TopBar() {
 	const pathname = usePathname();
@@ -47,10 +31,7 @@ export function TopBar() {
 
 	return (
 		<header className="sticky top-0 z-40 flex h-16 w-full flex-none items-center gap-2 border-b border-border/60 bg-background/80 px-3 backdrop-blur-md supports-backdrop-filter:bg-background/60 sm:px-6">
-			{/* Mobile only. On desktop the collapse control lives in the sidebar
-			    footer, where it belongs - it is a property of the sidebar. But on a
-			    phone the sidebar is a sheet that is either open or entirely gone, so
-			    a control inside it cannot be what opens it. This is the only way in. */}
+			{/* mobile sidebar trigger - provides the sole entry point to open the navigation sheet on small screens where the sidebar is hidden by default. */}
 			<SidebarTrigger className="text-muted-foreground hover:text-foreground md:hidden" />
 
 			<Separator
@@ -65,20 +46,11 @@ export function TopBar() {
 				</h1>
 			)}
 
-			{/* Pushes everything after it to the right without a fixed width, so the
-			    title can take whatever room it needs on a narrow screen. */}
+			{/* flexible spacer - pushes trailing controls to the right edge while allowing the section title to consume available space fluidly. */}
 			<div className="flex-1" />
 
 			<div className="flex items-center gap-2 sm:gap-3">
-				{/*
-				  The search control is a BUTTON, not an input.
-
-				  It used to be a real text field with no state, no handler and no
-				  results - it accepted typing and did nothing with it, which is the
-				  worst of both worlds. The palette owns the actual input, so what sits
-				  here only needs to open it. Styling it like a field keeps the header
-				  looking the same while making it honest about what it does.
-				*/}
+				{/* search trigger button - styles a semantic button to look like an input field, acting purely as a trigger for the global search palette rather than capturing typing directly. */}
 				<button
 					type="button"
 					onClick={openSearch}
@@ -88,16 +60,14 @@ export function TopBar() {
 					<Search className="size-4 shrink-0" aria-hidden="true" />
 					<span className="flex-1 truncate">Search...</span>
 					{/*
-					  The shortcut is only advertised where it can be pressed. Showing
-					  a keyboard hint on a touch device is noise.
+					  keyboard shortcut hint - displays the search shortcut explicitly on large screens where physical keyboards are expected.
 					*/}
 					<kbd className="hidden shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] lg:block">
 						Ctrl K
 					</kbd>
 				</button>
 
-				{/* Below md the field would crowd out everything else, so it collapses
-				    to the icon - which opens the same palette. */}
+				{/* mobile search trigger - collapses the fake search input into a compact icon button on narrow screens to preserve header space. */}
 				<Button
 					type="button"
 					variant="ghost"

@@ -9,15 +9,9 @@ interface ProjectActivitySectionProps {
 }
 
 /**
- * Everything that has happened on this project, newest first.
- *
- * Renders the same ActivityList the task modal's Activity tab uses - the rows
- * are identical, only the filter differs, so building a second layout here would
- * have guaranteed the two drifted apart.
- *
- * Visible to every member rather than owners only: the underlying read is gated
- * by project role, and a shared history that only some collaborators can see
- * defeats the point of having one.
+ * project activity section - displays a chronological history of project events,
+ * reusing the core activity list component and making it visible to all members
+ * to maintain a shared understanding of project progress.
  */
 export function ProjectActivitySection({
 	projectId,

@@ -10,19 +10,9 @@ import { LandingSection } from "../ui/landing-section";
 import { Reveal } from "../ui/reveal";
 
 /**
- * Questions and answers, as a single-open accordion.
- *
- * `type="single" collapsible` rather than `multiple`: an FAQ is read one
- * question at a time, and allowing several open at once means the answer someone
- * is reading can be pushed off the screen by an earlier one they forgot to
- * close. `collapsible` lets the open one be closed again, which `single` alone
- * does not.
- *
- * Radix renders each trigger as a real `<button>` inside a heading, so keyboard
- * and screen-reader users get the expand/collapse behaviour and the
- * `aria-expanded` state without any of that being written here. That is the
- * argument for using the primitive rather than a hand-rolled `useState` toggle,
- * which is easy to write and almost always ships without the ARIA.
+ * faq section - renders questions in a collapsible single-open accordion
+ * using Radix UI for native keyboard and screen reader support without
+ * custom state management.
  */
 export function FaqSection() {
 	return (

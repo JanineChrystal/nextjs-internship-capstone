@@ -9,18 +9,7 @@ import { SEARCH_GROUP_CONFIG, SEARCH_GROUPS } from "../../../_constants/search";
 import { useGlobalSearch } from "../../../_hooks/use-global-search";
 
 /**
- * The global search palette.
- *
- * Built on the app's existing Dialog rather than adding `cmdk`. The library
- * would bring filtering and keyboard handling, but this palette does neither of
- * those things locally: the filtering happens in Postgres, and the key handling
- * is one switch. A dependency that solves the parts already solved is not worth
- * the bundle.
- *
- * A dialog rather than a dropdown under the input, because on a phone a dropdown
- * pinned to a header input has almost no room beneath it once the keyboard is
- * up. A dialog owns the screen at every width, and gets focus trapping and
- * scroll locking from the primitive.
+ * global search dialog component - implements a search palette using the standard Dialog primitive for better mobile responsiveness and focus trapping, avoiding external dependencies like cmdk since filtering is handled server-side.
  */
 
 function ResultRow({
@@ -102,8 +91,7 @@ export function GlobalSearchDialog() {
 		}
 	};
 
-	// The running index across every group, so the arrow keys move through one
-	// sequence while the list stays visually grouped.
+	// unified selection cursor - tracks a continuous index across all visual groups to enable seamless arrow key navigation.
 	let cursor = -1;
 
 	return (
@@ -113,8 +101,7 @@ export function GlobalSearchDialog() {
 				className="top-24 max-w-xl translate-y-0 gap-0 overflow-hidden p-0"
 				onKeyDown={handleKeyDown}
 			>
-				{/* The primitive requires a title for screen readers; the input's own
-				    label is what a sighted user reads, so this is visually hidden. */}
+				{/* accessible title - provides a hidden title required by the Dialog primitive for screen readers. */}
 				<DialogTitle className="sr-only">Search</DialogTitle>
 
 				<div className="flex items-center gap-3 border-b border-border px-4">
@@ -129,9 +116,7 @@ export function GlobalSearchDialog() {
 							aria-hidden="true"
 						/>
 					)}
-					{/* Focused on open: a search palette exists to be typed into the
-					    moment it appears, and the dialog primitive traps focus, so this
-					    does not steal it from the page behind. */}
+					{/* auto-focusing input - captures input immediately when the palette opens, relying on the dialog's focus trap to prevent disruption to the underlying page. */}
 					<input
 						autoFocus
 						value={term}

@@ -19,9 +19,9 @@ interface UseTaskBulkActionsParams {
 interface ConfirmState {
 	isOpen: boolean;
 	actionType: "complete" | "delete" | null;
-	/** How many tasks the pending action covers, captured when it was raised. */
+	/** task count - captures the number of tasks involved when the action was initiated. */
 	count: number;
-	/** Whether any of them still has unchecked checklist items. */
+	/** incomplete checklist flag - indicates if any selected tasks contain unfinished checklist items. */
 	hasUnchecked: boolean;
 }
 
@@ -92,14 +92,9 @@ export function useTaskBulkActions({
 	};
 
 	/**
-	 * Deleting always asks, whatever the checklists say.
-	 *
-	 * This used to confirm ONLY when a selected task still had unchecked
-	 * checklist items, and otherwise deleted immediately. The effect was that
-	 * a tidy project - every checklist finished - was the one where a bulk
-	 * delete happened with no confirmation at all, which is exactly backwards.
-	 * The checklist state now changes the WORDING, not whether the question is
-	 * asked.
+	 * initiate bulk delete - unconditionally prompts for confirmation before
+	 * deleting, adjusting the warning message based on checklist state rather
+	 * than bypassing confirmation entirely.
 	 */
 	const initiateBulkDelete = () => {
 		const ids = Array.from(selectedTaskIds);
@@ -114,12 +109,8 @@ export function useTaskBulkActions({
 	};
 
 	/**
-	 * Completing only asks when there is something to warn about.
-	 *
-	 * Unlike a delete this is reversible - a task can be reopened - so a
-	 * confirmation on every bulk complete would be friction with nothing behind
-	 * it. The unchecked-checklist case is different: the reader is likely to
-	 * assume completing the task ticks its items off, and it does not.
+	 * initiate bulk complete - bypasses confirmation for reversible completion actions
+	 * unless there are unfinished checklists that require explicit user warning.
 	 */
 	const initiateBulkComplete = () => {
 		const ids = Array.from(selectedTaskIds);
@@ -146,13 +137,9 @@ export function useTaskBulkActions({
 	const closeWarningModal = () => setWarningModal(CLOSED);
 
 	/**
-	 * The dialog's wording, built here rather than in the views.
-	 *
-	 * Both the grid and the kanban board render this dialog, and each carried
-	 * its own hand-written copy - two identical ternaries that would have to be
-	 * changed together and eventually would not be. The hook is the only place
-	 * that knows both the count and the checklist state, so it is where the
-	 * sentence belongs.
+	 * confirmation copy builder - centralizes dynamic dialog messaging based on
+	 * action type, selection count, and checklist status to ensure consistency
+	 * across different views like grid and kanban.
 	 */
 	const confirmCopy: {
 		title: string;
@@ -167,9 +154,7 @@ export function useTaskBulkActions({
 			action: isDelete ? "delete" : "complete",
 			subject: "task",
 			count,
-			// Only overridden when there is something extra to say. Leaving it
-			// undefined lets the default through, which for a delete describes the
-			// trash window rather than claiming the deletion is permanent.
+			// consequence overriding - provides specialized warnings for incomplete checklists while relying on default copy for standard actions.
 			consequence: hasUnchecked
 				? isDelete
 					? `Some still have unchecked checklist items, which go to the trash with them and are deleted permanently after ${TRASH_RETENTION_DAYS} days.`

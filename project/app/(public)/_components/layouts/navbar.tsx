@@ -30,21 +30,16 @@ import { useSectionLink } from "../../_hooks/use-section-link";
 import { useSectionSpy } from "../../_hooks/use-section-spy";
 
 /**
- * The one-page header.
- *
- * Every entry is an in-page anchor, so each one is rendered as a real `<a>` with
- * a real `href="#section"` and the smooth scroll layered on top by
- * `preventDefault`. Two things fall out of that which a plain onClick handler
- * would lose: the links still work if the JavaScript fails to load, and hovering
- * one shows the destination in the status bar the way a link is supposed to.
+ * navbar - a one-page header that uses real anchor links with layered
+ * smooth scrolling, ensuring fallback functionality and native hover
+ * behavior.
  */
 export function Navbar() {
 	const { activeId, scrollToSection } = useSectionSpy(OBSERVED_SECTION_IDS);
 	const { hrefFor, handleAnchor: onAnchor } = useSectionLink(scrollToSection);
 	const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-	// Closing the mobile sheet happens either way: on the landing page the scroll
-	// is about to run underneath it, and off it the page is about to change.
+	// close on navigation - ensures the mobile menu closes automatically when a link is clicked, whether scrolling or navigating to a new page.
 	const handleAnchor = (
 		event: React.MouseEvent<HTMLAnchorElement>,
 		sectionId: string,
@@ -60,14 +55,13 @@ export function Navbar() {
 					href="/"
 					className="flex items-center gap-2 font-semibold text-on-surface"
 				>
-					{/* Wordmark only, no tile. The public pages are the product's
-					    front door and can afford to let the name carry itself; the
-					    marked version is for the app, where the sidebar collapses to a
-					    rail and something has to survive at 32 pixels. */}
+					{/*
+					  wordmark branding - uses only the text name for public pages since they don't have the space constraints of the collapsible app sidebar.
+					*/}
 					<span className="text-base">Takda PH</span>
 				</Link>
 
-				{/* Desktop navigation */}
+				{/* desktop nav - renders the primary navigation menu for large screens. */}
 				<NavigationMenu className="hidden md:flex" viewport={false}>
 					<NavigationMenuList>
 						<NavigationMenuItem>
@@ -142,9 +136,9 @@ export function Navbar() {
 						<Link href="/sign-up">Get started</Link>
 					</Button>
 
-					{/* Mobile navigation. The same Sheet primitive as the drawers, from
-					    the left, so the page has one overlay implementation rather than
-					    a bespoke mobile menu. */}
+					{/*
+					  mobile nav - uses the standard Sheet overlay entering from the left to maintain a single consistent overlay implementation across the page.
+					*/}
 					<Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
 						<SheetTrigger asChild>
 							<Button

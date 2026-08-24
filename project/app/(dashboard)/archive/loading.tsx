@@ -1,7 +1,10 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonList, SkeletonPage } from "@/components/ui/skeletons";
 
-/** Streamed while /archive fetches. The two pills stand in for its tabs. */
+/**
+ * loading state - streamed during /archive fetches, displaying two pill
+ * skeletons to represent the tabs.
+ */
 export default function Loading() {
 	return (
 		<SkeletonPage>

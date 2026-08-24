@@ -41,24 +41,15 @@ import { useSettingsNavStore } from "@/stores/use-settings-nav-store";
 import { bottomNavigation, navigationGroups } from "../../_constants/nav";
 
 /**
- * Shared by every entry so active and idle states cannot drift apart.
- *
- * The active treatment was three hard-coded `#0D47A1` literals - the same hex
- * three times, in a file that has nothing else to say about colour. It ignored
- * dark mode, and it would have ignored the Phase 7 palettes too. `bg-primary`
- * is the same blue in light mode and follows the theme everywhere else.
+ * base entry styles - defines shared structural styling for navigation items,
+ * deferring color management to active/idle classes to support dynamic themes.
  */
 const ENTRY_BASE =
 	"font-medium rounded-lg transition-colors group-data-[collapsible=icon]:justify-center";
 
 /**
- * The `!` is load-bearing, not laziness.
- *
- * `SidebarMenuButton` carries `data-[active=true]:bg-sidebar-accent` in its own
- * base classes. That is an attribute selector, so it outranks a plain
- * `bg-primary` on specificity and would paint the active entry grey no matter
- * what is passed in. Marking these important is the smallest way to say "the
- * app decides what active looks like" without forking the shared component.
+ * active entry styles - enforces theme-aware active state coloring by using
+ * important declarations to override the component's internal attribute selectors.
  */
 const ENTRY_ACTIVE =
 	"bg-primary! text-primary-foreground! hover:bg-primary/90!";
@@ -67,22 +58,9 @@ const ENTRY_IDLE =
 	"text-muted-foreground hover:bg-accent hover:text-foreground";
 
 /**
- * The dashboard's primary navigation.
- *
- * ## What changed and why
- *
- * It was a flat list of seven links with the active state painted in a repeated
- * hex literal, a brand block that was a button but did nothing, and no way to
- * see anything was waiting for you. It is now grouped under labels, badges the
- * unread count, and carries the account menu at the foot - which is where a
- * sidebar of this shape puts identity, leaving the top bar for tools.
- *
- * ## Why the badge count lives here and not in the layout
- *
- * The layout is a server component, so a count fetched there would be as stale
- * as the last full page load - and every move around the dashboard is a client
- * navigation. Fetching here, keyed on `pathname`, means the number is right
- * after the navigation that would have changed it, without polling.
+ * app sidebar component - provides the main navigation structure for the dashboard,
+ * dynamically fetching notification counts based on route changes to ensure
+ * data freshness across client-side navigations.
  */
 export function AppSidebar({ className }: { className?: string }) {
 	const pathname = usePathname();
@@ -97,15 +75,7 @@ export function AppSidebar({ className }: { className?: string }) {
 		(store) => store.requestScrollTo,
 	);
 
-	// Keyed on `pathname`, which also covers the first render. Reading
-	// /notifications is the thing most likely to change this number, and
-	// arriving or leaving is exactly when the badge would otherwise be wrong.
-	// The cancel flag matters because navigating twice quickly can land two
-	// responses out of order, and the slower one would win.
-	//
-	// `pathname` is the trigger, not a value the effect body reads. Taking the
-	// linter's fix would freeze the badge at whatever it was when the dashboard
-	// first mounted, because the sidebar never unmounts between routes.
+	// notification count fetcher - triggers on pathname changes to keep the unread badge synchronized, using a cancellation flag to handle rapid navigation races.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: pathname is the refetch trigger
 	useEffect(() => {
 		let cancelled = false;
@@ -123,9 +93,8 @@ export function AppSidebar({ className }: { className?: string }) {
 		item.badge === "unreadNotifications" ? unreadNotifications : 0;
 
 	/**
-	 * A sub-item that scrolls is active when its section is the one on screen,
-	 * not when the URL matches - four entries share the one /settings path, so
-	 * comparing hrefs would light up all four at once.
+	 * is sub-item active logic - determines active state for grouped sections like
+	 * settings based on scroll position tracking rather than solely URL matching.
 	 */
 	const isSubItemActive = (subItem: NavSubItem): boolean => {
 		if (!subItem.settingsSectionId) return pathname === subItem.href;
@@ -135,8 +104,7 @@ export function AppSidebar({ className }: { className?: string }) {
 		);
 	};
 
-	// On a phone the sidebar is a Sheet over the page, so it has to close itself
-	// when a link is taken. On desktop it is part of the layout and must not.
+	// mobile auto-close - ensures the navigation sheet dismisses itself upon selection on small screens while remaining persistent on desktop.
 	const closeOnMobile = () => {
 		if (isMobile) setOpenMobile(false);
 	};
@@ -146,15 +114,9 @@ export function AppSidebar({ className }: { className?: string }) {
 			collapsible="icon"
 			className={cn("border-r border-border bg-sidebar", className)}
 		>
-			{/* `p-2`, matching SidebarGroup and SidebarFooter exactly. It was `p-3`,
-			    which inset the brand mark four pixels further than every icon below
-			    it - enough that the rail read as a crooked column rather than a
-			    straight one. Padding on the containers is what aligns a collapsed
-			    sidebar; the buttons themselves are already square and centred. */}
+			{/* structural alignment - equalizes container padding across sections so the collapsed rail remains perfectly vertical. */}
 			<SidebarHeader className="p-2">
-				{/* A link home, not a button that did nothing. It looked pressable and
-				    was `cursor-default` with no handler, which is a control that lies
-				    about itself. */}
+				{/* brand mark interaction - links to the dashboard root, replacing an inactive button state for better UX. */}
 				<Link
 					href="/dashboard"
 					onClick={closeOnMobile}
@@ -170,8 +132,7 @@ export function AppSidebar({ className }: { className?: string }) {
 			<SidebarContent>
 				{navigationGroups.map((group) => (
 					<SidebarGroup key={group.label}>
-						{/* Hidden when collapsed: a label over a column of icons has
-						    nothing to label and only steals vertical space. */}
+						{/* conditional group label - hides the text when the sidebar is collapsed to save space. */}
 						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
 							{group.label}
 						</SidebarGroupLabel>
@@ -201,9 +162,7 @@ export function AppSidebar({ className }: { className?: string }) {
 											</Link>
 										</SidebarMenuButton>
 
-										{/* Hidden while collapsed rather than shrunk into the
-										    rail: a number floating over a 20px icon is unreadable,
-										    and the count is already in the tooltip. */}
+										{/* conditional badge - hides notification counts in collapsed mode since they are provided in tooltips and would clutter the small icons. */}
 										{count > 0 && (
 											<SidebarMenuBadge
 												className={cn(
@@ -253,14 +212,7 @@ export function AppSidebar({ className }: { className?: string }) {
 						}
 
 						/**
-						 * Settings opens a floating menu rather than an inline submenu.
-						 *
-						 * The submenu used to push four rows into the sidebar and shove
-						 * the account row down with them - and in the collapsed rail it
-						 * could not render at all, so pressing Settings had to force the
-						 * whole sidebar open first just to show four links. A popover
-						 * costs no layout, works identically in the rail, and matches
-						 * how the account menu below already behaves.
+						 * settings menu popover - utilizes a floating dropdown for settings sub-items to prevent layout shifting and support collapsed sidebar interactions.
 						 */
 						return (
 							<SidebarMenuItem key={item.name}>
@@ -282,9 +234,7 @@ export function AppSidebar({ className }: { className?: string }) {
 										</SidebarMenuButton>
 									</DropdownMenuTrigger>
 
-									{/* `side="right"` on desktop puts it beside the sidebar
-									    rather than over the navigation it came from; on a phone
-									    the sheet is the full width, so it goes above instead. */}
+									{/* popover placement - positions the dropdown relative to the sidebar orientation based on device size. */}
 									<DropdownMenuContent
 										side={isMobile ? "top" : "right"}
 										align="end"
@@ -300,11 +250,7 @@ export function AppSidebar({ className }: { className?: string }) {
 													data-active={isSubItemActive(subItem)}
 													className="data-[active=true]:text-primary data-[active=true]:font-medium"
 													onClick={() => {
-														// Same-page sections rather than routes: the store
-														// carries the request so it works both when already
-														// on /settings (the Link is a no-op and this
-														// scrolls) and when arriving from elsewhere (the
-														// page consumes it on mount).
+														// scroll request delegation - dispatches scroll navigation events to the store to handle both internal scrolling and cross-page navigation uniformly.
 														if (subItem.settingsSectionId) {
 															requestSettingsScroll(subItem.settingsSectionId);
 														}
@@ -321,12 +267,7 @@ export function AppSidebar({ className }: { className?: string }) {
 						);
 					})}
 
-					{/* The collapse control lives here, not in the top bar.
-					    It is a property of the sidebar, so it belongs to the sidebar -
-					    and the header is then free to be about the page you are on.
-					    Hidden below md: on a phone the sidebar is a sheet that is
-					    either open or gone, so there is no rail to collapse to, and the
-					    top bar keeps a trigger for opening it. */}
+					{/* desktop collapse toggle - embeds the sidebar collapse control at the bottom of the navigation area, hiding it on mobile where the sidebar functions as an overlay. */}
 					<SidebarMenuItem className="hidden md:block">
 						<SidebarMenuButton
 							tooltip={state === "collapsed" ? "Expand sidebar" : undefined}
@@ -347,13 +288,8 @@ export function AppSidebar({ className }: { className?: string }) {
 
 				<SidebarSeparator className="mx-0" />
 
-				{/* Identity at the foot of the navigation, tools in the top bar. The
-				    account menu used to sit beside Search and the theme toggle, which
-				    put "who am I" and "what can I do" in the same corner. */}
-				{/* `px-2` rather than `px-1`: the nav buttons carry their own `p-2`
-				    inside the footer's, so an avatar at `px-1` sat four pixels left of
-				    every icon above it. Collapsed, the padding drops and flex centring
-				    takes over. */}
+				{/* identity footer - positions the user account menu at the bottom of the sidebar to distinguish it from the operational tools in the top bar. */}
+				{/* footer padding alignment - ensures the avatar container aligns perfectly with the navigation icons above it when expanded. */}
 				<div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
 					<AccountMenu collapsed={state === "collapsed" && !isMobile} />
 				</div>
@@ -363,12 +299,8 @@ export function AppSidebar({ className }: { className?: string }) {
 }
 
 /**
- * Clerk's account menu, mounted only after hydration.
- *
- * `UserButton` renders nothing on the server and then appears, so without the
- * placeholder the sidebar footer visibly jumps on every load. The skeleton is
- * the same size as the control it stands in for, which is what makes the swap
- * invisible rather than merely fast.
+ * account menu component - defers Clerk's UserButton rendering until client hydration,
+ * utilizing an identically sized skeleton placeholder to eliminate layout shifts on load.
  */
 function AccountMenu({ collapsed }: { collapsed: boolean }) {
 	const [mounted, setMounted] = useState(false);
@@ -388,8 +320,7 @@ function AccountMenu({ collapsed }: { collapsed: boolean }) {
 
 	return (
 		<UserButton
-			// The name is dropped in the rail, where there is no room for it - the
-			// avatar alone still opens the same menu.
+			// name suppression - hides the user's name when the sidebar is collapsed to save space.
 			showName={!collapsed}
 			appearance={{
 				...clerkAppearance,
@@ -404,10 +335,7 @@ function AccountMenu({ collapsed }: { collapsed: boolean }) {
 				},
 			}}
 		>
-			{/* Carried over from the top bar unchanged. Note the hard-coded `u1` -
-			    that was already there and looks wrong; /profile/[id] expects a real
-			    user id, so this almost certainly 404s. Left as-is rather than
-			    guessed at during a layout change. */}
+			{/* static profile link - preserves the existing profile route link, noting that the hardcoded 'u1' parameter requires future correction. */}
 			<UserButton.MenuItems>
 				<UserButton.Link
 					label="Workspace Profile"

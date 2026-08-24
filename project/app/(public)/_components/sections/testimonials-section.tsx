@@ -5,14 +5,9 @@ import { LandingSection } from "../ui/landing-section";
 import { Reveal, RevealItem } from "../ui/reveal";
 
 /**
- * What people say, attributed to roles rather than invented people.
- *
- * The deliberate choice here is what is *missing*: no photographs, no company
- * logos, no full names. A capstone that renders three stock portraits under
- * fabricated names is making a claim it cannot support, and a reviewer who
- * notices stops believing the rest of the page too. Initials in a circle and a
- * role is honest about exactly what these are - feedback from a pilot - while
- * still doing the job a testimonial does.
+ * testimonials section - displays pilot feedback attributed honestly to
+ * roles and initials instead of using fabricated stock portraits and
+ * names.
  */
 export function TestimonialsSection() {
 	return (
@@ -32,9 +27,10 @@ export function TestimonialsSection() {
 							<blockquote className="flex-1 text-sm leading-relaxed text-on-surface">
 								{testimonial.quote}
 							</blockquote>
-							{/* A plain div, not a figcaption: BaseCard renders a div, and a
-							    figcaption outside a figure is invalid markup that browsers
-							    silently accept and validators do not. */}
+							{/*
+  valid markup - uses a standard div rather than a figcaption because it
+  exists outside a figure element.
+*/}
 							<div className="flex items-center gap-3 border-t border-border pt-4">
 								<span
 									aria-hidden="true"

@@ -8,13 +8,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * An expired session now redirects through sign-in instead of landing here, so
- * the only way to reach this page is signed in with no matching account record -
- * which the Clerk webhook creates moments after signup.
- *
- * That makes this a waiting room rather than a refusal, which is why the first
- * recovery route is "sign in again": if the webhook did land and the session is
- * simply stale, a fresh sign-in is what picks the new record up.
+ * unauthorized page component - functions as a waiting room for newly signed-up
+ * users whose account records are still being created by Clerk webhooks,
+ * offering a re-authentication route to pick up delayed records.
  */
 const ROUTES: readonly RecoveryRoute[] = [
 	{

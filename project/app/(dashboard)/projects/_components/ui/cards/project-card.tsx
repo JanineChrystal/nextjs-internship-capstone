@@ -31,7 +31,7 @@ export function ProjectCard({
 			>
 				<div className="flex justify-between items-center">
 					<div className="flex items-center gap-2.5">
-						{/* Selection Checkbox (Hover visible, persistent when selected) */}
+						{/* conditional checkbox visibility - keeps the checkbox visible only when hovered or actively selected to minimize visual noise. */}
 						<div
 							className={`transition-opacity duration-200 ${
 								isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -50,7 +50,7 @@ export function ProjectCard({
 							/>
 						</div>
 
-						{/* Status Dot */}
+						{/* status dot - displays a color-coded indicator representing the current project status. */}
 						<div
 							className={`w-2.5 h-2.5 rounded-full shrink-0 ${
 								project.status === "active"
@@ -67,15 +67,12 @@ export function ProjectCard({
 							{project.daysLeft} days left
 						</span>
 
-						{/* Archive Button. Sits before Delete so the reversible action is
-						    the one nearer the content, and the destructive one is the
-						    outermost thing on the row. */}
+						{/* action layout ordering - places the reversible archive action before the destructive delete action for safer interactions. */}
 						<button
 							type="button"
 							aria-label={`Archive ${project.title}`}
 							onClick={(e) => {
-								// The card is wrapped in a Link, so without these the click
-								// would archive the project AND navigate into it.
+								// click propagation barrier - prevents archive clicks from triggering the parent link navigation.
 								e.preventDefault();
 								e.stopPropagation();
 								onArchive?.(project.id);
@@ -85,7 +82,7 @@ export function ProjectCard({
 							<Archive className="w-4 h-4" />
 						</button>
 
-						{/* Delete Button */}
+						{/* delete button - triggers permanent project removal. */}
 						<button
 							type="button"
 							aria-label={`Delete ${project.title}`}
@@ -101,7 +98,7 @@ export function ProjectCard({
 					</div>
 				</div>
 
-				{/* Title & Description */}
+				{/* content block - renders the project title and a truncated description. */}
 				<div>
 					<h3 className="font-semibold text-lg mb-1">{project.title}</h3>
 					<p className="text-sm text-card-foreground/70 line-clamp-2">
@@ -109,33 +106,30 @@ export function ProjectCard({
 					</p>
 				</div>
 
-				{/* Meta Badges (Category, Status, Priority) */}
+				{/* meta badges container - groups category, status, and priority badges. */}
 				<div className="flex flex-wrap items-center gap-2 mt-1">
-					{/* Category Badge */}
+					{/* category badge - displays the project's classification. */}
 					{project.category && (
 						<CategoryBadge
 							name={project.category}
-							// The caller's own workspace, which is where Manage Categories
-							// writes project categories from this page. A project shared from
-							// another workspace keeps its generated colour rather than paying
-							// for a per-card lookup of someone else's palette.
+							// local workspace scope - defaults to the viewer's workspace categories to avoid expensive cross-workspace palette lookups.
 							scope={{ kind: "workspace", id: "default", type: "project" }}
 							className="uppercase"
 						/>
 					)}
 
-					{/* Status Badge */}
+					{/* status badge - displays the current workflow state. */}
 					{project.status && (
 						<StatusBadge status={project.status} className="uppercase" />
 					)}
 
-					{/* Priority Badge */}
+					{/* priority badge - highlights the project's urgency level. */}
 					{project.priority && (
 						<PriorityBadge priority={project.priority} className="uppercase" />
 					)}
 				</div>
 
-				{/* Metrics & Progress */}
+				{/* metrics footer - shows member count, task completion stats, and a progress bar. */}
 				<div className="mt-auto pt-4 flex flex-col gap-3">
 					<div className="flex justify-between text-xs text-card-foreground/80 font-medium">
 						<span>{project.membersCount} members</span>

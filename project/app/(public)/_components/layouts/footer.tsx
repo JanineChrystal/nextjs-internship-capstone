@@ -8,21 +8,11 @@ import { useSectionLink } from "../../_hooks/use-section-link";
 import { useSectionSpy } from "../../_hooks/use-section-spy";
 
 /**
- * The footer.
- *
- * Its in-page links go through the same `useSectionSpy` scroll helper the navbar
- * uses, so "Pricing" behaves identically whether it is clicked at the top or the
- * bottom of the page. Writing a second scroll implementation here is the obvious
- * shortcut and the reason footer anchors so often jump abruptly while the header
- * ones glide.
- *
- * The Contact entry is a button rather than a link, because it opens a panel
- * rather than going anywhere. Marking it up as a link would promise a
- * destination - and would break middle-click and "open in new tab", which a user
- * is entitled to expect from anything that looks like a link.
+ * footer - renders site navigation with smooth scrolling anchors for
+ * on-page links, and opens the contact drawer directly to prevent broken
+ * link behavior.
  */
-// A stable empty array: useSectionSpy watches nothing here, and a fresh `[]`
-// literal each render would be a new reference and re-run its effect every time.
+// stable array reference - prevents unnecessary re-renders in useSectionSpy by avoiding a new array literal on every render.
 const NO_OBSERVED_SECTIONS: string[] = [];
 
 export function Footer() {
@@ -30,9 +20,7 @@ export function Footer() {
 	const { hrefFor, handleAnchor: onAnchor } = useSectionLink(scrollToSection);
 	const openContact = useLandingUiStore((state) => state.openContact);
 
-	// The configured hrefs are a mix: section anchors like "#pricing" and, in
-	// principle, real paths. Only the anchors are rewritten - a real path is
-	// already correct from any page.
+	// href resolution - processes only section anchors through the router, leaving real paths intact to function correctly across all pages.
 	const resolveHref = (href: string) =>
 		href.startsWith("#") ? hrefFor(href.slice(1)) : href;
 
@@ -47,16 +35,21 @@ export function Footer() {
 	return (
 		<footer className="border-t border-border bg-surface-container-low/40">
 			<div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-				{/* One column on a phone, two from sm, and the brand block taking its
-				    own wider column from lg - so the link lists never squeeze to two
-				    words per line. */}
+				{/*
+  responsive layout - stacks columns on mobile, uses two on small
+  screens, and gives the brand block extra width on large screens to
+  prevent cramped link text.
+*/}
 				<div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
 					<div className="flex flex-col gap-3 lg:col-span-2">
 						<Link
 							href="/"
 							className="flex items-center gap-2 font-semibold text-on-surface"
 						>
-							{/* Wordmark only, matching the navbar above it. */}
+							{/*
+  consistent branding - displays only the wordmark to match the navbar
+  styling.
+*/}
 							Takda PH
 						</Link>
 						<p className="max-w-xs text-sm text-secondary">
@@ -105,8 +98,10 @@ export function Footer() {
 						&copy; {new Date().getFullYear()} Takda PH. Built as a capstone
 						project.
 					</p>
-					{/* Real routes, not section anchors like the columns above - which
-					    is why these are `Link` and skip the anchor handler. */}
+					{/*
+  direct links - uses Next.js Link for actual routes, bypassing the
+  smooth scroll anchor logic used above.
+*/}
 					<nav aria-label="Legal" className="flex items-center gap-4">
 						<Link
 							href="/privacy"

@@ -3,34 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 
 /**
- * Tracks which section of a one-page site is currently being read, and scrolls
- * to one on demand.
- *
- * ## Why an IntersectionObserver rather than a scroll listener
- *
- * The obvious implementation is `window.addEventListener("scroll", ...)` and
- * measuring every section's `getBoundingClientRect()` on each event. That fires
- * dozens of times a second, and each measurement forces the browser to
- * recalculate layout - the pattern known as layout thrashing, and a reliable way
- * to make a page feel sticky on a mid-range phone.
- *
- * An IntersectionObserver instead asks the browser to notify us only when a
- * watched element crosses a threshold. The browser already knows where
- * everything is; it tells us when the answer changes rather than being asked
- * continuously. One observer watches all the sections, not one per section.
- *
- * ## Why the rootMargin looks lopsided
- *
- *     rootMargin: "-88px 0px -55% 0px"
- *                   │            │
- *                   │            └── ignore the bottom 55% of the viewport
- *                   └── ignore the top 88px, which the sticky header covers
- *
- * That shrinks the region that counts as "being read" to a band across the upper
- * third of the screen. Without it, a tall section and the short one after it are
- * both on screen at once and the highlight flickers between them; with it, the
- * highlight follows what is under the reader's eye rather than what happens to
- * be visible.
+ * use-section-spy hook - uses IntersectionObserver to track the active
+ * reading section efficiently without layout thrashing, using an asymmetric
+ * rootMargin to account for sticky headers.
  */
 export function useSectionSpy(sectionIds: readonly string[]) {
 	// Local state

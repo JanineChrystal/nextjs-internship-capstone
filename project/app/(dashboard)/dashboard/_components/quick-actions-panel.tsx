@@ -11,12 +11,8 @@ import {
 import { useQuickActions } from "../_hooks/use-quick-actions";
 
 /**
- * Heavy modals, loaded only once a shortcut is used.
- *
- * All three are substantial - the project form, the invite form with its pending
- * table, and the task editor with its checklist, attachments and comments panel.
- * Bundling them into the dashboard would make the first page after sign-in carry
- * three editors nobody has asked for yet.
+ * dynamic modals - defers loading heavy action modals until a user
+ * invokes a shortcut, keeping the initial dashboard bundle lightweight.
  */
 const ProjectModal = dynamic(
 	() =>
@@ -43,12 +39,9 @@ const TaskModal = dynamic(
 );
 
 /**
- * The four original shortcuts, each opening the modal that already exists for
- * it rather than a dashboard-only copy.
- *
- * The task modal is mounted unconditionally once this panel is on screen,
- * because it reads its own open state from the task store rather than taking an
- * `isOpen` prop - the same way the project page mounts it.
+ * quick actions panel - provides shortcuts for common tasks by opening
+ * existing shared modals rather than duplicating form logic, mounting the
+ * task modal conditionally when triggered.
  */
 export function QuickActionsPanel({
 	projects,
@@ -97,7 +90,7 @@ export function QuickActionsPanel({
 				))}
 			</ul>
 
-			{/* Step one for the two project-scoped actions. */}
+			{/* step one - renders the project picker for project-scoped quick actions. */}
 			{pickerCopy && (
 				<ProjectPickerModal
 					isOpen={isPickingProject}
@@ -126,8 +119,7 @@ export function QuickActionsPanel({
 				scope="workspace"
 			/>
 
-			{/* Only mounted once a project has been chosen, so `targetId` is never
-			    an empty string that the invite would silently send nowhere. */}
+			{/* conditional invite modal - ensures the member addition modal only mounts after a valid project ID is selected. */}
 			{activeAction === "add-project-member" && pickedProjectId && (
 				<AddMemberModal
 					open

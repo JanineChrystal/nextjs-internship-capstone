@@ -6,11 +6,8 @@ import type { ActivityFeedItemDTO } from "@/lib/dtos/activity-dto";
 import { reportActionError } from "@/lib/utils/toast";
 
 /**
- * The whole project's history, for the Project Activity section in settings.
- *
- * Unlike the task tab this loads on mount: settings is a page someone navigated
- * to deliberately, so the section is expected to have content when they arrive
- * rather than after another interaction.
+ * use-project-activity hook - fetches the entire project history immediately on
+ * mount to populate the project activity settings section upon navigation.
  */
 export function useProjectActivity(projectId: string) {
 	const [items, setItems] = useState<ActivityFeedItemDTO[]>([]);

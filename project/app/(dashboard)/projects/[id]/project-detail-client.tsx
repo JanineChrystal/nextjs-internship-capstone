@@ -107,18 +107,9 @@ export function ProjectDetailClient({
 	}, [project, projectUI, tasks, boards, setTasks, setColumns]);
 
 	/**
-	 * Opens the task a search result pointed at.
-	 *
-	 * A task has no page of its own, so a search hit links to its project with
-	 * ?task={id}. Without this the link would drop the reader on a board and
-	 * leave them to find the card themselves - which is most of the work they
-	 * just asked search to do.
-	 *
-	 * It waits for the store to be populated: the tasks arrive from the server
-	 * through the effect above, and opening the modal before they land would show
-	 * an empty editor. The param is then cleared with replace() rather than
-	 * push(), so pressing Back leaves the project rather than silently reopening
-	 * the same task.
+	 * deep link handler - waits for tasks to hydrate from the server before
+	 * opening the modal requested by search parameters, then safely removes the
+	 * query string from the URL to preserve back navigation.
 	 */
 	useEffect(() => {
 		const taskId = searchParams.get("task");
@@ -140,15 +131,12 @@ export function ProjectDetailClient({
 		handleResetFilters,
 	} = useProjectPage();
 
-	// Settings is an owner/co-owner surface. Members and guests never see the tab,
-	// and this guard covers the ways they could still land on the view - a stale
-	// tab in state, or a deep link - by falling back to the default view.
+	// settings access guard - restricts the settings view to owners/co-owners, falling back to the grid view for unauthorized roles arriving via stale state or deep links.
 	const canOpenSettings = role === "owner" || role === "co-owner";
 	const effectiveView =
 		activeView === "settings" && !canOpenSettings ? "grid" : activeView;
 
-	// Board columns are owner/co-owner territory too - `manage_boards` is not
-	// granted to members, so offering the control only produced a refusal.
+	// board management guard - limits column management to users with explicit permissions to prevent displaying unauthorized controls.
 	const canManageBoards = hasPermission(role, "manage_boards");
 
 	return (

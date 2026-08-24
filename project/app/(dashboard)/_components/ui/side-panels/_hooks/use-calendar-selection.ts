@@ -15,23 +15,15 @@ import {
 import { useTaskStore } from "@/stores/use-task-store";
 import type { CalendarDeadlineItem } from "@/types/calendar";
 
-/**
- * What the calendar's bulk bar offers.
- *
- * Archive is deliberately absent. Only a project can be archived, and no bulk
- * action here may touch a project, so an Archive button could never succeed -
- * and a control that looks pressable but cannot work is worse than one that was
- * never offered. Archiving lives on the projects list and in a project's own
- * settings, both of which still have it.
- */
+/** action types - defines available bulk actions for calendar selections, explicitly excluding archive since projects cannot be archived from the calendar interface. */
 type ActionType = "complete" | "delete";
 
 interface ConfirmState {
 	isOpen: boolean;
 	actionType: ActionType | null;
-	/** How many tasks the pending action covers, captured when it was raised. */
+	/** pending task count - number of tasks affected by the pending bulk action. */
 	count: number;
-	/** Whether any of them still has unticked checklist items. */
+	/** incomplete checklist flag - true if any selected task contains unfinished checklist items, used to show a warning. */
 	hasUnchecked: boolean;
 }
 
@@ -43,11 +35,7 @@ const CLOSED: ConfirmState = {
 };
 
 /**
- * Why a project is refused, and where to go instead.
- *
- * Each names the destination rather than only saying no. A refusal that does not
- * say where the action lives leaves the reader hunting for it, and the usual
- * next move is to try the same button again.
+ * project action refusal messages - maps actions to explicit rejection messages that guide users to the correct interface for modifying projects.
  */
 const PROJECT_REFUSAL: Record<ActionType, string> = {
 	delete:
@@ -56,15 +44,14 @@ const PROJECT_REFUSAL: Record<ActionType, string> = {
 		"Projects cannot be completed from the calendar. Open the project and complete it there.",
 };
 
-/** What to add when something in the selection still has unticked items. */
+/** incomplete checklist consequences - additional warnings appended to confirmation dialogs when tasks have unfinished checklists. */
 const UNCHECKED_CONSEQUENCE: Record<ActionType, string> = {
 	delete: `Some still have unchecked checklist items, which go to the trash with them and are deleted permanently after ${TRASH_RETENTION_DAYS} days.`,
 	complete:
 		"Some still have unchecked checklist items. Completing the task does not tick those off.",
 };
 
-// Groups a flat task id list by the project each task belongs to, since the
-// underlying bulk task actions are permission-checked per project.
+// task grouping by project - groups tasks by project id since bulk actions require project-level permission checks on the server.
 function groupTaskIdsByProject(
 	taskIds: string[],
 	tasks: { id: string; projectId?: string }[],
@@ -79,37 +66,8 @@ function groupTaskIdsByProject(
 }
 
 /**
- * Bulk selection and actions for the calendar side panel.
- *
- * Used by two surfaces: the global calendar, whose items are projects *and*
- * tasks, and a project's own calendar view, whose items are tasks only. The
- * project rule below therefore never fires on the second one - not because it is
- * special-cased, but because it has no projects to select.
- *
- * ## No bulk action here may touch a project
- *
- * A project is deleted, completed or archived from the projects list or from its
- * own settings, and nowhere else. On a calendar a project renders as one small
- * row, visually indistinguishable from a task, but acting on it reaches its
- * tasks, its board, its comments and its members' work. Two rows that look
- * identical should not have outcomes three orders of magnitude apart.
- *
- * The refusal covers the whole selection rather than quietly proceeding with the
- * tasks in it. Half-applying a bulk action is worse than refusing it: the reader
- * asked for one thing, and would be told it succeeded having got something else.
- *
- * Nothing is lost by refusing here. Both routes that *do* delete a project -
- * the bulk bar on `/projects` and the Danger Zone - carry the same
- * ongoing-work check this panel used to duplicate.
- *
- * ## Deleting always asks
- *
- * The confirmation used to be raised only when something unfinished was
- * selected, and anything tidy was deleted immediately. That is backwards: it
- * means a finished task, the one most likely to be worth keeping, was the one
- * deleted without a question. Unticked checklist items now change the WORDING,
- * not whether the question is asked - the same rule already applied to the grid
- * and kanban bulk actions in `use-task-bulk-actions.ts`.
+ * calendar selection hook - manages bulk selection and actions for calendar items.
+ * enforces rules that bulk actions cannot affect projects (refusing the entire selection if one is present) and always requires confirmation for deletions.
  */
 export function useCalendarSelection(items: CalendarDeadlineItem[]) {
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -147,10 +105,7 @@ export function useCalendarSelection(items: CalendarDeadlineItem[]) {
 		tasks.some((t) => taskIds.includes(t.id) && hasIncompleteChecklist(t));
 
 	const executeDelete = async () => {
-		// Filtered here as well as at the door. `initiateAction` refuses the whole
-		// selection when a project is present, so this should be unreachable - but
-		// a delete is the wrong place to depend on a guard elsewhere still being
-		// correct, which is exactly the failure that produced this bug.
+		// safety filtering - re-filters tasks independently as a secondary guard to guarantee projects cannot be deleted even if initiation checks fail.
 		const { taskIds } = getSelectedByType();
 		if (taskIds.length === 0) return;
 
@@ -211,10 +166,7 @@ export function useCalendarSelection(items: CalendarDeadlineItem[]) {
 
 		const hasUnchecked = hasUncheckedChecklist(taskIds);
 
-		// Completing is reversible - a task can be reopened - so it only asks when
-		// there is something to warn about. A confirmation on every one would be
-		// friction with nothing behind it, and it is how people learn to click
-		// through the dialog that mattered. Deleting always asks.
+		// selective completion confirmation - skips confirmation for reversible completions unless there are incomplete checklist items to warn about.
 		if (actionType === "complete" && !hasUnchecked) {
 			executeComplete();
 			return;
@@ -239,15 +191,7 @@ export function useCalendarSelection(items: CalendarDeadlineItem[]) {
 
 	const closeConfirm = () => setConfirmState(CLOSED);
 
-	/**
-	 * The dialog's wording, built here rather than in the panel.
-	 *
-	 * The panel used to carry nested ternaries choosing a title, a confirm label
-	 * and a tone. This hook is the only place that knows the count, the action and
-	 * the checklist state, so it is where the sentence belongs - and
-	 * `buildConfirmCopy` makes the bulk and singular forms correct without either
-	 * being typed out.
-	 */
+	/** confirmation copy state - dynamically builds grammatically correct confirmation text using context only available in this hook. */
 	const confirmCopy: {
 		title: string;
 		description: string;
@@ -259,14 +203,12 @@ export function useCalendarSelection(items: CalendarDeadlineItem[]) {
 
 		const base = buildConfirmCopy({
 			action,
-			// Always tasks: a project is refused before the dialog can open.
+			// static subject - always 'task' because projects are rejected upstream.
 			subject: "task",
 			count,
 			consequence: hasUnchecked
 				? UNCHECKED_CONSEQUENCE[action]
-				: // Left undefined so the default comes through - for a delete that
-					// describes the 30-day trash window rather than claiming the
-					// deletion is permanent, which here it is not.
+				: // default consequence - relies on buildConfirmCopy defaults to accurately describe behavior like the 30-day trash retention for deletes.
 					undefined,
 		});
 

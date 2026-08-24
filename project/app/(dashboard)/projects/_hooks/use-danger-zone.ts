@@ -15,9 +15,9 @@ import { useProjectStore } from "@/stores/use-project-store";
 
 interface ArchiveConfirmState {
 	isOpen: boolean;
-	/** True when archiving, false when restoring. Fixed when the dialog opens. */
+	/** operation mode - fixed flag indicating whether the action is archiving or restoring. */
 	isArchiving: boolean;
-	/** Whether the project still has unfinished tasks, for the wording. */
+	/** task dependency flag - true if the project contains unfinished tasks to inform confirmation dialog wording. */
 	hasOpenTasks: boolean;
 }
 
@@ -44,14 +44,9 @@ export function useDangerZone(projectId: string, currentUserRole: RoleAccess) {
 	const project = projects.find((p) => p.id === projectId);
 
 	/**
-	 * Read from the store rather than held in local state.
-	 *
-	 * This used to be `useState(false)`, initialised to "not archived" no matter
-	 * what the project actually was - so opening the settings of an already
-	 * archived project offered to archive it again, and the button label was
-	 * simply wrong. Deriving it means the optimistic `updateProject` below is the
-	 * only thing that has to flip, and the label cannot fall out of step with the
-	 * data it describes.
+	 * derived archive state - computes active status directly from the global
+	 * project store to prevent local state drift and ensure optimistic updates
+	 * immediately reflect in the UI.
 	 */
 	const isArchiveActive = project?.status === "archived";
 	const isOwner = currentUserRole === "owner";
@@ -105,16 +100,9 @@ export function useDangerZone(projectId: string, currentUserRole: RoleAccess) {
 	);
 
 	/**
-	 * Deletes the project for real.
-	 *
-	 * This was a mock - a `window.alert` claiming success while nothing was
-	 * deleted - so the whole Danger Zone looked functional and was not.
-	 *
-	 * Unlike every other mutation here it is NOT optimistic. An optimistic delete
-	 * would remove the project from the store while we are still standing on its
-	 * settings page, blanking the surface under the reader before the server has
-	 * agreed to anything. The dialog stays up and busy instead, and the store is
-	 * only touched once the server has confirmed - at which point we leave.
+	 * execute deletion - performs the actual project deletion API call, keeping the
+	 * mutation non-optimistic so the settings page remains intact until the server
+	 * successfully processes the request.
 	 */
 	const handleDeleteProject = useCallback(async () => {
 		if (isDeleting) return;
@@ -126,17 +114,12 @@ export function useDangerZone(projectId: string, currentUserRole: RoleAccess) {
 
 			deleteProjects(new Set([projectId]));
 			setIsDeleteModalOpen(false);
-			// The second line matters here more than elsewhere: the reader just
-			// typed the project name to prove they meant it, and telling them it is
-			// recoverable is the difference between a considered action and a
-			// frightening one.
+			// recovery reassurance - explicitly informs the user that deleted projects are recoverable from the archive for a retention period.
 			notify.success("Project deleted", {
 				description: `You can restore it from the archive for ${TRASH_RETENTION_DAYS} days.`,
 			});
 
-			// The page we are on describes a project that no longer exists, so
-			// staying here would show a dead settings screen until something else
-			// forced a navigation.
+			// post-deletion navigation - automatically redirects to the projects list since the current settings page now belongs to a deleted project.
 			router.push("/projects");
 		} catch (e) {
 			reportActionError("Could not delete project", e);

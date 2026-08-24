@@ -9,14 +9,9 @@ import { Glow } from "../ui/glow";
 import { Reveal } from "../ui/reveal";
 
 /**
- * The closing call to action.
- *
- * Deliberately repeats the hero's offer rather than introducing a new one. A
- * reader who has just scrolled the whole page is at the point of deciding, and
- * making them scroll back up to find the button is the easiest conversion to
- * lose. The secondary action here is the contact drawer instead of "sign in",
- * because someone who read this far and did not sign up usually has a question
- * rather than an account.
+ * cta section - repeats the hero's primary offer at the page bottom to
+ * capture ready users, while offering a contact option instead of
+ * sign-in for those with questions.
  */
 export function CtaSection() {
 	const openContact = useLandingUiStore((state) => state.openContact);

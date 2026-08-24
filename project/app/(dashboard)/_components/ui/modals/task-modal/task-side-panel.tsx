@@ -8,7 +8,7 @@ import { TaskComments } from "./task-comments";
 
 type TaskPanelTab = "comments" | "activity";
 
-// Hoisted so the strip is not rebuilt on every render (AGENTS section 10).
+// tab configuration - hoisted outside the component to prevent unnecessary re-renders as per AGENTS section 10.
 const TASK_PANEL_TABS: TabOption<TaskPanelTab>[] = [
 	{ label: "Comments", value: "comments" },
 	{ label: "Activity", value: "activity" },
@@ -21,16 +21,8 @@ interface TaskSidePanelProps {
 }
 
 /**
- * The task modal's right-hand panel, which now holds two views of the same task:
- * the discussion, and what has been done to it.
- *
- * Owning the tab strip here rather than inside TaskComments keeps each tab a
- * plain content component with one job, and means adding a third view later is
- * a new file plus one array entry rather than a rewrite.
- *
- * Both tabs stay mounted. Comments hold unsent text and scroll position that
- * would be thrown away by unmounting, and the activity tab defers its own fetch
- * until it is actually the active tab, so keeping it mounted costs nothing.
+ * task side panel component - manages the right-hand views (comments and activity) within the task modal.
+ * tabs are kept mounted to preserve state like unsent text and scroll positions, with activity fetching deferred until active.
  */
 export function TaskSidePanel({
 	taskId,
@@ -49,7 +41,7 @@ export function TaskSidePanel({
 				/>
 			</div>
 
-			{/* Kept mounted and hidden rather than swapped out - see note above. */}
+			{/* hidden inactive tabs - keeps content mounted via CSS to preserve state without unmounting. */}
 			<div
 				className={`flex-1 min-h-0 flex flex-col ${activeTab === "comments" ? "" : "hidden"}`}
 			>

@@ -15,32 +15,9 @@ interface NotificationRowProps {
 }
 
 /**
- * One notification.
- *
- * ## Two ways to mark something read, for two different intentions
- *
- * A notification about a project is a link: clicking the body marks it read AND
- * takes you there, because those are the same intent - you read a notification
- * by going to look at the thing it is about.
- *
- * But that used to be the ONLY way. Clearing a single notification meant
- * navigating away from the page you were tidying, and the alternative was "Mark
- * all as read", which cannot say "I have seen this one and not the others". The
- * check button beside the dismiss control covers that second intention: read it,
- * stay here.
- *
- * ## Why a notification with no project is no longer clickable
- *
- * It used to render the body as a `<button>` whose only effect was marking it
- * read - identical in appearance to the rows that navigate, with nothing to say
- * it did anything, and silently broken under middle-click because it was not a
- * link. Those rows are now plain content, and the check button is the way to
- * mark them read. One affordance that says what it does beats two that look the
- * same and behave differently.
- *
- * The controls sit outside the clickable body rather than inside it. Nesting a
- * button inside a link is invalid HTML and leaves the two competing for the same
- * click, so the row is a row: body, then controls.
+ * notification row - renders individual notifications with explicit controls
+ * for dismissing or marking as read without navigating, resolving accessibility
+ * and interaction issues with the previous clickable-row design.
  */
 export function NotificationRow({
 	notification,
@@ -95,34 +72,16 @@ export function NotificationRow({
 	const bodyClassName = "flex flex-1 min-w-0 gap-3 p-4 text-left";
 
 	/**
-	 * Always visible, never revealed on hover.
-	 *
-	 * Both controls used to sit at `opacity-0` until the row was hovered. The
-	 * CSS for that works - the reveal rule is generated and is not gated behind
-	 * `@media (hover: hover)` - but it fails as a design in three ways at once,
-	 * and the first person to look for the new button could not find it:
-	 *
-	 *   - Nothing hints that hovering will produce anything, so a control that
-	 *     is invisible until you happen to pass over it is a control most people
-	 *     never learn exists.
-	 *   - There is no hover on a touch screen. Whatever the media query says,
-	 *     a finger either taps something or it does not, and "reveal on hover"
-	 *     has no meaning on a phone.
-	 *   - It puts the affordance and the action in different moments: you have
-	 *     to already suspect something is there before the page will admit it.
-	 *
-	 * Dimmed instead of hidden. The controls stay quiet enough that the message
-	 * is still the loudest thing in the row, and they are visible at rest, which
-	 * is the whole difference.
+	 * always visible controls - keeps row controls dimmed rather than hidden,
+	 * ensuring they are discoverable and accessible on touch screens without
+	 * relying on hover states.
 	 */
 	const controlClassName =
 		"shrink-0 text-secondary opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100";
 
 	return (
 		<li
-			// No `group` any more: nothing in this row reacts to the row being
-			// hovered now that the controls are always visible, and leaving the
-			// class behind would imply a relationship that no longer exists.
+			// independent interactions - removes group hover classes since row elements no longer depend on container hover state.
 			className={cn(
 				"flex items-start rounded-lg border transition-colors",
 				notification.isRead
@@ -143,9 +102,7 @@ export function NotificationRow({
 			)}
 
 			<div className="flex shrink-0 items-center gap-1 p-2">
-				{/* Only while it is unread. A "mark as read" on an already-read row is
-				    a control that cannot do anything, and one that does nothing when
-				    pressed teaches people to distrust the rest. */}
+				{/* contextual controls - hides the mark as read button on already-read rows to avoid presenting non-functional actions. */}
 				{!notification.isRead && (
 					<Button
 						type="button"

@@ -3,17 +3,9 @@ import { HorizonArc } from "../ui/glow";
 import { Reveal, RevealItem } from "../ui/reveal";
 
 /**
- * The quiet section between the features and the workflow rail.
- *
- * Every page needs somewhere for the eye to rest, and this is it: a short claim,
- * two supporting lines, and the horizon arc. It is also where the page says the
- * one thing a project-management tool actually has to be believed about, which
- * is that access control is real.
- *
- * `min-h-[32rem]` rather than a fixed height so the arc has room to sit under
- * the text without the section collapsing around it when the copy is short on a
- * wide screen - and without clipping the copy when it wraps to six lines on a
- * narrow one.
+ * trust section - provides a visual break using a horizon arc and
+ * minimal copy to emphasize the platform's core claim of reliable access
+ * control.
  */
 export function TrustSection() {
 	return (

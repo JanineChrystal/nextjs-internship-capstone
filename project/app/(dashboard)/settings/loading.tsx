@@ -2,13 +2,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonPage } from "@/components/ui/skeletons";
 
 /**
- * Streamed while /settings fetches.
- *
- * Three cards in a single full-width column, matching the page since the
- * in-page menu was removed. The first is much taller than the others because
- * the Clerk account panel is the heaviest thing on the page by a wide margin,
- * and it is also code-split - so this height is what stops the two sections
- * below it jumping upward while it arrives.
+ * settings loading skeleton - renders a full-width, three-card placeholder
+ * layout while the page fetches, specifically allocating extra height for the
+ * first card to prevent layout shift when the heavy Clerk component loads.
  */
 export default function Loading() {
 	return (

@@ -6,17 +6,9 @@ import { LandingSection } from "../ui/landing-section";
 import { Reveal, RevealItem } from "../ui/reveal";
 
 /**
- * The features section: four large panels, then a dense grid of one-liners.
- *
- * Two densities on purpose. The bento panels are for the reader deciding whether
- * this product is for them at all, and each gets room to make an argument. The
- * grid below is for the reader who has already decided and is now checking their
- * checklist - that reader wants breadth and scannability, not prose.
- *
- * The cards are the app's own `BaseCard`, not a landing-page card. It already
- * carries the border, radius, padding and hover treatment the rest of the
- * product uses, so the marketing page and the app look like the same piece of
- * software - which is the whole reason a landing page is worth building.
+ * features section - displays key features in detailed bento panels
+ * followed by a dense scannable grid, using the app's native BaseCard
+ * for consistent branding.
  */
 export function FeaturesSection() {
 	return (
@@ -25,9 +17,10 @@ export function FeaturesSection() {
 			title="Everything a project needs, nothing it does not"
 			description="The parts that make a board worth keeping open: columns that match the work, access that holds up, and a record of what actually happened."
 		>
-			{/* Bento: one column on a phone, two from md up. The `wide` panels take
-			    both columns there, which is what makes the grid read as a bento
-			    rather than a plain 2x2. */}
+			{/*
+  bento layout - uses responsive columns where wide panels span two
+  columns on larger screens to create an asymmetric bento grid.
+*/}
 			<Reveal
 				stagger
 				className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-6"
@@ -56,8 +49,10 @@ export function FeaturesSection() {
 				))}
 			</Reveal>
 
-			{/* The dense grid. Steps 1 -> 2 -> 4 columns so a phone gets a readable
-			    single column, a tablet two, and a desktop four. */}
+			{/*
+  dense grid - scales from one to four columns based on screen size for
+  optimal scannability.
+*/}
 			<Reveal
 				stagger
 				as="ul"

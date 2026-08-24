@@ -1,16 +1,9 @@
 import { cn } from "@/lib/utils";
 
 /**
- * The soft radial light behind the hero and the closing call to action.
- *
- * Built from the theme's own `--primary` via `color-mix` rather than a
- * hard-coded colour, so it follows dark mode now and will follow the Phase 7
- * palette picker without an edit. That is the same indirection the rest of the
- * design system uses: nothing states a hex value except the token definitions.
- *
- * `aria-hidden` and `pointer-events-none` because it is decoration - it must
- * never be announced and must never intercept a click meant for the button
- * sitting on top of it.
+ * glow effect - a purely decorative radial gradient built from theme
+ * tokens to ensure automatic color mode switching without interfering
+ * with clicks.
  */
 export function Glow({
 	className,
@@ -30,7 +23,7 @@ export function Glow({
 			)}
 		>
 			<div
-				className="absolute left-1/2 top-0 h-[36rem] w-[64rem] -translate-x-1/2 -translate-y-1/3 rounded-full blur-3xl"
+				className="absolute left-1/2 top-0 h-144 w-5xl -translate-x-1/2 -translate-y-1/3 rounded-full blur-3xl"
 				style={{
 					background: `radial-gradient(closest-side, color-mix(in oklch, var(--primary) ${opacity * 100}%, transparent), transparent)`,
 				}}
@@ -40,12 +33,8 @@ export function Glow({
 }
 
 /**
- * The thin horizon arc from the reference layout - a bright rim above a dark
- * curve, as if a planet were rising.
- *
- * A single div with a very large border-radius and a top-edge box-shadow. The
- * alternative was an SVG or an image; a shadowed div costs no request, scales to
- * any width, and recolours with the theme for free.
+ * horizon arc - an SVG-free scalable horizon effect using a shadowed div
+ * and border radius that automatically adapts to the current theme.
  */
 export function HorizonArc({ className }: { className?: string }) {
 	return (
@@ -57,7 +46,7 @@ export function HorizonArc({ className }: { className?: string }) {
 			)}
 		>
 			<div
-				className="mx-auto h-[30rem] w-[120%] max-w-none translate-y-1/2 rounded-[50%] border-t"
+				className="mx-auto h-120 w-[120%] max-w-none translate-y-1/2 rounded-[50%] border-t"
 				style={{
 					borderColor: "color-mix(in oklch, var(--primary) 55%, transparent)",
 					boxShadow:

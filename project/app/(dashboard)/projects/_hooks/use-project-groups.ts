@@ -13,9 +13,9 @@ import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import { useMemberStore } from "@/stores/use-member-store";
 
 /**
- * Groups seen from inside a project's settings - the only place they are
- * surfaced, since they are a convenience for filling a project's member list
- * rather than an entity with a page of its own.
+ * use-project-groups hook - manages member groups exclusively within project
+ * settings contexts, facilitating rapid population of project member lists from
+ * saved snapshots.
  */
 export function useProjectGroups(projectId: string) {
 	const [groups, setGroups] = useState<GroupOutputDTO[]>([]);
@@ -87,8 +87,7 @@ export function useProjectGroups(projectId: string) {
 					? `Added ${result.addedCount} member(s) from the group.`
 					: "Everyone in that group is already on this project.",
 			);
-			// The member table is server-backed, so it has to be re-read rather than
-			// patched: applying a group can resurrect previously removed rows.
+			// server state refresh - forces a re-fetch of project members since applying a group can reinstate previously removed memberships that aren't easily patched locally.
 			await fetchProjectMembers(projectId);
 		},
 		[projectId, fetchProjectMembers],

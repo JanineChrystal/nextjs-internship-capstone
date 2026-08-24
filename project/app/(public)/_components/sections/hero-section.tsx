@@ -8,13 +8,9 @@ import { ProductPreview } from "../ui/product-preview";
 import { Reveal, RevealItem } from "../ui/reveal";
 
 /**
- * The first screen.
- *
- * Mobile-first throughout: the base classes describe a phone - one column,
- * text-4xl, full-width stacked buttons - and every `sm:`/`lg:` prefix adds
- * something a larger screen has room for. Written the other way round, a phone
- * would inherit desktop sizes and each breakpoint would be undoing them, which
- * is how a heading ends up overflowing on the narrowest device nobody tested.
+ * hero section - the primary landing screen designed mobile-first,
+ * ensuring proper text sizing and button stacking before scaling up for
+ * larger displays.
  */
 export function HeroSection() {
 	return (
@@ -46,8 +42,10 @@ export function HeroSection() {
 					</RevealItem>
 
 					<RevealItem className="w-full">
-						{/* Stacked and full-width on a phone so each button is an easy
-						    thumb target; side by side once there is room. */}
+						{/*
+  responsive buttons - stacks full-width buttons for touch targets on
+  mobile, displaying side-by-side on larger screens.
+*/}
 						<div className="mx-auto flex w-full max-w-sm flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
 							<Button asChild size="lg" className="h-11 px-6 text-base">
 								<Link href={HERO.primaryCta.href}>

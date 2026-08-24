@@ -32,7 +32,7 @@ export function EmailLayout({ previewText, children }: EmailLayoutProps) {
 				<Body className="bg-white font-sans">
 					<Container className="mx-auto my-10 max-w-150 p-5 rounded border border-solid border-[#eaeaea]">
 						<div className="flex items-center gap-2 mb-6">
-							{/* We can't use absolute paths for the logo unless hosted, so we use text as fallback for now */}
+							{/* text fallback - uses text instead of a logo image since absolute paths cannot be used for unhosted images. */}
 							<span className="text-xl font-bold tracking-tight text-slate-900">
 								Project Manager
 							</span>

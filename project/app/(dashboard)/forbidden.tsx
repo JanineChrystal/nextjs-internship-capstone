@@ -7,13 +7,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * Rendered when `forbidden()` is called from inside the dashboard - a member
- * opening a project they are not on, or reaching a moderation surface reserved
- * for owners.
- *
- * No retry is offered, deliberately. The answer to a 403 does not change on a
- * second attempt, and a retry control that cannot succeed teaches people to
- * distrust every retry control in the product.
+ * forbidden page - explicitly omits a retry control for 403 responses
+ * since retrying will not bypass server-enforced access restrictions.
  */
 export default function ForbiddenPage() {
 	return (

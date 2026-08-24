@@ -31,8 +31,7 @@ function CommentRow({
 	onDelete: (id: string) => void;
 	mentionMembers: Map<string, { userId: string; label: string }>;
 }) {
-	// Replying to or deleting a comment only makes sense while its text is
-	// actually present - a withheld or removed comment has nothing to act on.
+	// actionable state - disables reply and delete actions for comments that are deleted, rejected, or under review.
 	const isActionable =
 		!comment.isDeleted && !comment.isUnderReview && !comment.isRejected;
 
@@ -49,10 +48,7 @@ function CommentRow({
 						{comment.authorName}
 					</p>
 					{comment.isRejected ? (
-						// Says what happened without saying who did it. The moderator's
-						// identity is on the row for the audit trail, but publishing it
-						// back into the thread would turn a moderation decision into a
-						// confrontation between two members.
+						// anonymous moderation message - hides the moderator's identity in the thread to avoid confrontations while keeping the action visible.
 						<span className="inline-flex items-center gap-1.5 rounded-full bg-error/10 px-3 py-1 text-xs text-error italic">
 							<ShieldAlert className="h-3.5 w-3.5 shrink-0" />
 							This comment was rejected
@@ -62,17 +58,13 @@ function CommentRow({
 							{comment.authorName} deleted a comment
 						</p>
 					) : comment.isUnderReview ? (
-						// A pill rather than the text. The comment exists and its author
-						// is still named - hiding that would make the thread lie about
-						// what happened - but the words wait for a moderator.
+						// review pending state - displays a pill instead of content while maintaining author visibility during moderation review.
 						<span className="inline-flex items-center gap-1.5 rounded-full bg-surface-container-highest px-3 py-1 text-xs text-secondary italic">
 							<ShieldAlert className="h-3.5 w-3.5 shrink-0" />
 							This comment is under review
 						</span>
 					) : (
-						// overflow-wrap:anywhere (rather than break-word) so a single
-						// very long unbroken string also shrinks this flex item's
-						// min-content width instead of widening the whole panel.
+						// forced word wrap - prevents long unbroken strings from breaking the flex layout and widening the panel.
 						<p className="text-sm text-on-surface wrap-anywhere">
 							<MentionText body={comment.body} members={mentionMembers} />
 						</p>
@@ -128,9 +120,7 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 
 	const mentions = useMentionAutocomplete(projectId, newComment, setNewComment);
 
-	// handle -> member, for turning "@janine" back into a display name. Built
-	// from the same member list the suggestions come from, so what is rendered
-	// and what is offered can never disagree.
+	// mention lookup map - maps handles back to display names using the suggestion list to ensure rendering consistency.
 	const mentionMembers = useMemo(
 		() =>
 			new Map(
@@ -223,18 +213,9 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 						</Button>
 					</div>
 				)}
-				{/* Two nested boxes on purpose. The outer one is the positioning
-				    context for the suggestion list; the inner one keeps overflow-hidden
-				    so the textarea's corners stay inside the rounded border.
-
-				    They cannot be the same element. The list is positioned with
-				    bottom-full, which places it entirely above its parent's box, and
-				    overflow-hidden on that parent then clips it away completely - it
-				    rendered, with the right suggestions in it, and was invisible. */}
+				{/* layout structure - uses an outer positioning context for the dropdown to prevent it from being clipped by the inner container's overflow-hidden. */}
 				<div className="relative">
-					{/* The suggestion list sits ABOVE the box: the composer is at the
-					    bottom of a scrolling panel, so a dropdown below it would open
-					    off-screen. */}
+					{/* upward suggestions - opens the suggestion list above the input to avoid rendering off-screen at the bottom of the scroll panel. */}
 					{mentions.isOpen && (
 						<ul className="absolute bottom-full left-0 z-20 mb-1 w-full overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest shadow-lg">
 							{mentions.suggestions.map((member, index) => (
@@ -281,9 +262,7 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 							onClick={(e) => mentions.syncCaret(e.currentTarget)}
 							onKeyUp={(e) => mentions.syncCaret(e.currentTarget)}
 							onKeyDown={(e) => {
-								// The suggestion list gets first refusal on the keys it
-								// uses, so Enter accepts a mention instead of posting a
-								// half-typed comment.
+								// priority key handling - allows the autocomplete list to intercept keys like Enter before they trigger comment submission.
 								if (mentions.handleKeyDown(e)) return;
 								if (e.key === "Enter" && !e.shiftKey) {
 									e.preventDefault();
@@ -305,9 +284,7 @@ export function TaskComments({ taskId, isOpen }: TaskCommentsProps) {
 					</div>
 				</div>
 			</div>
-			{/* Reports what already happened, so there is nothing to cancel. The
-			    same dialog covers English and Filipino hits, because both verdicts
-			    are now in hand before the response is sent. */}
+			{/* moderation notice - informative dialog displayed after a comment triggers a moderation filter, with no cancel option since the action is already taken. */}
 			<WarningModal
 				isOpen={underReviewNotice}
 				onClose={dismissUnderReviewNotice}

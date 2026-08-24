@@ -15,36 +15,13 @@ const EMPTY: SearchResults = {
 };
 
 /**
- * The global search palette's state.
- *
- * Two problems here are worth more than the rest of the file put together, and
- * both are invisible until the network is slow.
- *
- * ## 1. Debouncing
- *
- * Typing "kanban" fires six searches if every keystroke queries. The timer is
- * reset on each change and only the pause at the end runs a query.
- *
- * ## 2. Out-of-order responses
- *
- *     type "ka"    → request A ─────────────────────────┐ (slow)
- *     type "kanban"→ request B ──────┐ (fast)           │
- *                                    ▼                  ▼
- *                         B lands: shows kanban   A lands: OVERWRITES
- *                                                 with results for "ka"
- *
- * The box then shows results that do not match what is in it, and nothing looks
- * broken - it just looks wrong. Debouncing reduces this but cannot fix it: two
- * requests can always be in flight if one is slow enough.
- *
- * The fix is a monotonic request id. Each search takes the next number, and a
- * response is only applied if its number is still the latest one issued. A late
- * reply from an abandoned query is dropped rather than rendered.
+ * global search hook - manages state, debouncing, and keyboard navigation for the global search palette.
+ * uses a monotonic request id to prevent stale out-of-order network responses from overwriting newer search results.
  */
 export function useGlobalSearch() {
 	const router = useRouter();
 
-	// External store - shared with the top bar's trigger.
+	// shared state store - links visibility state with external triggers like the top bar search button.
 	const isOpen = useSearchStore((state) => state.isOpen);
 	const closeStore = useSearchStore((state) => state.close);
 	const toggleStore = useSearchStore((state) => state.toggle);
@@ -63,13 +40,7 @@ export function useGlobalSearch() {
 	const trimmed = term.trim();
 	const isQueryable = trimmed.length >= SEARCH_MIN_LENGTH;
 
-	/**
-	 * Every hit in one array, in the order they appear on screen.
-	 *
-	 * Keyboard navigation needs a single sequence to move an index through;
-	 * keeping the groups separate would mean the arrow keys having to know how
-	 * many rows each group has and where each one starts.
-	 */
+	/** flattened results - combines grouped search hits into a single sequential array to simplify arrow-key navigation. */
 	const flat: SearchResult[] = useMemo(
 		() => [...results.projects, ...results.tasks, ...results.people],
 		[results],
@@ -84,8 +55,7 @@ export function useGlobalSearch() {
 		setResults(EMPTY);
 		setError(null);
 		setActiveIndex(0);
-		// Bumped so any request still in flight is ignored when it lands - without
-		// this, closing and reopening quickly can flash the previous query's hits.
+		// request invalidation - increments the request id on close to ignore any in-flight requests and prevent flashing old results on reopen.
 		requestIdRef.current += 1;
 	}, [closeStore]);
 
@@ -100,8 +70,7 @@ export function useGlobalSearch() {
 	const moveActive = useCallback(
 		(delta: number) => {
 			if (flat.length === 0) return;
-			// Wraps at both ends, so holding ArrowDown cycles rather than sticking
-			// on the last row.
+			// circular navigation - wraps the active index to enable continuous cycling through results.
 			setActiveIndex(
 				(current) => (current + delta + flat.length) % flat.length,
 			);
@@ -126,7 +95,7 @@ export function useGlobalSearch() {
 		const timer = setTimeout(async () => {
 			const response = await globalSearchAction(trimmed);
 
-			// The guard. A response from an abandoned query is discarded.
+			// stale response guard - discards responses if a newer request has been initiated.
 			if (requestId !== requestIdRef.current) return;
 
 			if (!response.success || !response.data) {
@@ -144,7 +113,7 @@ export function useGlobalSearch() {
 		return () => clearTimeout(timer);
 	}, [isOpen, trimmed, isQueryable]);
 
-	// Cmd+K / Ctrl+K from anywhere, and Escape to leave.
+	// global keyboard shortcuts - binds Cmd/Ctrl+K to toggle the search palette globally.
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {

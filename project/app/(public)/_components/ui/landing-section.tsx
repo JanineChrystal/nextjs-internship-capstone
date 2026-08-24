@@ -15,18 +15,9 @@ interface LandingSectionProps {
 }
 
 /**
- * The frame every landing section sits in.
- *
- * Three things are the same for all of them and so belong here rather than
- * repeated eleven times: the anchor id the navigation scrolls to, the vertical
- * rhythm, and `scroll-mt` - without which every anchor lands with its heading
- * hidden behind the sticky header, which is the single most common bug in a
- * one-page site with a fixed navbar.
- *
- * The heading itself reuses the app's existing `SectionTitle` rather than a new
- * marketing-only heading component. It already handles the title/description
- * pair and takes class overrides for size and alignment, so a second component
- * would only differ by its default font size.
+ * landing section wrapper - standardizes anchor IDs, vertical rhythm,
+ * and scroll margin across all landing sections while reusing the app's
+ * SectionTitle component.
  */
 export function LandingSection({
 	id,
@@ -39,9 +30,7 @@ export function LandingSection({
 	return (
 		<section
 			id={id}
-			// scroll-mt-24 clears the sticky header. The header is h-16 (64px);
-			// 96px leaves a comfortable margin above the heading rather than
-			// jamming it against the underside of the bar.
+			// anchor margin - adds scroll-margin-top to prevent the sticky header from covering the section heading when jumping to anchor links.
 			className={cn(
 				"scroll-mt-24 px-4 py-20 sm:px-6 lg:px-8 lg:py-28",
 				className,

@@ -10,11 +10,9 @@ import {
 } from "@/lib/utils/mentions";
 
 /**
- * The @-mention suggestion list for the comment composer.
- *
- * Suggests only this project's members, matching the server: a handle that
- * resolves to nobody is dropped when the comment is saved, so offering a name
- * that would not resolve is offering a mention that will not work.
+ * use-mention-autocomplete hook - provides mention suggestions scoped strictly to
+ * the project's current members to prevent users from mentioning invalid or
+ * unauthorized handles.
  */
 export function useMentionAutocomplete(
 	projectId: string | undefined,
@@ -51,9 +49,7 @@ export function useMentionAutocomplete(
 			);
 			onChange(result.body);
 
-			// The caret has to be restored after React re-renders the textarea, or
-			// it snaps to the end and the rest of the sentence is typed in the
-			// wrong place.
+			// caret position restoration - resets the cursor location after mention insertion to prevent jumping to the end of the input.
 			requestAnimationFrame(() => {
 				const node = inputRef.current;
 				if (!node) return;
@@ -81,8 +77,7 @@ export function useMentionAutocomplete(
 				);
 				return true;
 			}
-			// Enter and Tab both accept, because both are things people press when a
-			// list of completions is open.
+			// generic accept keys - maps both Enter and Tab to selection acceptance.
 			if (event.key === "Enter" || event.key === "Tab") {
 				event.preventDefault();
 				const member = suggestions[activeIndex];

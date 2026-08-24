@@ -19,22 +19,9 @@ interface RevealProps {
 }
 
 /**
- * The one scroll-reveal wrapper the whole landing page uses.
- *
- * Written once and reused rather than each section calling `motion.div` with its
- * own props - eleven sections each choosing their own offsets is how a page ends
- * up feeling inconsistent, and it is eleven places to fix when the timing is
- * wrong.
- *
- * ## Why it respects prefers-reduced-motion
- *
- * `useReducedMotion()` reads the operating system setting that some people set
- * because scroll animation makes them physically unwell - vestibular disorders
- * make large moving elements genuinely nauseating. When it is on, this returns
- * the children with no animation at all rather than a faster one: the content
- * still appears, it simply appears immediately. That is a real accessibility
- * requirement, not a nicety, and doing it in this one component is why no
- * section has to remember it.
+ * reveal component - a centralized scroll-reveal wrapper using framer-motion
+ * that globally respects the prefers-reduced-motion accessibility setting
+ * without requiring section-level logic.
  */
 export function Reveal({
 	children,
@@ -66,12 +53,8 @@ export function Reveal({
 }
 
 /**
- * One child inside a staggered `<Reveal stagger>`.
- *
- * Split from Reveal because the two do different jobs: Reveal decides *when* a
- * group starts, this decides *how* one member of it arrives. Collapsing them
- * into one component with a boolean would mean every caller passing the flag
- * that says which of the two behaviours it wanted.
+ * reveal item - handles individual child animations within a staggered
+ * Reveal parent, separated to avoid overloaded component boolean props.
  */
 export function RevealItem({
 	children,

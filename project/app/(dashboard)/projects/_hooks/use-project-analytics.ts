@@ -6,16 +6,9 @@ import type { ProjectAnalyticsDTO } from "@/lib/dtos/analytics-dto";
 import { reportActionError } from "@/lib/utils/toast";
 
 /**
- * The figures behind a single project's Charts tab.
- *
- * Loads on mount, and the Charts view is code-split behind next/dynamic, so
- * nothing here runs - not the request, not recharts itself - until someone
- * actually opens the tab.
- *
- * The `cancelled` flag is what stops a late response from a project the user has
- * already navigated away from writing itself into state. Without it, switching
- * projects quickly leaves the previous project's numbers under the new
- * project's heading, which looks like a data bug rather than a race.
+ * use-project-analytics hook - lazily fetches project statistics when the Charts
+ * tab is opened, employing cancellation flags to prevent race conditions from
+ * stale responses when switching projects quickly.
  */
 export function useProjectAnalytics(projectId: string) {
 	const [analytics, setAnalytics] = useState<ProjectAnalyticsDTO | null>(null);

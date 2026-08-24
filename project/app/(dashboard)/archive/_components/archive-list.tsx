@@ -24,13 +24,9 @@ interface ArchiveListProps {
 }
 
 /**
- * One list, both tabs.
- *
- * Archive and Trash show the same rows and differ only in which two buttons sit
- * on the right, so the buttons are passed in as config rather than the list
- * being written twice. That is also what guarantees a row looks and behaves
- * identically in both places - the thing most likely to go wrong when a "move to
- * trash" screen and a "restore" screen are built separately.
+ * archive list - renders items for both archive and trash tabs, using
+ * injected action configs to ensure rows behave and look identical
+ * across different operations.
  */
 export function ArchiveList({
 	items,

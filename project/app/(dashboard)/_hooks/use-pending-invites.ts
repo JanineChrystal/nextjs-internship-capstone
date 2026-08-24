@@ -10,11 +10,8 @@ import type { PendingInviteOutputDTO } from "@/lib/dtos/pending-invite-dto";
 import { reportActionError } from "@/lib/utils/toast";
 
 /**
- * Loads and revokes pending invitations for one scope.
- *
- * Kept as a hook rather than a store because the two surfaces that show invites
- * never appear at once, so there is no shared state to coordinate - and a stale
- * list is more confusing than a second fetch is expensive.
+ * pending invites hook - loads and manages pending invitations for a specific scope.
+ * implemented as a hook instead of a global store to ensure fresh data fetching on mount since the surfaces using this are never active simultaneously.
  */
 export function usePendingInvites(
 	scope: "project" | "workspace",
@@ -43,10 +40,7 @@ export function usePendingInvites(
 	const revoke = useCallback(async (inviteId: string) => {
 		let previous: PendingInviteOutputDTO[] = [];
 
-		// The snapshot is taken inside the updater rather than read from `invites`,
-		// so this callback no longer depends on the list it mutates. Depending on
-		// it rebuilt `revoke` on every change, which meant every row that received
-		// it re-rendered whenever any invite was revoked.
+		// stable revoke callback - uses functional state updates to avoid depending on the invites array, preventing unnecessary row re-renders.
 		setInvites((current) => {
 			previous = current;
 			return current.filter((invite) => invite.id !== inviteId);
@@ -59,7 +53,7 @@ export function usePendingInvites(
 		}
 	}, []);
 
-	// Effects last, after every value they might close over has been declared.
+	// initialization effect - triggers the initial data load on mount.
 	useEffect(() => {
 		load();
 	}, [load]);

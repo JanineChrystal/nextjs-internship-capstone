@@ -32,7 +32,7 @@ export function NotificationsClient({
 		loadMore,
 	} = useNotifications(initialNotifications, initialHasMore);
 
-	// Feeds /notifications/loading.tsx its row count on the next visit.
+	// skeleton hydration - records current notification count to properly size the loading skeleton on subsequent visits.
 	useRecordSkeletonCount("notifications", notifications.length);
 
 	const [isConfirmingMarkAll, setIsConfirmingMarkAll] = useState(false);
@@ -63,11 +63,7 @@ export function NotificationsClient({
 				)}
 			</div>
 
-			{/* Confirmed because it is bulk and cannot be undone - there is no
-			    "mark unread", so a mis-click silently clears every badge in the app.
-			    Dismissing a single row is left unconfirmed on purpose: it affects
-			    one item, the result is visible immediately, and a dialog on every
-			    dismissal would make clearing a backlog unbearable. */}
+			{/* confirmation boundary - requires confirmation for bulk destructive actions while leaving individual dismissals immediate for better flow. */}
 			<ConfirmDialog
 				isOpen={isConfirmingMarkAll}
 				onClose={() => setIsConfirmingMarkAll(false)}
@@ -96,8 +92,7 @@ export function NotificationsClient({
 				<div className="flex flex-col gap-6">
 					{groups.map((group) => (
 						<section key={group.key} className="flex flex-col gap-2">
-							{/* Sticky so the day stays visible while scrolling a long run
-							    of notifications from the same date. */}
+							{/* sticky headers - keeps date headings visible during scroll for better context in long lists. */}
 							<h2 className="sticky top-0 z-10 -mx-1 px-1 py-1 bg-background text-xs font-semibold uppercase tracking-wide text-secondary">
 								{group.heading}
 							</h2>

@@ -12,28 +12,12 @@ interface WarningModalProps {
 	confirmText?: string;
 	cancelText?: string;
 	variant?: "danger" | "warning" | "info";
-	/**
-	 * Drops the cancel button, turning the dialog into an acknowledgement.
-	 *
-	 * Some of these dialogs report something that has already happened rather
-	 * than asking permission for something about to happen. Offering "Cancel"
-	 * there implies the action can still be called off, which it cannot.
-	 */
+	/** hide cancel toggle - drops the cancel button to turn the dialog into an acknowledgement for irreversible actions. */
 	hideCancel?: boolean;
 }
 
 /**
- * Compatibility wrapper over `ConfirmDialog`.
- *
- * This was the app's second confirmation design, rendered through `BaseModal`
- * with an icon bubble and colours taken from raw Tailwind palette classes
- * (`text-red-600`, `text-amber-600`) rather than design tokens - so it did not
- * follow the theme and would not have followed the Phase 7 palettes either.
- *
- * It now delegates to the shared dialog, which keeps its eleven call sites
- * working untouched while leaving exactly one component that actually renders a
- * confirmation. Migrate those call sites to `ConfirmDialog` directly as the
- * polish pass reaches each screen, then delete this file.
+ * warning modal component - a compatibility wrapper that delegates to ConfirmDialog to centralize confirmation rendering while allowing gradual migration of call sites.
  */
 export function WarningModal({
 	isOpen,
@@ -50,8 +34,7 @@ export function WarningModal({
 		<ConfirmDialog
 			isOpen={isOpen}
 			onClose={onClose}
-			// Preserves the old behaviour of closing once confirmed. ConfirmDialog
-			// leaves that to the caller so a pending mutation can hold it open.
+			// auto-close behavior - wraps the confirm callback to preserve legacy behavior of closing immediately upon confirmation.
 			onConfirm={() => {
 				onConfirm();
 				onClose();

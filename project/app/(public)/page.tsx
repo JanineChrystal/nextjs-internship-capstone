@@ -17,24 +17,17 @@ export const metadata: Metadata = {
 };
 
 /**
- * The landing page.
- *
- * A server component that does nothing but order eight sections. That is the
- * whole point of the split: this file is the page's outline, readable in one
- * screen, and changing the order of the argument the page makes is moving one
- * line rather than moving four hundred.
- *
- * Only three of those sections ship JavaScript - pricing and the closing CTA
- * because they open the contact drawer, and the reveal wrappers because
- * animation is a browser concern. Everything else is rendered on the server and
- * sent as HTML, which is why the first thing a visitor sees does not wait on a
- * bundle.
+ * landing page - acts as a server-rendered outline component that simply
+ * orders the sections, minimizing the client-side JavaScript bundle and
+ * improving initial load times.
  */
 export default function HomePage() {
 	return (
 		<>
-			{/* Suspense is required around a component reading search params, and it
-			    is what lets this page stay prerendered. */}
+			{/*
+			  suspense boundary - required for components reading search params,
+			  ensuring the parent page remains prerendered instead of dynamic.
+			*/}
 			<Suspense fallback={null}>
 				<SessionExpiredNotice />
 			</Suspense>

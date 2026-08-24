@@ -46,10 +46,7 @@ export function CommentModerationSection({
 				description={settingsSectionTexts.commentModeration.description}
 			/>
 
-			{/* Absent entirely when nothing is pending, rather than present and
-			    disabled. This control exists to report a fault; on a healthy project
-			    a permanently greyed "No Pending Checks" is a broken-looking button
-			    advertising a problem that does not exist. */}
+			{/* conditional error controls - hides retry actions completely when healthy to avoid presenting disabled error states on normal projects. */}
 			{pendingCount > 0 && (
 				<div className="flex items-center justify-end gap-3 -mt-2">
 					<p className="text-xs text-secondary">
@@ -88,9 +85,7 @@ export function CommentModerationSection({
 				renderRow={(comment) => (
 					<>
 						<div className="w-52">
-							{/* min-w-0 on the flex child is what actually lets truncate
-							    work here - without it the span refuses to shrink below
-							    its content and spills into the comment column. */}
+							{/* truncate containment - enforces minimum width zero on the flex child to allow text truncation to operate correctly. */}
 							<div className="flex items-center gap-2 min-w-0">
 								<MemberAvatar
 									name={comment.authorName}

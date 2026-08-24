@@ -46,17 +46,8 @@ interface GenericCalendarProps {
 }
 
 /**
- * The month/week/day header above the grid.
- *
- * Two rows on a phone - the period label, then navigation and the view switch -
- * and one row from `sm` up. The controls are not duplicated per breakpoint: they
- * sit in a single row that the flex direction relocates, so there is one of each
- * button in the DOM and nothing to keep in step.
- *
- * On a phone the view switch grows to fill the width left over by the two
- * navigation buttons, which turns three cramped links into three tap targets of
- * a usable size. It stops growing at `sm`, where it would otherwise stretch
- * absurdly across a desktop toolbar.
+ * custom toolbar component - renders the calendar navigation header, using responsive
+ * flex layouts to stack controls on mobile while keeping a single DOM structure.
  */
 function CustomToolbar({
 	label,
@@ -67,14 +58,13 @@ function CustomToolbar({
 }: ToolbarProps<CalendarEvent>) {
 	return (
 		<div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-			{/* Truncated rather than wrapped: "September 2026" on a narrow phone
-			    would otherwise push the controls below the fold. */}
+			{/* responsive title - truncates long date labels to prevent pushing navigation controls off-screen on small devices. */}
 			<h2 className="truncate text-lg font-bold text-foreground sm:text-2xl">
 				{label}
 			</h2>
 
 			<div className="flex items-center gap-2 sm:gap-4">
-				{/* Prev / Next Navigation */}
+				{/* navigation controls */}
 				<div className="flex shrink-0 gap-2">
 					<Button
 						variant="outline"
@@ -96,7 +86,7 @@ function CustomToolbar({
 					</Button>
 				</div>
 
-				{/* View Toggles (Month, Week, Day) */}
+				{/* view toggles */}
 				<div className="flex flex-1 rounded-lg bg-surface-container p-1 sm:flex-none">
 					{(views as View[]).map((viewName) => (
 						<button
@@ -169,14 +159,8 @@ function CustomEvent({ event }: { event: CalendarEvent }) {
 }
 
 /**
- * The Week/Day event body.
- *
- * Those views give an event a real block of space, so it shows the full detail
- * set rather than the single-line pill Month view uses - but only from `sm` up.
- * A phone's day column is about 45px wide: a category chip and a status chip
- * side by side in that space are two or three truncated characters each, which
- * is noise standing where the title should be. Below `sm` only the priority dot
- * and the title are drawn, which is what the mobile reference shows too.
+ * custom detailed event component - renders full event metadata for Week/Day views
+ * on desktop, falling back to a compact title-only display on mobile to fit narrow columns.
  */
 function CustomDetailedEvent({ event }: { event: CalendarEvent }) {
 	const { priority, type, category, status } = event.extendedProps ?? {};
@@ -231,19 +215,13 @@ export function BigCalendar({
 	const [date, setDate] = useState<Date>(new Date());
 	const isMobile = useIsMobile();
 
-	// Custom Month Date Header component with inline interaction
+	// custom month date header - provides interactive date cells for the month grid.
 	const CustomMonthDateHeader = useCallback(
 		({ date: headerDate, label }: { date: Date; label: string }) => {
 			return (
 				<div className="flex items-center justify-between w-full group px-0.5 sm:p-1">
 					{/*
-					 * Always visible on a phone, hover-revealed from `sm` up.
-					 *
-					 * A touch screen has no hover state, so an `opacity-0` control that
-					 * only appears on `group-hover` is simply unreachable there - this
-					 * is the same failure the notifications mark-as-read control had.
-					 * Creation is the only thing this button does, so losing it on
-					 * mobile would remove the feature rather than hide it.
+					 * touch-aware add button - keeps the creation icon permanently visible on mobile where hover states don't exist.
 					 */}
 					<button
 						type="button"
@@ -258,25 +236,12 @@ export function BigCalendar({
 						<Plus className="w-3 h-3" />
 					</button>
 					{/*
-					 * Tapping the date number filters the side panel to that day.
-					 *
-					 * This button existed but had no `onClick` at all - the filtering
-					 * ran only through react-big-calendar's `onSelectSlot`, which fires
-					 * from its drag-selection layer. On a touch screen that layer needs
-					 * a long press (RBC's `longPressThreshold`, 250ms by default) before
-					 * it reports anything, so an ordinary tap on a date did nothing and
-					 * the feature looked broken on a phone.
-					 *
-					 * Wiring it here makes the date number a real control: it works on
-					 * touch, on a mouse and from the keyboard, and it does not depend on
-					 * a gesture layer behaving the same way on every device.
-					 * `onSelectSlot` stays for the click-and-drag path on desktop.
+					 * interactive date label - wires direct click handlers to the date number to bypass unreliable touch-gesture layers for side panel filtering.
 					 */}
 					<button
 						type="button"
 						onClick={(e) => {
-							// Otherwise the cell underneath registers the click as well and
-							// the day is selected, then immediately deselected.
+							// propagation stop - prevents the underlying slot from triggering a duplicate selection event.
 							e.stopPropagation();
 							onDateCellClick?.(headerDate);
 						}}
@@ -315,11 +280,7 @@ export function BigCalendar({
 				style: {
 					borderRadius: "4px",
 					outline: "none",
-					// The detailed renderer needs room to show its extra rows; short
-					// events would otherwise clip them entirely. Lower on a phone,
-					// where 58px of every event stacked in a day column pushes the
-					// later ones off the bottom of the grid - the detailed renderer
-					// there shows the title and drops to one meta row anyway.
+					// minimum height sizing - ensures detailed events have enough vertical space for their content, scaling down on mobile to prevent grid overflow.
 					...(view === "month"
 						? {}
 						: { minHeight: isMobile ? "38px" : "58px" }),
@@ -340,13 +301,8 @@ export function BigCalendar({
 	);
 
 	/**
-	 * Date labels, shortened for a phone.
-	 *
-	 * Seven columns on a 360px screen leave roughly 50px each. "04 Wed" does not
-	 * fit in that, and react-big-calendar lays the grid out as a table - so a
-	 * header that will not fit does not wrap or truncate, it widens its column
-	 * and pushes the whole grid past the edge of the card. A single letter plus
-	 * the date is what the mobile design uses, and it is what fits.
+	 * responsive date formats - abbreviates day labels on mobile devices to prevent
+	 * table column expansion from breaking the grid layout.
 	 */
 	const formats = useMemo(
 		() =>
@@ -371,27 +327,12 @@ export function BigCalendar({
 				onSelectEvent={onEventSingleClick}
 				onDoubleClickEvent={onEventDoubleClick}
 				/*
-				 * "ignoreEvents", not `true`.
-				 *
-				 * In Week and Day views react-big-calendar attaches its drag-selection
-				 * listener to the whole day column - events included - and its own
-				 * click and doubleClick handlers then consume the gesture and report a
-				 * SLOT selection. The result was that double-clicking a task or project
-				 * in those two views did nothing at all, while Month view worked fine:
-				 * Month puts its selection layer BEHIND the events, so they keep their
-				 * own clicks.
-				 *
-				 * "ignoreEvents" is the library's documented setting for exactly this -
-				 * "useful when you want custom event click or drag logic". Slot
-				 * selection still works on empty space; a gesture that starts on an
-				 * event is left alone for the event's own handlers.
+				 * selective slot interaction - ignores drag-selection over events so they can handle their own click events without interference from the background grid.
 				 */
 				selectable="ignoreEvents"
 				onSelectSlot={(slotInfo) => onDateCellClick?.(slotInfo.start)}
 				/*
-				 * Side-by-side rather than stacked with offsets. The default overlaps
-				 * concurrent events so each is partly hidden behind the next, which at
-				 * a phone's ~45px day column left a row of unreadable fragments.
+				 * flat layout algorithm - renders concurrent events side-by-side rather than overlapping them, which is critical for legibility in narrow mobile columns.
 				 */
 				dayLayoutAlgorithm="no-overlap"
 				components={components}

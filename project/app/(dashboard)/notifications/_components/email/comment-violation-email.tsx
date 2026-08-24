@@ -9,19 +9,9 @@ interface CommentViolationEmailProps {
 }
 
 /**
- * Sent to the author of a comment the language filter flagged after the fact.
- *
- * Only the *late* verdicts reach this email. When both detectors answer before
- * the comment is stored, the composer tells the author in a dialog and nothing
- * is sent - an email restating what a person read two seconds ago is noise.
- * This covers the case that dialog cannot: a detector that timed out, and a
- * recheck that found something minutes or hours later, by which time the author
- * has long since closed the tab.
- *
- * The comment is quoted back deliberately. A flagged comment is withheld from
- * the thread, so without the text the author has no way to know which of their
- * comments this is about - and it is their own writing, not something the quote
- * exposes to anyone new.
+ * comment violation email - sent to users when a comment is flagged by
+ * late-stage language filters, quoting the withheld text to provide clear
+ * context on what triggered the review.
  */
 export function CommentViolationEmail({
 	taskName,

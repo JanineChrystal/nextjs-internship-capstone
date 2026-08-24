@@ -28,8 +28,7 @@ interface TeamToolbarProps {
 	onViewChange?: (view: TeamViewType) => void;
 	onToggleSort?: () => void;
 	availableRoles?: string[];
-	// Fired when the add-member modal closes, so the directory can pull in any
-	// invites that were sent.
+	// invites settled callback - triggers a directory refresh when the add-member modal closes to pick up new invitations.
 	onInvitesSettled?: () => void;
 }
 
@@ -120,8 +119,7 @@ export const TeamToolbar = ({
 				}
 			/>
 
-			{/* No targetId: workspace invites resolve the caller's own workspace
-			    server-side, replacing the placeholder id that never existed. */}
+			{/* implicit scope resolution - relies on the server to determine the workspace ID for invites, requiring no target ID here. */}
 			<AddMemberModal
 				open={isAddModalOpen}
 				onOpenChange={(open) => {

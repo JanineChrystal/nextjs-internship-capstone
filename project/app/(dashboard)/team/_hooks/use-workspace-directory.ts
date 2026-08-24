@@ -13,8 +13,9 @@ interface RemovalTarget {
 const CLOSED_REMOVAL: RemovalTarget = { isOpen: false, userIds: null };
 
 /**
- * Owns the directory data and its mutations. Selection state deliberately lives
- * in a separate hook so sorting/selection re-renders do not touch data logic.
+ * use-workspace-directory hook - manages workspace member data and mutations,
+ * separated from selection state to prevent display-only re-renders from
+ * interfering with data logic.
  */
 export function useWorkspaceDirectory(
 	initialMembers: WorkspaceMemberOutputDTO[],
@@ -27,13 +28,11 @@ export function useWorkspaceDirectory(
 	const removeMembers = useWorkspaceMemberStore((state) => state.removeMembers);
 
 	const [removal, setRemoval] = useState<RemovalTarget>(CLOSED_REMOVAL);
-	// Bumped after invites are sent so the Pending view can remount and pick up
-	// a newly stored invitation.
+	// pending refresh key - increments to force remounts of the Pending view after new invitations are dispatched.
 	const [pendingRefreshKey, setPendingRefreshKey] = useState(0);
 	const isHydrated = useRef(false);
 
-	// Hydrate once from the server-fetched props. Guarded by a ref so client
-	// mutations are not overwritten when this effect's deps change.
+	// server hydration guard - ensures initial member data is loaded exactly once without overwriting subsequent client-side mutations.
 	useEffect(() => {
 		if (!isHydrated.current) {
 			setMembers(initialMembers);
@@ -54,8 +53,7 @@ export function useWorkspaceDirectory(
 	const confirmRemoval = useCallback(
 		async (selectedIds: Set<string>) => {
 			const targets = removal.userIds ?? selectedIds;
-			// Counted before the store filters them out, so the toast can say how
-			// many went rather than reporting on an already-emptied set.
+			// removal count snapshot - captures the size of the target set before removal for accurate success reporting.
 			const count = targets.size;
 
 			setRemoval(CLOSED_REMOVAL);
@@ -66,11 +64,7 @@ export function useWorkspaceDirectory(
 					`${count} ${count === 1 ? "member" : "members"} removed`,
 				);
 			} else {
-				// The store writes the reason to `error` on the way out. It is read
-				// back here, reported as a toast like every other failure in the app,
-				// and then cleared - because with the page banner gone there is
-				// nothing left to render it, and a value nobody reads would sit in
-				// the store forever and suppress nothing.
+				// transient error handling - retrieves and displays store errors as toasts before clearing them, as inline error banners were removed.
 				const reason = useWorkspaceMemberStore.getState().error;
 				reportActionError("Could not remove members", reason);
 				useWorkspaceMemberStore.getState().clearError();
@@ -81,9 +75,7 @@ export function useWorkspaceDirectory(
 		[removal.userIds, removeMembers],
 	);
 
-	// Called when the add-member modal closes. Invites are sent by the member
-	// store, so this hook has to pull the resulting directory changes in, and
-	// report any invite failure the same way removals now do.
+	// handle invites settled - synchronizes directory state and processes any errors originating from the member store after the invite modal closes.
 	const handleInvitesSettled = useCallback(async () => {
 		const inviteError = useMemberStore.getState().inviteError;
 		if (inviteError) {

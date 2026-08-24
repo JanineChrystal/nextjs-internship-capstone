@@ -13,14 +13,8 @@ interface ActivityListProps {
 }
 
 /**
- * The history feed, used by both surfaces that show one: the task modal's
- * Activity tab and the Project Activity section in project settings.
- *
- * One component rather than two because the rows are identical - the only
- * difference is which query fed them, and that decision belongs to the caller.
- * The task tab passes rows filtered to one task; project settings passes the
- * whole project. Building these separately would have meant two nearly-identical
- * layouts drifting apart the first time either was restyled.
+ * activity list component - provides a unified, reusable feed for rendering history
+ * items across both task and project contexts to maintain consistent layouts.
  */
 export function ActivityList({
 	items,
@@ -66,8 +60,7 @@ export function ActivityList({
 						</div>
 
 						{item.details && (
-							// wrap-anywhere so a long category or task name cannot widen
-							// the panel this sits in.
+							// forced word wrap - prevents long text strings from overflowing or improperly expanding their container bounds.
 							<p className="text-sm text-secondary mt-0.5 wrap-anywhere">
 								{item.details}
 							</p>

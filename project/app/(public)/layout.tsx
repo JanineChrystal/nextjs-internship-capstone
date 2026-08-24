@@ -4,18 +4,9 @@ import { Footer } from "./_components/layouts/footer";
 import { Navbar } from "./_components/layouts/navbar";
 
 /**
- * The shell every public page shares.
- *
- * The dock is here rather than on the page because it is chrome: it belongs to
- * the site, not to one document, and mounting it in the layout means it survives
- * a client navigation between public routes without its drawers remounting and
- * losing a half-typed message.
- *
- * `Toaster` is mounted here too because the contact form reports success and
- * failure through the app's shared toast helpers. The dashboard layout has its
- * own; the public group had none, so a submitted form would have shown nothing
- * at all - the toast would have been dispatched into a portal that was never
- * rendered.
+ * public layout - mounts the FloatingDock and Toaster at the root to
+ * ensure they survive navigation between public routes without remounting
+ * or dropping toast notifications.
  */
 export default function PublicLayout({
 	children,

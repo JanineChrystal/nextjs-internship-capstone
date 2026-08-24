@@ -9,12 +9,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * A server component that reads the DAL directly, matching /team and /analytics.
- *
- * The notification preferences are in the HTML on first paint rather than
- * fetched afterwards, so the switches never render in the wrong position and
- * then flick - which on a page of toggles would look exactly like someone else
- * changing them.
+ * settings page - fetches notification preferences directly via the DAL on the
+ * server to ensure toggles render in their correct state on first paint,
+ * avoiding confusing visual flicker.
  */
 export default async function SettingsPage() {
 	await requireUser();

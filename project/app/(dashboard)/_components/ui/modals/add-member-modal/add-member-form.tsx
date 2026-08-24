@@ -42,8 +42,7 @@ export function AddMemberForm({ form, onSubmit, scope }: AddMemberFormProps) {
 					{...register("recipient")}
 					className="bg-surface border-outline-variant text-on-surface focus-visible:ring-primary h-10 w-full"
 				/>
-				{/* Rendered because a rejected submit used to be completely silent -
-				    the button simply appeared not to work. */}
+				{/* validation feedback - displays inline error messages to prevent silent failures during form submission. */}
 				{errors.recipient && (
 					<p className="mt-1 text-xs text-error">{errors.recipient.message}</p>
 				)}

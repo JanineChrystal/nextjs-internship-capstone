@@ -4,7 +4,10 @@ import {
 	SkeletonStatGrid,
 } from "@/components/ui/skeletons";
 
-/** Streamed while /analytics fetches. Four tiles, from `ANALYTICS_STAT_CARDS`. */
+/**
+ * loading state - streamed during /analytics fetches to display four stat
+ * card skeletons.
+ */
 export default function Loading() {
 	return (
 		<SkeletonPage>

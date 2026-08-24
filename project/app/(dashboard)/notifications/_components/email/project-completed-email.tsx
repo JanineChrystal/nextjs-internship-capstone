@@ -8,11 +8,8 @@ interface ProjectCompletedEmailProps {
 }
 
 /**
- * Sent to a project's members when it is marked complete.
- *
- * Wider reach than the task email by design: a task closing concerns the people
- * working on it, while a project closing concerns everyone on it - it is the
- * moment their involvement ends.
+ * project completed email - sent to all project members when a project is
+ * marked complete to notify them that their active involvement has ended.
  */
 export function ProjectCompletedEmail({
 	completedBy,

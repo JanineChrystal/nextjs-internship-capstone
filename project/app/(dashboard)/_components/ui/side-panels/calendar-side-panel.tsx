@@ -15,17 +15,8 @@ interface CalendarSidePanelProps {
 }
 
 /**
- * The deadline list beside a calendar, with bulk selection.
- *
- * Rendered by both the global calendar (projects and tasks) and a project's own
- * calendar view (tasks only). Every rule about what may be bulk-acted on lives
- * in `useCalendarSelection`, so the two surfaces cannot drift apart - including
- * the rule that no bulk action here may touch a project.
- *
- * There used to be an inline red banner here for refusals, driven by an
- * `alertMessage` that nothing had set since the guard behind it was removed -
- * dead state rendering an alert that could never appear. Refusals are toasts
- * now, matching every other page.
+ * calendar side panel component - renders a deadline list with bulk selection capabilities for both global and project-specific calendars.
+ * bulk action rules and state are centralized in useCalendarSelection to ensure consistency across views.
  */
 export function CalendarSidePanel({
 	title = "Upcoming Deadlines",
@@ -45,7 +36,7 @@ export function CalendarSidePanel({
 		closeConfirm,
 	} = useCalendarSelection(items);
 
-	// Feeds the side-panel skeleton in /calendar/loading.tsx.
+	// loading skeleton count - records the current item count to correctly size the skeleton loader during transitions.
 	useRecordSkeletonCount("calendar-deadlines", items.length);
 
 	return (
@@ -73,10 +64,7 @@ export function CalendarSidePanel({
 				)}
 			</div>
 
-			{/* No onArchive. Only a project can be archived and no bulk action here
-			    may touch one, so the button could never succeed - see
-			    useCalendarSelection. Archiving is on the projects list and in a
-			    project's own settings. */}
+			{/* restricted bulk actions - omits the archive action since projects cannot be modified via bulk actions from this calendar view. */}
 			<BulkActionBar
 				selectedCount={selectedIds.size}
 				onClearSelection={handleClearSelection}
@@ -84,9 +72,7 @@ export function CalendarSidePanel({
 				onComplete={handleBulkComplete}
 			/>
 
-			{/* Wording comes from the hook rather than from ternaries here: it is the
-			    only place that knows the count, the action and whether anything is
-			    unfinished. */}
+			{/* centralized confirmation dialog - relies on useCalendarSelection to provide context-aware text based on action types and item states. */}
 			<ConfirmDialog
 				isOpen={confirmState.isOpen}
 				onClose={closeConfirm}

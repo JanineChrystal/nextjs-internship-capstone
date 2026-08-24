@@ -23,15 +23,7 @@ import {
 } from "@/lib/dtos/project-member-dto";
 import type { InviteOutcome } from "@/lib/types/pending-invite";
 
-/**
- * Who can reach a project and at what level.
- *
- * Split out of projects.ts, which had grown past 700 lines doing two unrelated
- * jobs. Project CRUD and membership rules change for different reasons and on
- * different schedules - the access model has been revised repeatedly while
- * createProjectInDB has barely moved - which is the Single Responsibility
- * Principle's actual test: one reason to change, not one topic.
- */
+// project members access - defines who can reach a project and at what level, separated from projects.ts to maintain the single responsibility principle.
 
 export async function inviteUserToProjectInDB(
 	projectId: string,
@@ -57,8 +49,7 @@ export async function inviteUserToProjectInDB(
 			.from(users)
 			.where(and(eq(users.email, normalizedEmail), isNull(users.deletedAt)));
 
-		// Nobody by that address yet. Store the invitation instead of refusing it;
-		// the Clerk webhook converts it into real membership on signup.
+		// store invitation - saves pending invites for unregistered emails to be converted into actual membership via Clerk webhook upon signup.
 		if (!knownUser) {
 			await createPendingInviteInDB({
 				workspaceId: existingProject.workspaceId,
@@ -69,8 +60,7 @@ export async function inviteUserToProjectInDB(
 				accessLevel,
 			});
 
-			// Logged even though nobody can be notified yet - there is no Users row
-			// for this address. INVITE_ACCEPTED closes the loop when they sign up.
+			// log invite activity - records the invite action even without a registered user row, to be completed when INVITE_ACCEPTED triggers upon signup.
 			await recordActivity({
 				workspaceId: existingProject.workspaceId,
 				actorId: user.id,
@@ -86,10 +76,7 @@ export async function inviteUserToProjectInDB(
 			const targetUser = knownUser;
 			const project = existingProject;
 
-			// Fills both contact directories, not just the inviter's: the invitee
-			// joins the project workspace's directory, and the inviter joins the
-			// invitee's own. Sharing a project is a two-way working relationship, so
-			// each side should be able to find the other on their team page.
+			// link mutual directories - adds the invitee to the project's workspace and the inviter to the invitee's workspace to establish a two-way visible working relationship.
 			await linkWorkspaceDirectoriesInDB(tx, {
 				inviterId: user.id,
 				inviteeId: targetUser.id,

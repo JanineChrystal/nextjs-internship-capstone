@@ -1,6 +1,6 @@
 import { SkeletonPage, SkeletonTable } from "@/components/ui/skeletons";
 
-/** Streamed while /team fetches. The row count is remembered per browser. */
+/** team loading - displays a skeleton table while fetching, scaling its row count based on historical data. */
 export default function Loading() {
 	return (
 		<SkeletonPage withAction>

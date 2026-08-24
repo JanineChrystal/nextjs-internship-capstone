@@ -67,7 +67,7 @@ export function TaskModal() {
 				showCloseButton={false}
 				className="sm:max-w-5xl p-0 gap-0 overflow-hidden bg-surface flex flex-col md:flex-row h-fit md:h-[90vh] max-h-[90vh] min-h-150 overflow-y-auto md:overflow-hidden"
 			>
-				{/* Top Right Floating Toolbar */}
+				{/* floating toolbar controls */}
 				<TaskModalToolbar
 					isCommentsOpen={isCommentsOpen}
 					toggleComments={toggleComments}
@@ -77,7 +77,7 @@ export function TaskModal() {
 					onAction={handleAction}
 				/>
 
-				{/* Left Pane - Details */}
+				{/* left details pane */}
 				<div className="flex-1 min-w-0 flex flex-col overflow-y-auto border-r border-outline-variant">
 					<DialogHeader className="px-6 py-4 border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-10">
 						<DialogTitle className="flex items-center gap-3">
@@ -112,8 +112,7 @@ export function TaskModal() {
 							)}
 						</DialogTitle>
 
-						{/* Stays visible while the task is past due even if the user
-						    reassigns the status - only moving the due date clears it. */}
+						{/* overdue warning - persists regardless of status changes and is only cleared by updating the due date. */}
 						{isOverdue && (
 							<div className="flex items-start gap-2 mt-3 px-3 py-2 rounded-md bg-error/10 border border-error/20">
 								<AlertTriangle className="h-4 w-4 text-error shrink-0 mt-0.5" />
@@ -167,7 +166,7 @@ export function TaskModal() {
 						/>
 					</div>
 
-					{/* Create Action Footer */}
+					{/* creation action footer */}
 					{!isEditMode && (
 						<div className="p-4 border-t border-outline-variant bg-surface-container-lowest mt-auto sticky bottom-0 z-10 flex justify-end">
 							<Button
@@ -185,7 +184,7 @@ export function TaskModal() {
 					)}
 				</div>
 
-				{/* Right Pane - Comments */}
+				{/* right comments pane */}
 				{isEditMode && (
 					<div
 						className={`w-full min-w-0 h-auto md:h-full md:shrink-0 border-t md:border-t-0 md:border-l border-outline-variant bg-surface-container-lowest flex flex-col md:transition-all md:duration-300 md:ease-in-out md:overflow-hidden ${

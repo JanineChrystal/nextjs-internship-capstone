@@ -14,25 +14,9 @@ import { AppearanceDrawer } from "../appearance/appearance-drawer";
 import { ContactDrawer } from "../contact/contact-drawer";
 
 /**
- * The two floating buttons in the bottom-right corner, plus the drawers they
- * open.
- *
- * The dock and the drawers are mounted together rather than the drawers living
- * in the layout, because they are one feature: nothing else on the page needs to
- * know either exists. Other openers - the pricing card's "Contact us", the
- * footer link - reach the same drawers through the store rather than through a
- * prop, which is why this component takes none.
- *
- * ## Positioning, and why it is not simply `bottom-6 right-6`
- *
- * `bottom-[max(1.5rem,env(safe-area-inset-bottom))]` keeps the dock clear of the
- * home indicator on an iPhone and the gesture bar on Android. Without it the
- * lower button sits underneath the system UI on exactly the devices where a
- * floating action button is most useful.
- *
- * Each button is 44px square at its smallest, which is the minimum comfortable
- * touch target - a 32px icon button is fine for a mouse and genuinely hard to
- * hit with a thumb.
+ * floating dock - renders bottom-right floating action buttons for
+ * appearance and contact drawers, positioned carefully to avoid system
+ * UI overlays on mobile devices.
  */
 export function FloatingDock() {
 	const openContact = useLandingUiStore((state) => state.openContact);
@@ -60,8 +44,7 @@ export function FloatingDock() {
 				className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex flex-col gap-2 sm:right-6 sm:bottom-6"
 				initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
 				animate={{ opacity: 1, y: 0 }}
-				// A deliberate delay so the dock arrives after the hero has settled
-				// rather than competing with it for attention on first paint.
+				// delayed animation - delays dock entrance so it doesn't distract from the hero section's initial paint.
 				transition={{ delay: 0.6, duration: 0.4 }}
 			>
 				{actions.map((action) => (

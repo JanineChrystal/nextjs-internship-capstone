@@ -1,19 +1,9 @@
 import { cn } from "@/lib/utils";
 
 /**
- * A drawn mock of the product, not a screenshot.
- *
- * The trade-off, since it is the obvious question: a screenshot would show the
- * real thing, but it would be a fixed-size raster that goes stale the first time
- * a button moves, ships as a large image on the page a visitor loads first, and
- * - the deciding reason - would be locked to whichever theme it was captured in,
- * so half of all visitors would see a light screenshot on a dark page.
- *
- * This is built from the same design tokens as the app, so it follows light and
- * dark mode, will follow the Phase 7 palette picker for free, weighs nothing,
- * and stays sharp at any size. It is clearly labelled as an illustration and
- * hidden from assistive technology, because reading out sixteen empty rectangles
- * would tell a screen-reader user nothing the surrounding copy does not.
+ * product preview - an SVG-free UI illustration built from app tokens
+ * that stays sharp, supports themes natively, and remains accessible via
+ * figcaption.
  */
 
 const STAT_TILES = [
@@ -24,10 +14,8 @@ const STAT_TILES = [
 ];
 
 /**
- * Each mock card carries its own id rather than being keyed by position. The
- * list never reorders, so an index key would work today - but a key derived from
- * position is a habit that quietly breaks the first time a list does reorder,
- * and it is not worth practising here to save eight characters.
+ * card mock data - uses explicit IDs instead of array index keys to
+ * establish robust habits and prevent future reordering bugs.
  */
 const COLUMNS: {
 	name: string;
@@ -62,7 +50,7 @@ const COLUMNS: {
 	},
 ];
 
-/** Heights as percentages, so the bars need no data and no chart library. */
+/** mock chart heights - uses simple percentage values to render chart bars without requiring external chart libraries or complex data. */
 const BAR_HEIGHTS = [38, 62, 45, 78, 55, 88, 70, 96, 60, 82, 48, 72].map(
 	(height, index) => ({ id: `week-${index + 1}`, height }),
 );
@@ -82,7 +70,7 @@ export function ProductPreview({ className }: { className?: string }) {
 	return (
 		<figure className={cn("m-0", className)}>
 			<div
-				// aria-hidden: decoration. The figcaption below carries the meaning.
+				// decorative illustration - hides the mock UI from screen readers since the figcaption provides the necessary context.
 				aria-hidden="true"
 				className="overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
 			>

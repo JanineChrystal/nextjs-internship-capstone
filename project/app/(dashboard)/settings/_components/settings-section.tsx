@@ -13,11 +13,8 @@ interface SettingsSectionProps {
 }
 
 /**
- * One card on the settings one-pager.
- *
- * The `scroll-mt-24` is not cosmetic: the dashboard's top bar is fixed, so
- * without it `scrollIntoView` puts the heading exactly underneath the bar and
- * the reader lands on a section whose title they cannot see.
+ * settings section component - wraps content in a BaseCard with a top scroll margin
+ * to ensure titles remain visible below the fixed top bar during scrollIntoView navigation.
  */
 export function SettingsSection({
 	id,
@@ -29,8 +26,7 @@ export function SettingsSection({
 	return (
 		<BaseCard
 			id={id}
-			// BaseCard lifts on hover, which suits a clickable card in a grid and
-			// not a full-width panel the reader is filling in.
+			// hover stabilization - overrides the default BaseCard hover lift since these are static, full-width forms.
 			className={cn("hover:scale-100 scroll-mt-24 gap-5", className)}
 		>
 			<div>

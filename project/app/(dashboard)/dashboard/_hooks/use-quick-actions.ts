@@ -8,16 +8,9 @@ import { useBoardStore } from "@/stores/use-board-store";
 import { useTaskStore } from "@/stores/use-task-store";
 
 /**
- * Which shortcut is running, and what it still needs.
- *
- * Two of the four actions are a single step - open a modal. The other two are
- * two steps: ask which project, then open the modal for it. Rather than four
- * booleans that can contradict each other, one nullable id says which action is
- * mid-flight and one nullable project id says whether it has an answer yet.
- *
- * That also makes the illegal states unrepresentable: there is no way to have
- * the task modal and the invite modal open at once, because `activeAction` holds
- * exactly one value.
+ * use-quick-actions hook - manages modal state for shortcuts by keeping
+ * a single active action identifier to prevent conflicting or overlapping
+ * modals from opening simultaneously.
  */
 export function useQuickActions() {
 	// Local state
@@ -35,15 +28,9 @@ export function useQuickActions() {
 	}, []);
 
 	/**
-	 * Loads the chosen project's columns before the task modal opens.
-	 *
-	 * The board store is normally filled by the project page on the server. From
-	 * here there is no such page, and the modal cannot save a task without
-	 * knowing which column to put it in - it would create the row optimistically,
-	 * fail to resolve a board, and roll back with an error. So the columns are
-	 * fetched first and the modal only opens once they are in place.
-	 *
-	 * Failing here stops the flow rather than opening a modal that cannot save.
+	 * start task for project - fetches project columns ahead of opening the
+	 * task modal to prevent optimistic row creation errors if no valid columns
+	 * exist.
 	 */
 	const startTaskForProject = useCallback(
 		async (projectId: string) => {
@@ -76,8 +63,7 @@ export function useQuickActions() {
 					})),
 				);
 
-				// The project travels with the open call, because the task modal reads
-				// its project from the route and there is no project in this one.
+				// inject project id - passes the project ID directly since the dashboard route lacks the project URL context the modal normally reads.
 				openTaskModal(undefined, { projectId });
 				reset();
 			} catch (error) {
@@ -100,8 +86,7 @@ export function useQuickActions() {
 				void startTaskForProject(projectId);
 				return;
 			}
-			// Adding a member needs nothing loaded first - the invite modal fetches
-			// that project's pending invites itself.
+			// immediate select - allows adding members without pre-fetching since the invite modal manages its own data loading.
 			setPickedProjectId(projectId);
 		},
 		[activeAction, startTaskForProject],

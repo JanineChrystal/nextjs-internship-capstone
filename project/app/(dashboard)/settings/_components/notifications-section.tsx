@@ -23,13 +23,8 @@ interface ToggleRowProps {
 }
 
 /**
- * One switch and its label.
- *
- * The whole row is the label, so the text is a hit target too - a 32px switch is
- * a small thing to aim at, and the description beside it is dead space
- * otherwise. `htmlFor` rather than wrapping the switch in the label, because a
- * Radix switch renders a button and a button inside a label is invalid markup
- * that browsers handle inconsistently.
+ * toggle row component - renders a switch with an expanded hit target using htmlFor,
+ * avoiding invalid markup caused by nesting Radix buttons inside labels.
  */
 function ToggleRow({
 	id,
@@ -75,10 +70,8 @@ function ToggleRow({
 }
 
 /**
- * Email preferences.
- *
- * Every switch saves on its own the moment it moves - no save button, because
- * each preference is independent and there is nothing to batch or to cancel.
+ * notifications section component - provides a list of independent email preference
+ * toggles that save instantly upon interaction without requiring a batch submit.
  */
 export function NotificationsSection({
 	initialSettings,
@@ -98,8 +91,7 @@ export function NotificationsSection({
 					label="Allow all"
 					description="Turn every email below on or off at once."
 					checked={allEnabled}
-					// The master switch is derived from the others rather than stored,
-					// so it has no column of its own - flipping it writes all five.
+					// master switch derivation - determines the 'allow all' state from individual toggles and applies changes across all five options when flipped.
 					disabled={isBusy}
 					onToggle={toggleAll}
 					className="border-b border-border pb-4"

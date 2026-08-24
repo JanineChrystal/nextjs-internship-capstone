@@ -20,16 +20,11 @@ interface DeleteProjectModalProps {
 	projectName: string;
 	onConfirmDelete: () => void;
 	/**
-	 * Shown when the project still has unfinished tasks.
-	 *
-	 * Folded in here rather than raised as a separate dialog first. The old flow
-	 * stacked a warning dialog in front of this one, so deleting a busy project
-	 * meant answering two questions in a row about the same thing - and the
-	 * second one already asks the reader to type the project's name, which is a
-	 * far stronger check than the first was.
+	 * open task warning - displays an inline warning about unfinished tasks within
+	 * the confirmation dialog to avoid redundant modal stacking during deletion.
 	 */
 	openTaskWarning?: boolean;
-	/** Disables the controls while the delete is in flight. */
+	/** disable state - prevents multiple submissions while deletion is processing. */
 	isDeleting?: boolean;
 }
 
@@ -107,9 +102,7 @@ export function DeleteProjectModal({
 						variant="destructive"
 						disabled={!isConfirmed || isDeleting}
 						onClick={handleConfirm}
-						// Matches the confirm button in ConfirmDialog: the solid fill
-						// carries a white label, rather than --error-foreground, which
-						// resolves to a dark red on the pale --error of dark mode.
+						// high contrast labeling - uses solid fill specific colors for better readability instead of relying on standard error foregrounds.
 						className="bg-danger-solid text-on-danger-solid hover:bg-danger-solid/90 disabled:opacity-50"
 					>
 						{isDeleting ? "Deleting…" : "Delete Project"}

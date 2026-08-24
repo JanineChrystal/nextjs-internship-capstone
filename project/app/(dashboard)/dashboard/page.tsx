@@ -17,39 +17,24 @@ export const metadata: Metadata = {
 };
 
 /**
- * A server component that reads the DAL directly, matching /team and /projects.
- *
- * There is no client-side fetch and no loading spinner for the numbers, because
- * there is nothing interactive about them: the page is rendered once, on the
- * server, with the figures already in the HTML. Fetching them from the browser
- * instead would mean shipping the query, waiting for a round-trip after paint,
- * and showing four empty boxes in the meantime.
+ * dashboard page - a server component that renders the dashboard via
+ * direct DAL queries, omitting client-side fetches and spinners to deliver
+ * a fully populated document on initial load.
  */
 export default async function DashboardPage() {
 	const user = await requireUser();
 
-	// Both reads are independent, so they run together rather than one after the
-	// other. The project list feeds the two Quick Actions that have to ask which
-	// project they apply to.
+	// parallel data fetch - executes independent DAL queries concurrently, feeding necessary project context into Quick Actions.
 	const [overview, projects, roles] = await Promise.all([
 		getDashboardOverviewDAL(),
 		getAllUserProjectsDAL(),
 		getEffectiveProjectRolesDAL(),
 	]);
 
-	// Narrowed to what the picker renders. Sending the full rows would ship every
-	// project's description, dates and counts to draw a list of names.
-	//
-	// The role is resolved in one batched read rather than per project, and is
-	// what lets the picker grey out a project the action would be refused on. The
-	// server still re-checks when the action runs - this only moves the answer
-	// forward so nobody fills in a form to be told no afterwards.
+	// picker payload optimization - narrows the project dataset down to essential fields and resolves roles upfront to disable unauthorized actions in the UI before submission.
 	const pickerProjects: ProjectPickerOption[] = projects.flatMap((project) => {
 		const roleAccess = roles.get(project.id);
-		// A project with no resolved role should not be reachable here at all,
-		// since both reads use the same three access routes. Dropping it rather
-		// than defaulting to a role keeps a future divergence from silently
-		// granting something.
+		// role validation drop - drops projects lacking a resolved role instead of providing a fallback, preventing accidental unauthorized access.
 		if (!roleAccess) return [];
 
 		return [

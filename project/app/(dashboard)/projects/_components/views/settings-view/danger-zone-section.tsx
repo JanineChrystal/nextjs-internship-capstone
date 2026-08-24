@@ -116,10 +116,7 @@ export function DangerZoneSection({
 				})}
 			</div>
 
-			{/* The type-the-project-name check is the confirmation for deletion.
-			    A separate warning dialog in front of it used to ask the same
-			    question in a weaker form; the unfinished-task note now lives
-			    inside this one instead. */}
+			{/* confirmation modal - integrates open task warnings directly into the name-typing confirmation to streamline the deletion flow. */}
 			<DeleteProjectModal
 				open={isDeleteModalOpen}
 				onOpenChange={setIsDeleteModalOpen}

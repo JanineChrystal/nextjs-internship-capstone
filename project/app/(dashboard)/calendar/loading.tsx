@@ -2,12 +2,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonList, SkeletonPage } from "@/components/ui/skeletons";
 
 /**
- * Streamed while /calendar fetches.
- *
- * The month grid is one block rather than thirty-five day-cell placeholders.
- * That many pulsing squares is a great deal of animation for something replaced
- * in a moment, and it reads as a broken table rather than as a calendar
- * arriving. The heights match the real containers exactly so nothing shifts.
+ * loading state - streamed during /calendar fetches, presenting a unified
+ * month grid skeleton to avoid the visual noise of animating thirty-five
+ * individual day cells.
  */
 export default function Loading() {
 	return (

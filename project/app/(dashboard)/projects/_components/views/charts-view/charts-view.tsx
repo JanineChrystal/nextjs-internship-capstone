@@ -18,12 +18,9 @@ interface ChartsViewProps {
 }
 
 /**
- * Turns a DTO group into the shape the chart speaks.
- *
- * The chart components take {label, segments} and know nothing about tasks, so
- * this one-line adapter is where the domain meets the drawing. Doing it here
- * rather than inside StackedBarChart is what lets that component draw three
- * different panels without three different props.
+ * DTO adapter - transforms backend data groups into the standardized format
+ * expected by the chart components, allowing multiple chart panels to reuse
+ * the same implementation.
  */
 function toStackedData(
 	groups: StackedGroupDTO[],
@@ -49,14 +46,9 @@ function ChartsSkeleton() {
 }
 
 /**
- * The Charts tab of a single project.
- *
- * Four panels, and three of them are the same component. Status, Priority,
- * Bucket and Members all answer "how is this project's work distributed, and
- * what state is each part in" - so they share one set of status series, one
- * palette, one legend component and one stacked-bar implementation. The only
- * thing that varies is which column the tasks are grouped into, and that is
- * decided in the DAL, not here.
+ * charts view - renders four distinct analytic panels (Status, Priority,
+ * Bucket, Members) by passing different grouped datasets into shared, reusable
+ * chart components.
  */
 export function ChartsView({ projectId }: ChartsViewProps) {
 	const { analytics, isLoading } = useProjectAnalytics(projectId);

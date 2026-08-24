@@ -11,18 +11,9 @@ import { LandingSection } from "../ui/landing-section";
 import { Reveal, RevealItem } from "../ui/reveal";
 
 /**
- * Three tiers, with the middle one marked.
- *
- * This is the one section that has to be a client component, because one of its
- * three buttons opens the contact drawer rather than navigating. It reaches the
- * drawer through the store, so this file imports no drawer and the drawer knows
- * nothing about pricing - which is what lets the footer open the same panel
- * without either of them being involved.
- *
- * The `#contact` href in the constants file is the signal. A constants file
- * cannot import a component, and should not: it holds data, and "this CTA is the
- * one that opens the panel" is data. Resolving it here keeps the copy editable
- * without touching a component.
+ * pricing section - renders interactive pricing tiers where specific CTA
+ * links can trigger the contact drawer instead of navigation, avoiding
+ * direct component imports.
  */
 export function PricingSection() {
 	const openContact = useLandingUiStore((state) => state.openContact);
@@ -33,8 +24,10 @@ export function PricingSection() {
 			title="Simple while it is being built"
 			description="The pilot is free. When that changes, everyone on it will be told before it does."
 		>
-			{/* items-stretch keeps all three cards the same height when one has an
-			    extra feature line, so the buttons align across the row. */}
+			{/*
+  uniform height - uses items-stretch to align cards and their bottom
+  buttons regardless of feature list length.
+*/}
 			<Reveal
 				stagger
 				className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-3 lg:gap-6"

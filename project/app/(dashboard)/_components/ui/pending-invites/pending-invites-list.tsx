@@ -14,17 +14,13 @@ interface PendingInvitesListProps {
 	invites: PendingInviteOutputDTO[];
 	onRevoke: (inviteId: string) => void;
 	canRevoke?: boolean;
-	// The team page lists invites across the whole workspace, so it needs to say
-	// which project each one is for. Project settings already knows.
+	// project visibility toggle - used to display the project name when listing invites globally on the team page, as opposed to within specific project settings.
 	showProject?: boolean;
 	emptyMessage?: string;
 }
 
 /**
- * Invitations waiting on someone to sign up.
- *
- * Shared by project settings and the team page's Pending view so both render
- * the same row, rather than drifting into two lookalike tables.
+ * pending invites list component - renders a table of pending invitations, shared between project settings and the global team page to maintain consistency.
  */
 export function PendingInvitesList({
 	invites,

@@ -26,9 +26,7 @@ export function KanbanBoard({
 }: {
 	projectId: string;
 	externalFilters?: Record<string, string[]>;
-	// manage_boards belongs to owner and co-owner only, so a member clicking
-	// "Add Board" was always going to be refused by the server. Hiding it is the
-	// same treatment the Settings tab gets - the server remains the gate.
+	// board management gate - hides the add column button for members lacking permissions, reflecting server-side authorization visually.
 	canManageBoards?: boolean;
 }) {
 	const {
@@ -89,7 +87,7 @@ export function KanbanBoard({
 						))}
 					</SortableContext>
 
-					{/* Add Column Button */}
+					{/* add column button - allows authorized users to create new board columns. */}
 					{canManageBoards && (
 						<div className="shrink-0 w-80 flex flex-col h-full">
 							<Button
@@ -111,8 +109,7 @@ export function KanbanBoard({
 				onComplete={initiateBulkComplete}
 			/>
 
-			{/* Same dialog and same wording as the grid view, both sourced from
-			    useTaskBulkActions - the copy used to be duplicated in each. */}
+			{/* confirmation dialog - reuses shared bulk action warnings centralized in the task hooks. */}
 			<ConfirmDialog
 				isOpen={warningModal.isOpen}
 				onClose={closeWarningModal}

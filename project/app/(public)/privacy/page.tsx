@@ -8,9 +8,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * Lives in the public group so it is readable without an account - which is the
- * whole point of linking it from the sign-in and sign-up forms. Someone
- * deciding whether to hand over their email must be able to read this first.
+ * public access - ensures the privacy policy is readable without an
+ * account, allowing users to review it before signing up.
  */
 export default function PrivacyPage() {
 	return <LegalDocumentView document={PRIVACY_POLICY} />;

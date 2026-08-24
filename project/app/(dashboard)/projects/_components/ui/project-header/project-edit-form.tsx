@@ -42,7 +42,7 @@ export function ProjectEditForm({
 		fetchCategories("default", "project");
 	}, [fetchCategories]);
 
-	// Watch values so the badges dynamically update their colors while editing
+	// real-time form bindings - watches specific fields to update UI element colors instantly during editing.
 	const currentPriority = form.watch("priority");
 	const currentStatus = form.watch("status");
 
@@ -106,7 +106,7 @@ export function ProjectEditForm({
 				description={descriptionElement}
 				className="transition-all ring-1 ring-primary/30"
 			>
-				{/* Status Badge */}
+				{/* status selector - provides an inline dropdown for changing project status. */}
 				<div className="relative flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded-full text-label-sm font-medium capitalize transition-all focus-within:ring-2 focus-within:ring-primary">
 					<span
 						className={`w-2 h-2 rounded-full shrink-0 ${
@@ -126,7 +126,7 @@ export function ProjectEditForm({
 					</select>
 				</div>
 
-				{/* Priority Badge */}
+				{/* priority selector - provides an inline dropdown for changing project priority with dynamic styling. */}
 				<div
 					className={`relative flex items-center gap-1.5 px-3 py-1 rounded-full text-label-sm font-medium capitalize border transition-all ${
 						TASK_PRIORITY_BADGE_STYLES[currentPriority?.toLowerCase() || "low"]
@@ -146,7 +146,7 @@ export function ProjectEditForm({
 					</select>
 				</div>
 
-				{/* Category Badge */}
+				{/* category combobox - allows selecting existing categories or creating new ones directly. */}
 				<div className="relative flex items-center gap-2 rounded-full text-label-sm font-medium transition-all min-w-37.5">
 					<CreatableCombobox
 						options={categories.map((c) => ({
@@ -166,7 +166,7 @@ export function ProjectEditForm({
 					/>
 				</div>
 
-				{/* Start Date */}
+				{/* start date input - captures the project start date via a native datetime picker. */}
 				<div className="relative flex items-center gap-2 text-secondary text-label-sm px-2 py-1 rounded-md transition-all bg-surface-container-high focus-within:ring-2 focus-within:ring-primary">
 					<Calendar size={14} className="shrink-0" />
 					<input
@@ -178,7 +178,7 @@ export function ProjectEditForm({
 
 				<span className="text-outline-variant hidden sm:inline">•</span>
 
-				{/* Due Date */}
+				{/* due date input - captures the project due date via a native datetime picker. */}
 				<div className="relative flex items-center gap-2 text-secondary text-label-sm px-2 py-1 rounded-md transition-all bg-surface-container-high focus-within:ring-2 focus-within:ring-primary">
 					<Calendar size={14} className="shrink-0" />
 					<input

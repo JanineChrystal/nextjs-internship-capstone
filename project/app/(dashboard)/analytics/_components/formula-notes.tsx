@@ -3,11 +3,8 @@ import { BaseCard } from "@/components/ui/cards/base-card";
 import { ANALYTICS_FORMULAS } from "../_constants/formulas";
 
 /**
- * Renders the definition of every metric on the page.
- *
- * Collapsed by default so it never competes with the figures, but present on the
- * page rather than hidden in a wiki - the moment the definition lives somewhere
- * else, it starts drifting away from the code that produces the number.
+ * formula notes - renders collapsable metric definitions directly on the
+ * page to keep them closely tied to the code that generates them.
  */
 export function FormulaNotes() {
 	return (

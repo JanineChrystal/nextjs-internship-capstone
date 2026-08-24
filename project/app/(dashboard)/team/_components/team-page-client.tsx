@@ -25,7 +25,7 @@ interface TeamPageClientProps {
 }
 
 export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
-	// Feeds /team/loading.tsx its row count on the next visit.
+	// row count tracking - records the actual member count to size the loading skeleton correctly next time.
 	useRecordSkeletonCount("team-members", initialMembers.length);
 	const {
 		members,
@@ -51,7 +51,7 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 		handleSort,
 	} = useDirectorySelection(members);
 
-	// A single-row removal names the person; a bulk removal counts them.
+	// removal scope tracking - distinguishes between individual and bulk actions to tailor the warning modal text.
 	const removalCount = removal.userIds?.size ?? selectedIds.size;
 	const isSingleRemoval = removal.userIds?.size === 1;
 	const singleTargetName = isSingleRemoval
@@ -70,11 +70,7 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 				description="Manage workspace members and their roles across all projects."
 			/>
 
-			{/* The error banner that used to sit here is gone. Removal and invite
-			    failures are reported as toasts now, the same as every other failure
-			    in the app - a page that reports its own errors one way while the
-			    rest of the product uses another makes the reader learn two habits,
-			    and the banner also pushed the whole directory down when it appeared. */}
+			{/* centralized error reporting - delegates error handling to global toasts rather than shifting layout with inline banners. */}
 
 			<div className="flex-1 overflow-auto">
 				<TeamToolbar
@@ -106,13 +102,11 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 					/>
 				)}
 
-				{/* Remounted when an invite is sent, so a newly stored invitation shows
-				    up without needing a tab switch. */}
+				{/* pending list refresh - forces a remount on invite actions to ensure new invitations are immediately visible. */}
 				{activeView === "Pending" && <PendingView key={pendingRefreshKey} />}
 			</div>
 
-			{/* Selection belongs to the directory views; the Pending list has its own
-			    per-row revoke and nothing bulk to act on. */}
+			{/* conditional bulk actions - hides the bulk action bar on views that don't support multi-selection operations. */}
 			{activeView !== "Pending" && (
 				<BulkActionBar
 					selectedCount={selectedIds.size}

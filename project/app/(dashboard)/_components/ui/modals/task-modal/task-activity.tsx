@@ -10,11 +10,8 @@ interface TaskActivityProps {
 }
 
 /**
- * The Activity tab of the task side panel.
- *
- * Thin on purpose: it owns nothing but the fetch trigger and the empty-state
- * wording. The rows themselves come from ActivityList, the same component the
- * Project Activity section renders, so the two feeds cannot drift apart.
+ * task activity panel - a thin wrapper component that triggers data fetching and
+ * provides task-specific empty states, delegating rendering to the shared ActivityList component.
  */
 export function TaskActivity({
 	taskId,

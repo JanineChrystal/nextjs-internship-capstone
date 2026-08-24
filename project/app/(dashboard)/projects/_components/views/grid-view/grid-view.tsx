@@ -56,7 +56,7 @@ export function GridView({
 					),
 				};
 			}
-			// All these columns sortable except select and assignee
+			// selective sorting - enables sorting on all columns except selection checkboxes and assignees.
 			return { ...col, sortable: col.key !== "assignee" };
 		});
 	}, [isSelectionActive, handleToggleSelectionMode]);
@@ -92,9 +92,7 @@ export function GridView({
 				onComplete={initiateBulkComplete}
 			/>
 
-			{/* Wording comes from the hook, which is the only place that knows both
-			    how many tasks are selected and whether any checklist is unfinished.
-			    The kanban board renders the same dialog from the same source. */}
+			{/* confirmation dialog - displays dynamic warnings based on selection state and task progress provided by the view hook. */}
 			<ConfirmDialog
 				isOpen={warningModal.isOpen}
 				onClose={closeWarningModal}

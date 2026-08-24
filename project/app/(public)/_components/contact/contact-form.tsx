@@ -17,12 +17,9 @@ import { CONTACT_COPY, CONTACT_TOPIC_OPTIONS } from "../../_constants/contact";
 import { useContactForm } from "../../_hooks/use-contact-form";
 
 /**
- * One field's error line.
- *
- * Extracted because five fields need the identical markup and the identical
- * `aria-describedby` wiring, and getting that wiring subtly different on one
- * field is exactly the kind of thing that is invisible until someone uses a
- * screen reader.
+ * field error component - standardizes error rendering and ARIA wiring
+ * across multiple form fields to ensure consistent accessibility for
+ * screen readers.
  */
 function FieldError({ id, message }: { id: string; message?: string }) {
 	if (!message) return null;
@@ -33,7 +30,7 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 	);
 }
 
-export function ContactForm({ onSent }: { onSent?: () => void }) {
+export function ContactForm({ onSentAction }: { onSentAction?: () => void }) {
 	const { form, isSent, isSubmitting, onSubmit, reset } = useContactForm();
 	const { register, control, formState } = form;
 	const { errors } = formState;
@@ -57,8 +54,8 @@ export function ContactForm({ onSent }: { onSent?: () => void }) {
 					<Button type="button" variant="outline" size="lg" onClick={reset}>
 						Send another
 					</Button>
-					{onSent && (
-						<Button type="button" size="lg" onClick={onSent}>
+					{onSentAction && (
+						<Button type="button" size="lg" onClick={onSentAction}>
 							Close
 						</Button>
 					)}
@@ -70,21 +67,7 @@ export function ContactForm({ onSent }: { onSent?: () => void }) {
 	return (
 		<form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
 			{/*
-			  THE HONEYPOT.
-
-			  A real, empty text input that a person is never routed to and a bot
-			  cannot tell apart from the fields around it. Four things together are
-			  what make it invisible to people but visible to a script:
-
-			    aria-hidden   - assistive technology skips it entirely
-			    tabIndex={-1} - keyboard tabbing walks straight past it
-			    autoComplete  - the browser will not helpfully fill it in
-			    the wrapper   - moved off-screen, NOT display:none, because some
-			                    bots specifically skip hidden inputs
-
-			  The server rejects any submission that arrives with it filled, and
-			  answers "sent" rather than "rejected" so the next attempt does not
-			  simply leave it blank.
+			  honeypot field - a visually hidden, accessible-ignored input used to silently trap and reject bot submissions without affecting real users.
 			*/}
 			<div
 				aria-hidden="true"
@@ -100,9 +83,10 @@ export function ContactForm({ onSent }: { onSent?: () => void }) {
 				/>
 			</div>
 
-			{/* Mobile-first: one column by default, two from the small breakpoint
-			    up, because name and email are short enough to share a row as soon as
-			    there is room for them. */}
+			{/*
+  responsive grid - stacks fields on mobile and places name and email
+  side-by-side on larger screens to optimize space.
+*/}
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="contact-name">Name</Label>
@@ -153,11 +137,9 @@ export function ContactForm({ onSent }: { onSent?: () => void }) {
 				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="contact-topic">What is this about?</Label>
 					{/*
-					  Controller, not register. The select is a Radix component that
-					  keeps its value in React state and calls onValueChange - it has
-					  no native input for react-hook-form's ref to attach to, so it
-					  has to be driven as a controlled field.
-					*/}
+  select controller - uses a controlled Controller component because the
+  Radix select lacks a native input for react-hook-form to register.
+*/}
 					<Controller
 						name="topic"
 						control={control}

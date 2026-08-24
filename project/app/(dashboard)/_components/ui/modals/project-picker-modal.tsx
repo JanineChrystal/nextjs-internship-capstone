@@ -19,37 +19,16 @@ interface ProjectPickerModalProps {
 	title: string;
 	description: string;
 	confirmLabel: string;
-	/** Projects where the viewer lacks this are listed but not selectable. */
+	/** required permission - determines if a listed project is selectable or disabled based on user access. */
 	requiredPermission: Permission;
-	/** Shown on a disabled row, saying why it cannot be used. */
+	/** denied hint - explanatory text displayed on disabled project rows. */
 	deniedHint: string;
 	isBusy?: boolean;
 }
 
 /**
- * "Which project?" - the step in front of any action that needs one.
- *
- * Two shortcuts on the dashboard need this: creating a task, and adding a member
- * to a project. Both are project-scoped operations reached from a page that has
- * no project, so both have to ask first. Writing it once means the two cannot
- * end up asking the same question in two different shapes.
- *
- * ## Disabled rather than hidden, and never instead of the server check
- *
- * A project the viewer cannot perform this action on is shown, greyed, with the
- * reason beside it. Two deliberate choices there:
- *
- * **Disabled, not hidden.** Someone who knows they are on a project and cannot
- * find it in this list has no way to tell whether it is missing because of their
- * access or because something is broken. A greyed row with "Only the owner or a
- * co-owner can invite" answers that on the spot.
- *
- * **This is not the security boundary.** The server re-checks the same
- * permission when the action runs, and has to: this list is assembled in the
- * browser and nothing stops a caller invoking the action directly. Greying rows
- * out is purely so a refusal never arrives after someone has filled in a form.
- * The two read the same `Permission` value, so they cannot drift into disagreeing
- * about which projects are usable.
+ * project picker modal - a reusable modal for selecting a project before performing project-scoped actions from global contexts.
+ * projects lacking required permissions are shown as disabled rather than hidden to provide clear feedback, while actual security validation remains on the server.
  */
 export function ProjectPickerModal({
 	isOpen,
@@ -66,7 +45,7 @@ export function ProjectPickerModal({
 	const [query, setQuery] = useState("");
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 
-	// A search box only earns its place once the list is long enough to scan.
+	// search visibility threshold - only display search when the list exceeds a scannable length.
 	const showSearch = projects.length > 6;
 
 	const options = useMemo(
@@ -135,9 +114,7 @@ export function ProjectPickerModal({
 						description="Create a project first, then you can add tasks and members to it."
 					/>
 				) : allowedCount === 0 ? (
-					/* Every project is listed but none can be used. Saying so once at
-					   the top is clearer than leaving someone to work it out from a
-					   list where every row happens to be greyed. */
+					/* zero-access empty state - displays a clear top-level message when all listed projects are disabled due to permissions. */
 					<EmptyState
 						subdued
 						icon={Lock}
@@ -164,10 +141,7 @@ export function ProjectPickerModal({
 										type="button"
 										disabled={!project.isAllowed}
 										aria-pressed={isSelected}
-										// The reason travels with the control rather than
-										// only being printed beside it, so it is announced
-										// when the row is reached rather than needing to be
-										// found separately.
+										// accessible disabled reason - associates the denial hint directly with the button for screen readers.
 										aria-description={
 											project.isAllowed ? undefined : deniedHint
 										}

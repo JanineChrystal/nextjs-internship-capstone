@@ -5,16 +5,9 @@ import { ProductPreview } from "../ui/product-preview";
 import { Reveal, RevealItem } from "../ui/reveal";
 
 /**
- * How it works: a numbered rail beside the product illustration.
- *
- * On a phone the two stack and the illustration comes second - the steps are the
- * content, the picture supports them, and on the narrowest screen a picture
- * first would push the actual answer below the fold.
- *
- * From `lg` up they sit side by side and the illustration is `sticky`, so it
- * stays in view while the reader works down the four steps. That is the whole
- * reason this layout is worth the extra breakpoint: the steps describe what the
- * screen next to them is doing.
+ * workflow section - displays a numbered steps rail beside a sticky
+ * product illustration on desktop, stacking the steps above the image on
+ * mobile for better flow.
  */
 export function WorkflowSection() {
 	return (
@@ -27,9 +20,10 @@ export function WorkflowSection() {
 				<Reveal stagger as="ul" className="flex flex-col gap-8">
 					{WORKFLOW_STEPS.map((step, index) => (
 						<RevealItem key={step.title} as="li" className="flex gap-4">
-							{/* The number is decoration for a screen reader - the list is
-							    already announced as ordered, so reading "1" before the
-							    title would just repeat that. */}
+							{/*
+  decorative numbering - uses aria-hidden on step numbers to avoid
+  redundant screen reader announcements in the ordered list.
+*/}
 							<span
 								aria-hidden="true"
 								className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-sm font-semibold text-primary"

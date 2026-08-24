@@ -8,15 +8,9 @@ import type { ArchivedItemDTO, ArchivePageDTO } from "@/lib/dtos/archive-dto";
 import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 
 /**
- * The archive page's list state.
- *
- * Optimistic like every other mutation here - the row leaves the list the moment
- * the button is pressed - but with one difference worth noting: after the server
- * confirms, `router.refresh()` re-runs the server component instead of the hook
- * patching the other list by hand. Unarchiving does not just remove a row, it
- * also has to reappear on /projects; letting the server recompute both lists is
- * both less code and the only version that cannot drift out of sync with what a
- * reload would show.
+ * use-archive hook - manages optimistic list removals and triggers a
+ * server re-render via router.refresh() after confirmation to prevent
+ * the client state from drifting out of sync.
  */
 export function useArchive(initial: ArchivePageDTO) {
 	const router = useRouter();
@@ -26,10 +20,7 @@ export function useArchive(initial: ArchivePageDTO) {
 	const [trashed, setTrashed] = useState(initial.trashed);
 	const [busyId, setBusyId] = useState<string | null>(null);
 
-	// `initial` is a fresh object on every server render, so this runs exactly
-	// once per refresh and never in a loop. Without it the optimistic lists would
-	// be the only ones the page ever showed, and the server's recomputed answer -
-	// including anything the visit's purge sweep removed - would be discarded.
+	// state sync - synchronizes the local optimistic state with the server's fresh initial data on every re-render to avoid discarding server-side updates.
 	useEffect(() => {
 		setArchived(initial.archived);
 		setTrashed(initial.trashed);
@@ -40,8 +31,7 @@ export function useArchive(initial: ArchivePageDTO) {
 		operation: ArchiveOperation,
 		successMessage: string,
 	) {
-		// Snapshots taken before the optimistic removal, so a failure restores
-		// exactly what was on screen.
+		// optimistic rollback snapshots - stores list states before removal to allow exact restoration if the server operation fails.
 		const previousArchived = archived;
 		const previousTrashed = trashed;
 
@@ -69,8 +59,7 @@ export function useArchive(initial: ArchivePageDTO) {
 
 		reportActionSuccess(successMessage);
 
-		// Moving between the two tabs is the common case, so the authoritative
-		// lists are re-read rather than guessed at here.
+		// server sync - refreshes the authoritative lists from the server instead of predicting cross-tab state changes locally.
 		startTransition(() => router.refresh());
 	}
 

@@ -11,20 +11,9 @@ import {
 } from "@/lib/validations/contact-schema";
 
 /**
- * The contact drawer's state, kept out of the component.
- *
- * The form component's job is layout; deciding what happens on submit is not
- * layout. Splitting them is also what makes the "sent" state easy to reason
- * about - there is exactly one place that can set it.
- *
- * ## Why this one does not update optimistically
- *
- * Every other mutation in this app writes to a store immediately and rolls back
- * if the server disagrees, because the user is looking at data that should
- * change instantly. Here there is nothing on screen to update: the only thing
- * the user wants to know is whether the message actually arrived, and claiming
- * it did before the server said so is precisely the wrong lie to tell. So this
- * one waits.
+ * use-contact-form hook - extracts form state and mutation logic from the
+ * component to isolate UI layout from data flow, intentionally avoiding
+ * optimistic updates until the server confirms receipt.
  */
 export function useContactForm() {
 	// Local state

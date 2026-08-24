@@ -3,16 +3,9 @@ import type { ReactNode } from "react";
 import { BrandMark } from "@/components/ui/brand-mark";
 
 /**
- * One of the two legal links under the card.
- *
- * Both open in a new tab. Navigating away mid-sign-up would throw away a
- * half-filled form and any verification step already in progress - and someone
- * clicking "Privacy Policy" wants to read it before continuing, not instead of
- * continuing.
- *
- * The "(opens in a new tab)" is `sr-only`. A sighted reader gets that from the
- * browser; someone using a screen reader gets no warning at all unless it is
- * said, and a tab that opens unannounced is disorienting.
+ * legal link - renders external links that open in a new tab with
+ * screen-reader announcements to prevent users from losing their
+ * in-progress auth forms.
  */
 function LegalLink({ href, children }: { href: string; children: ReactNode }) {
 	return (
@@ -37,23 +30,9 @@ interface AuthShellProps {
 }
 
 /**
- * What sits around the Clerk widget on the auth pages.
- *
- * ## Deliberately not a card
- *
- * There is no panel here. Clerk renders its own card - border, radius, shadow,
- * heading and subtitle - and wrapping that in a second card produced exactly
- * what it sounds like: two nested containers and two headings saying the same
- * thing twice. Everything this component adds sits OUTSIDE that card, in the
- * space above and below it.
- *
- * ## Why the switch link is required
- *
- * `clerkAuthAppearance` hides Clerk's footer to remove its branding, and that
- * footer also carried the link between signing in and signing up. `switchHref`
- * has no default for that reason - forgetting it would leave someone with no
- * account stuck on a form with no way out, and a required prop turns that into
- * a compile error rather than a bug found in testing.
+ * auth shell - wraps the Clerk widget without adding redundant card
+ * styling, and explicitly requires a switch link to replace Clerk's
+ * hidden footer branding.
  */
 export function AuthShell({
 	children,
@@ -63,15 +42,18 @@ export function AuthShell({
 }: AuthShellProps) {
 	return (
 		<div className="flex w-full max-w-md flex-col items-center">
-			{/* The brand mark floats above Clerk's card rather than sitting inside
-			    it, so the page says whose product this is without competing with the
-			    widget's own heading. */}
+			{/*
+			  floating brand mark - sits above the Clerk card to establish product
+			  identity without competing with the widget's internal headings.
+			*/}
 			<Link
 				href="/"
 				className="mb-8 flex items-center gap-2 rounded-lg text-on-surface transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
 			>
-				{/* Same mark as the dashboard sidebar, one size larger. Someone who
-				    signs in should meet the identical brand on the other side. */}
+				{/*
+				  consistent branding - uses the identical brand mark found in the app
+				  dashboard to maintain visual continuity after sign-in.
+				*/}
 				<BrandMark className="size-9" letterClassName="text-xl" />
 				<span className="text-lg font-semibold tracking-tight">Takda PH</span>
 			</Link>

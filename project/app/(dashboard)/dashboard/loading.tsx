@@ -5,12 +5,9 @@ import {
 } from "@/components/ui/skeletons";
 
 /**
- * Streamed while /dashboard fetches.
- *
- * Four stat tiles as a literal, not a remembered count: they come from
- * `DASHBOARD_STAT_CARDS`, which is a constant, so the number is known rather
- * than guessed at. Remembering something already knowable would be machinery
- * that can only go wrong.
+ * loading state - streamed during /dashboard fetches, utilizing constant
+ * values for stat card skeletons instead of needlessly guessing or storing
+ * row counts.
  */
 export default function Loading() {
 	return (

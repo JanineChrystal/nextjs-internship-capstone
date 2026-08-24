@@ -5,24 +5,17 @@ import { cn } from "@/lib/utils";
 interface StatCardProps {
 	label: string;
 	value: string | number;
-	/** The unit the value is measured in, e.g. "tasks/week". */
+	/** measurement unit - optional suffix appended to the value text. */
 	unit?: string;
 	icon: LucideIcon;
-	/** One short line explaining how the figure is calculated. */
+	/** calculation hint - short explanation of the metric's origin or meaning. */
 	hint?: string;
 	className?: string;
 }
 
 /**
- * A single headline number.
- *
- * Deliberately not a chart. A lone value has no shape to plot - drawing it as a
- * one-bar bar chart adds axes, gridlines and a legend to communicate exactly one
- * number, and the number on its own is both smaller and faster to read.
- *
- * One component for all three surfaces (dashboard, analytics, a project's Charts
- * tab). The three used to be three separate hand-rolled blocks of markup, which
- * is how they ended up with three slightly different paddings.
+ * stat card component - displays a single headline metric with consistent styling
+ * across all dashboard surfaces, optimizing for scannability over complex charting.
  */
 export function StatCard({
 	label,
@@ -42,9 +35,7 @@ export function StatCard({
 			</div>
 
 			<div className="flex items-baseline gap-1.5">
-				{/* tabular-nums is deliberately NOT used here: a large standalone
-				    figure reads better in the font's default proportional digits, and
-				    nothing below it needs to line up. */}
+				{/* proportional digits - uses default number spacing rather than tabular formatting for better aesthetics on standalone figures. */}
 				<span className="text-3xl font-semibold text-on-surface">{value}</span>
 				{unit && <span className="text-xs text-secondary">{unit}</span>}
 			</div>

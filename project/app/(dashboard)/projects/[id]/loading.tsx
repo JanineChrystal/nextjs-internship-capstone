@@ -1,15 +1,13 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonPage, SkeletonTable } from "@/components/ui/skeletons";
 
-/** The project detail view tabs, keyed by name rather than by index. */
+/** view tabs - keyed by name rather than index for stable identification. */
 const VIEW_TABS = ["board", "grid", "calendar", "charts", "settings"];
 
 /**
- * Streamed while a project detail page fetches.
- *
- * The pill row stands in for the view tabs, which render before the project
- * data does - reserving their height is what stops the content below sliding
- * down as the rest arrives.
+ * loading state - streamed during project detail fetches, prioritizing the
+ * view tabs pill row to reserve height and prevent layout shift as the rest
+ * of the page arrives.
  */
 export default function Loading() {
 	return (

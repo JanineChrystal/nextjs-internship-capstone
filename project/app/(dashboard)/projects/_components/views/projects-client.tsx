@@ -26,32 +26,24 @@ const ProjectModal = dynamic(
 	{ ssr: false },
 );
 
-// 1. Define the props interface to satisfy TypeScript
-// Replace `any` with your actual Project type (e.g., `Project[]`) if you have it exported
+// component props - defines the interface for the initial projects data passed from the server.
 export interface ProjectsClientProps {
 	initialProjects: Project[];
 }
 
-// 2. Accept the prop in the component signature
+// component signature - accepts initial projects prop for hydration.
 export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
-	// 3. (Optional but recommended) Pass the initial data into your custom hook
-	// so it can use the server-fetched data as its starting state.
+	// state initialization - seeds the client-side store with server-rendered data for immediate interactivity.
 	const { modals, selection, filters } = useProjectsClient(initialProjects);
 
-	// Lets /projects/loading.tsx draw one placeholder card per real project on
-	// the next visit instead of a hard-coded six. The UNFILTERED count, because
-	// filter state is local and resets on reload - recording a filtered 1 would
-	// mean one lonely placeholder before twenty cards arrived.
+	// skeleton hydration count - records the unfiltered project count to accurately size loading placeholders on subsequent visits.
 	useRecordSkeletonCount("projects", initialProjects.length);
 	const router = useRouter();
 
 	/**
-	 * Archives a project from its card.
-	 *
-	 * No optimistic removal here, unlike the task board: the projects list is
-	 * server-rendered from getAllUserProjectsDAL, so refreshing is what makes the
-	 * card disappear - and it also refreshes the counts and stats that the same
-	 * server render produced, which a local filter would have left stale.
+	 * handle archive project - performs server-side archiving and relies on
+	 * router.refresh() rather than optimistic updates to ensure accurate server
+	 * statistics and lists.
 	 */
 	const handleArchiveProject = async (projectId: string) => {
 		const result = await applyArchiveOperationAction(
@@ -147,15 +139,13 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 				)}
 			</div>
 
-			{/* Render Modals */}
+			{/* render modals - mounts all interactive dialogs required by the view. */}
 			<ProjectModal
 				isOpen={modals.create.isOpen}
 				onClose={() => modals.create.setIsOpen(false)}
 			/>
 
-			{/* Wording comes from buildConfirmCopy rather than a template string, so
-			    the single and bulk cases read as English - "this project" and
-			    "3 projects" - instead of the "project(s)" this used to render. */}
+			{/* semantic confirmation text - uses buildConfirmCopy to generate grammatically correct warnings for single or multiple item deletions. */}
 			<ConfirmDialog
 				isOpen={modals.delete.isOpen}
 				onClose={modals.delete.close}

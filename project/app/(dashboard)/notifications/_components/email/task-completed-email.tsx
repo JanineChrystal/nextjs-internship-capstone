@@ -9,13 +9,9 @@ interface TaskCompletedEmailProps {
 }
 
 /**
- * Sent to a task's assignees when someone marks it complete.
- *
- * Only the *other* assignees hear about it - `recordActivity` drops the actor,
- * so the person who ticked the box is never emailed about their own click.
- *
- * The project name is included because an assignee may be on several projects
- * and a task called "Fix login" is ambiguous without it.
+ * task completed email - notifies other assignees when a task is completed,
+ * excluding the actor, and includes the project name to disambiguate common
+ * task names.
  */
 export function TaskCompletedEmail({
 	completedBy,

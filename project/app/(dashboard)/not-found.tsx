@@ -7,16 +7,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * The 404 for anything inside the signed-in app.
- *
- * Separate from the root `not-found.tsx` for two reasons. It renders inside the
- * dashboard layout, so the sidebar and top bar stay put and the reader is still
- * somewhere rather than being ejected to a bare page. And it can offer the
- * dashboard recovery routes, which are only useful to someone already signed in.
- *
- * This is also the surface `notFound()` unwinds to when a DAL lookup returns
- * nothing for a project or task id - previously that fell through to the root
- * handler, which did not exist, so the reader got Next's built-in screen.
+ * dashboard not-found page - renders a contextual 404 error within the
+ * dashboard layout that includes authenticated recovery routes instead of
+ * ejecting users to the root bare page.
  */
 export default function DashboardNotFound() {
 	return (

@@ -10,12 +10,8 @@ interface RecentProjectsPanelProps {
 }
 
 /**
- * The five projects touched most recently, with a real progress meter.
- *
- * The meter is a meter, not a chart: it is one ratio against a fixed limit
- * (100%), and a chart's axes and legend would add nothing a filled track does
- * not already say. It is also labelled with the actual figure, because a bar
- * whose only reading is its own length cannot be read by a screen reader.
+ * recent projects panel - displays up to five active projects featuring a
+ * true ARIA-labelled progress meter instead of a chart for accessibility.
  */
 export function RecentProjectsPanel({ projects }: RecentProjectsPanelProps) {
 	return (
@@ -57,10 +53,7 @@ export function RecentProjectsPanel({ projects }: RecentProjectsPanelProps) {
 								</div>
 
 								<div className="flex items-center gap-2 shrink-0">
-									{/* The shared Progress primitive rather than a hand-rolled
-									    pair of divs: it already carries the correct ARIA
-									    role and value, which a bare div has to bolt on and
-									    usually gets wrong. */}
+									{/* accessible progress bar - utilizes the Radix primitive instead of raw divs to guarantee correct ARIA roles and values. */}
 									<Progress
 										value={project.progress}
 										className="h-2 w-20"

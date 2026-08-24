@@ -3,32 +3,9 @@ import { GlowingWave } from "@/components/ui/backgrounds/glowing-wave";
 import { Toaster } from "@/components/ui/toaster";
 
 /**
- * The shell both auth pages share.
- *
- * The route group had no layout at all before this, so each page repeated its
- * own full-screen centring wrapper and neither had a `Toaster` - meaning any
- * toast raised from a sign-in or sign-up screen was dispatched into a portal
- * that was never rendered. The dashboard and public groups each mount one; this
- * group was the gap.
- *
- * ## The stacking bug this layout had, because it is easy to repeat
- *
- * The wave was first given `-z-10` while this wrapper kept `bg-background`, and
- * it rendered nothing at all. A negative z-index does not put a child behind its
- * own parent's background - it puts it behind everything in the nearest
- * stacking context, and since `relative` with no `z-index` creates none, that
- * context was the root element. The wave was painting under the page's
- * background colour, one step too early in the paint order.
- *
- * The fix is to stop using a negative index: the wave sits at `z-0` and the
- * content is lifted to `z-10` above it, so both are ordinary positioned
- * siblings in the same context and the order is explicit.
- *
- * `fixed` rather than `absolute` so it fills the viewport even when the form
- * grows past it - Clerk's sign-up form is considerably taller than sign-in once
- * the OAuth buttons and every field are showing, and an absolutely positioned
- * background would stretch with the content and drag the wave's geometry with
- * it.
+ * auth layout - provides a shared shell with a background wave and Toaster
+ * for auth pages, resolving previous z-index stacking bugs by using
+ * explicit z-indexes without negative values.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
 	return (
