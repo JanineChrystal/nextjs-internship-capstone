@@ -25,7 +25,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 	const [theme, setTheme] = useState<Theme>("light");
 
 	useEffect(() => {
-		// Check for saved theme preference or default to light
+		/** theme initialization - checks for a saved theme preference in local storage, falling back to light if none exists. */
 		const savedTheme = localStorage.getItem("theme") as Theme;
 		if (savedTheme) {
 			setTheme(savedTheme);

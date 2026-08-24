@@ -8,13 +8,9 @@ export interface Category {
 export type CategoryType = "project" | "task";
 
 /**
- * Which set of categories a lookup wants.
- *
- * Categories belong to a workspace, but the two ways of reaching them are not
- * interchangeable. A "project" scope resolves the workspace that owns the
- * project server-side, which is what a member viewing someone else's board
- * needs; a "workspace" scope resolves the caller's own. Reaching for the wrong
- * one is what previously left members with an empty category dropdown.
+ * category scope - specifies the resolution context for category lookups to
+ * prevent empty dropdowns, distinguishing between a caller's own 'workspace'
+ * and a specific 'project' owned by another workspace.
  */
 export interface CategoryScope {
 	kind: "workspace" | "project";
@@ -23,6 +19,7 @@ export interface CategoryScope {
 }
 
 /**
- * Category name (lower-cased) to hex colour, for one scope.
+ * category color map - maps lower-cased category names to their corresponding
+ * hex colors within a specific scope.
  */
 export type CategoryColorMap = Record<string, string>;

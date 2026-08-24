@@ -38,8 +38,11 @@ export function hasPermission(
 	return ROLE_PERMISSIONS[role].includes(permission);
 }
 
-// Higher number wins when a user qualifies for a project through several paths
-// at once (owner, a direct membership, and/or one or more teams).
+/**
+ * role rank precedence - defines a numeric rank where higher values
+ * override lower ones when users have multiple overlapping project
+ * roles.
+ */
 export const ROLE_RANK: Record<RoleAccess, number> = {
 	owner: 4,
 	"co-owner": 3,
@@ -48,14 +51,9 @@ export const ROLE_RANK: Record<RoleAccess, number> = {
 };
 
 /**
- * Collapses every role a user holds on a project down to the one that governs.
- *
- * Taking the highest rank is equivalent to taking the union of all granted
- * permissions ONLY because ROLE_PERMISSIONS is a total inclusion chain:
- * guest subset of member subset of co-owner subset of owner. If that chain is
- * ever broken - by giving a lower role a permission a higher one lacks - this
- * would start silently under-granting. `assertRolePermissionsAreNested` guards
- * that assumption.
+ * resolve effective role - collapses multiple user roles into the
+ * single highest governing role, relying on a strict inclusion chain
+ * where higher roles encompass all lower role permissions.
  */
 export function resolveEffectiveRole(roles: RoleAccess[]): RoleAccess | null {
 	if (roles.length === 0) return null;
@@ -66,9 +64,9 @@ export function resolveEffectiveRole(roles: RoleAccess[]): RoleAccess | null {
 }
 
 /**
- * Verifies the inclusion chain that `resolveEffectiveRole` depends on.
- * Returns the offending pair rather than throwing, so callers choose how loud
- * to be. Intended for tests and dev-time assertions.
+ * assert role inclusion chain - validates that higher roles properly
+ * inherit all permissions of lower roles, returning any discrepancies
+ * instead of throwing to allow flexible error handling in tests.
  */
 export function assertRolePermissionsAreNested(): {
 	lower: RoleAccess;

@@ -26,12 +26,8 @@ interface GroupsSectionProps {
 }
 
 /**
- * Reusable member groups, managed entirely from project settings.
- *
- * A group is a saved snapshot of people, not a live link: "Add from group"
- * copies its members into this project as ordinary members, and editing or
- * deleting the group afterwards leaves this project untouched. That is stated in
- * the UI too, because the alternative behaviour is what users normally assume.
+ * groups section - manages reusable member snapshots, emphasizing that groups
+ * are point-in-time copies rather than live synchronizations.
  */
 export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 	const {
@@ -45,9 +41,7 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 		removeGroup,
 	} = useProjectGroups(projectId);
 
-	// isNaming is a UI toggle, not form data, so useState is the right tool for it.
-	// The name itself moved to React Hook Form: it is a validated input, and the
-	// schema it validates against is the same one the server action re-checks.
+	// form state separation - separates UI toggles into local state while delegating validated inputs to the form handler.
 	const [isNaming, setIsNaming] = useState(false);
 
 	const {

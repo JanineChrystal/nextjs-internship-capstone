@@ -12,8 +12,8 @@ import { useMemberStore } from "@/stores/use-member-store";
 export type AddInviteFormValues = z.infer<typeof AddProjectInviteSchema>;
 
 /**
- * `targetId` is the project id for project-scoped invites. Workspace-scoped
- * invites resolve the caller's own workspace server-side, so no id is passed.
+ * add member modal hook - manages form state and staging for member invitations.
+ * `targetId` is required for projects, but omitted for workspaces as they are resolved on the server.
  */
 export function useAddMemberModal(
 	targetId: string,
@@ -28,8 +28,7 @@ export function useAddMemberModal(
 		sendBulkInvites,
 	} = useMemberStore();
 
-	// The workspace form renders neither a position nor an access-level field, so
-	// it must not be validated against the project schema that requires them.
+	// dynamic schema validation - switches validation schemas based on scope to avoid errors on fields the workspace form doesn't render.
 	const form = useForm<AddInviteFormValues>({
 		resolver: zodResolver(
 			scope === "project" ? AddProjectInviteSchema : AddWorkspaceInviteSchema,
@@ -49,8 +48,7 @@ export function useAddMemberModal(
 			addPendingInvite({
 				recipient: values.recipient.trim(),
 				jobRole: values.jobRole?.trim() || "Member",
-				// Workspace invites render no access-level field, so the value is
-				// absent rather than empty and needs a default of its own.
+				// default role access - provides a default 'member' role for workspace invites since the field is not rendered.
 				roleAccess: (values.roleAccess ?? "member") as Exclude<
 					RoleAccess,
 					"owner"

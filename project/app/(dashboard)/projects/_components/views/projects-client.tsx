@@ -1,12 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { TASK_PRIORITY_OPTIONS } from "@/app/(dashboard)/_constants/task";
-import { ActionConfirmModal } from "@/components/modals/action-confirm-modal";
+import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
+import { useRecordSkeletonCount } from "@/hooks/use-skeleton-count";
+import { applyArchiveOperationAction } from "@/lib/actions/archive-actions";
+import { TRASH_RETENTION_DAYS } from "@/lib/constants/archive";
+import { buildConfirmCopy } from "@/lib/constants/confirm-copy";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import type { Project } from "@/lib/validations/project-schema";
 import { useProjectsClient } from "../../_hooks/use-projects-client";
 import { ProjectCard } from "../ui/cards/project-card";
@@ -20,17 +26,40 @@ const ProjectModal = dynamic(
 	{ ssr: false },
 );
 
-// 1. Define the props interface to satisfy TypeScript
-// Replace `any` with your actual Project type (e.g., `Project[]`) if you have it exported
+// component props - defines the interface for the initial projects data passed from the server.
 export interface ProjectsClientProps {
 	initialProjects: Project[];
 }
 
-// 2. Accept the prop in the component signature
+// component signature - accepts initial projects prop for hydration.
 export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
-	// 3. (Optional but recommended) Pass the initial data into your custom hook
-	// so it can use the server-fetched data as its starting state.
+	// state initialization - seeds the client-side store with server-rendered data for immediate interactivity.
 	const { modals, selection, filters } = useProjectsClient(initialProjects);
+
+	// skeleton hydration count - records the unfiltered project count to accurately size loading placeholders on subsequent visits.
+	useRecordSkeletonCount("projects", initialProjects.length);
+	const router = useRouter();
+
+	/**
+	 * handle archive project - performs server-side archiving and relies on
+	 * router.refresh() rather than optimistic updates to ensure accurate server
+	 * statistics and lists.
+	 */
+	const handleArchiveProject = async (projectId: string) => {
+		const result = await applyArchiveOperationAction(
+			"project",
+			projectId,
+			"archive",
+		);
+
+		if (!result.success) {
+			reportActionError("Could not archive project", result.error);
+			return;
+		}
+
+		reportActionSuccess("Project archived");
+		router.refresh();
+	};
 
 	const isSingleDelete = selection.projectToDelete !== null;
 	const deleteCount = isSingleDelete ? 1 : selection.selectedProjectIds.size;
@@ -99,6 +128,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 								isSelected={selection.selectedProjectIds.has(project.id)}
 								onToggleSelection={() => selection.toggleSelection(project.id)}
 								onDelete={selection.initiateSingleDelete}
+								onArchive={handleArchiveProject}
 							/>
 						</div>
 					))
@@ -109,20 +139,26 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 				)}
 			</div>
 
-			{/* Render Modals */}
+			{/* render modals - mounts all interactive dialogs required by the view. */}
 			<ProjectModal
 				isOpen={modals.create.isOpen}
 				onClose={() => modals.create.setIsOpen(false)}
 			/>
 
-			<ActionConfirmModal
+			{/* semantic confirmation text - uses buildConfirmCopy to generate grammatically correct warnings for single or multiple item deletions. */}
+			<ConfirmDialog
 				isOpen={modals.delete.isOpen}
 				onClose={modals.delete.close}
-				onConfirm={selection.confirmDelete}
-				title={isSingleDelete ? "Delete Project" : "Delete Projects"}
-				description={`Are you sure you want to delete ${deleteCount} selected project(s)? This action cannot be undone.`}
-				confirmText={isSingleDelete ? "Delete Project" : "Delete Projects"}
-				isDestructive={true}
+				onConfirm={() => {
+					selection.confirmDelete();
+					modals.delete.close();
+				}}
+				tone="danger"
+				{...buildConfirmCopy({
+					action: "delete",
+					subject: "project",
+					count: deleteCount,
+				})}
 			/>
 
 			<WarningModal
@@ -138,7 +174,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
 				}
 				message={
 					modals.warning.actionType === "delete"
-						? "This project has ongoing tasks. Are you sure you want to delete it? This action cannot be undone."
+						? `This project has ongoing tasks. Are you sure you want to delete it? It moves to the trash, and is deleted permanently after ${TRASH_RETENTION_DAYS} days.`
 						: modals.warning.actionType === "archive"
 							? "There are still ongoing tasks in this project. Are you sure you want to archive it?"
 							: "There are still ongoing tasks in this project. Are you sure you want to set it as completed?"

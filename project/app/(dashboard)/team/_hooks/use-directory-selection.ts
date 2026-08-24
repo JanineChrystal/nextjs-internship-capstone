@@ -5,10 +5,9 @@ import type { TeamViewType } from "@/lib/types/team";
 type SortConfig = { key: string; direction: "asc" | "desc" } | null;
 
 /**
- * Selection, sorting and view state for the directory.
- *
- * Selection is a Set so membership tests stay O(1) and bulk actions can be
- * handed straight to the batched store action.
+ * use-directory-selection hook - manages directory state including active view,
+ * sorting config, and user selections, storing selected IDs as a Set for O(1)
+ * lookups and seamless bulk action processing.
  */
 export function useDirectorySelection(members: WorkspaceMemberOutputDTO[]) {
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -46,8 +45,7 @@ export function useDirectorySelection(members: WorkspaceMemberOutputDTO[]) {
 		}));
 	}, []);
 
-	// Derived rather than stored, so sorting never mutates the source list and
-	// cannot drift from the store after a removal.
+	// sorted members derivation - calculates sorted state on the fly to avoid mutating the source list or drifting from the primary store.
 	const sortedMembers = useMemo(() => {
 		if (!sortConfig) return members;
 

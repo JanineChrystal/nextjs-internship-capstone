@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { FilterPopover } from "@/components/ui/filters/filter-popover";
 import { hasPermission } from "@/lib/config/permissions";
@@ -42,6 +43,11 @@ const CalendarView = dynamic(
 	{ ssr: false },
 );
 
+const ChartsView = dynamic(
+	() => import("../_components/views/charts-view").then((m) => m.ChartsView),
+	{ ssr: false },
+);
+
 const SettingsView = dynamic(
 	() =>
 		import("../_components/views/settings-view").then((m) => m.SettingsView),
@@ -70,6 +76,8 @@ export function ProjectDetailClient({
 	boards,
 	role,
 }: ProjectDetailClientProps) {
+	const router = useRouter();
+	const searchParams = useSearchParams();
 	const setTasks = useTaskStore((state) => state.setTasks);
 	const setColumns = useBoardStore((state) => state.setColumns);
 	const isInitialized = useRef(false);
@@ -98,6 +106,22 @@ export function ProjectDetailClient({
 		}
 	}, [project, projectUI, tasks, boards, setTasks, setColumns]);
 
+	/**
+	 * deep link handler - waits for tasks to hydrate from the server before
+	 * opening the modal requested by search parameters, then safely removes the
+	 * query string from the URL to preserve back navigation.
+	 */
+	useEffect(() => {
+		const taskId = searchParams.get("task");
+		if (!taskId) return;
+
+		const storeTasks = useTaskStore.getState().tasks;
+		if (!storeTasks.some((task) => task.id === taskId)) return;
+
+		useTaskStore.getState().openTaskModal(taskId);
+		router.replace(`/projects/${projectId}`, { scroll: false });
+	}, [searchParams, projectId, router]);
+
 	const {
 		activeView,
 		filters,
@@ -107,15 +131,12 @@ export function ProjectDetailClient({
 		handleResetFilters,
 	} = useProjectPage();
 
-	// Settings is an owner/co-owner surface. Members and guests never see the tab,
-	// and this guard covers the ways they could still land on the view - a stale
-	// tab in state, or a deep link - by falling back to the default view.
+	// settings access guard - restricts the settings view to owners/co-owners, falling back to the grid view for unauthorized roles arriving via stale state or deep links.
 	const canOpenSettings = role === "owner" || role === "co-owner";
 	const effectiveView =
 		activeView === "settings" && !canOpenSettings ? "grid" : activeView;
 
-	// Board columns are owner/co-owner territory too - `manage_boards` is not
-	// granted to members, so offering the control only produced a refusal.
+	// board management guard - limits column management to users with explicit permissions to prevent displaying unauthorized controls.
 	const canManageBoards = hasPermission(role, "manage_boards");
 
 	return (
@@ -149,7 +170,7 @@ export function ProjectDetailClient({
 					<GridView projectId={projectId} externalFilters={filters} />
 				)}
 				{effectiveView === "calendar" && <CalendarView projectId={projectId} />}
-				{effectiveView === "charts" && <div>Charts View Draft</div>}
+				{effectiveView === "charts" && <ChartsView projectId={projectId} />}
 				{effectiveView === "settings" && (
 					<SettingsView projectId={projectId} role={role} />
 				)}

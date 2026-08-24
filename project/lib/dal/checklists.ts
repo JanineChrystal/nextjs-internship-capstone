@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { checklists, tasks } from "@/lib/db/schema";
 import { type ChecklistOutputDTO, toChecklistDTO } from "@/lib/dtos/task-dto";
+import { encrypt } from "@/lib/utils/encryption";
 
 export async function getChecklistItemsByTaskIds(
 	taskIds: string[],
@@ -66,7 +67,7 @@ export async function createChecklistItemInDB(
 
 		const [item] = await db
 			.insert(checklists)
-			.values({ taskId, title })
+			.values({ taskId, title: encrypt(title) })
 			.returning();
 
 		return toChecklistDTO(item);

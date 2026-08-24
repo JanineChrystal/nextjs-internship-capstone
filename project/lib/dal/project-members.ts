@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
+import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser } from "@/lib/dal/auth";
 import {
 	createPendingInviteInDB,
@@ -7,7 +8,14 @@ import {
 } from "@/lib/dal/pending-invites";
 import { linkWorkspaceDirectoriesInDB } from "@/lib/dal/workspaces";
 import { db } from "@/lib/db";
-import { projectMembers, projects, projectTeams, users } from "@/lib/db/schema";
+import {
+	projectMembers,
+	projects,
+	projectTeams,
+	teamMembers,
+	teams,
+	users,
+} from "@/lib/db/schema";
 import {
 	type ProjectMemberDetailedOutputDTO,
 	type ProjectMemberOutputDTO,
@@ -15,15 +23,7 @@ import {
 } from "@/lib/dtos/project-member-dto";
 import type { InviteOutcome } from "@/lib/types/pending-invite";
 
-/**
- * Who can reach a project and at what level.
- *
- * Split out of projects.ts, which had grown past 700 lines doing two unrelated
- * jobs. Project CRUD and membership rules change for different reasons and on
- * different schedules - the access model has been revised repeatedly while
- * createProjectInDB has barely moved - which is the Single Responsibility
- * Principle's actual test: one reason to change, not one topic.
- */
+/** project members access - defines who can reach a project and at what level, separated to maintain SRP. */
 
 export async function inviteUserToProjectInDB(
 	projectId: string,
@@ -49,8 +49,7 @@ export async function inviteUserToProjectInDB(
 			.from(users)
 			.where(and(eq(users.email, normalizedEmail), isNull(users.deletedAt)));
 
-		// Nobody by that address yet. Store the invitation instead of refusing it;
-		// the Clerk webhook converts it into real membership on signup.
+		/** store pending invitation - saves invites for unregistered emails to be claimed via webhook upon signup. */
 		if (!knownUser) {
 			await createPendingInviteInDB({
 				workspaceId: existingProject.workspaceId,
@@ -60,6 +59,16 @@ export async function inviteUserToProjectInDB(
 				position: jobRole,
 				accessLevel,
 			});
+
+			/** log pending invite activity - records the invite action immediately, pending the INVITE_ACCEPTED completion event. */
+			await recordActivity({
+				workspaceId: existingProject.workspaceId,
+				actorId: user.id,
+				actionType: "INVITE_SENT",
+				details: `Invited ${normalizedEmail} (no account yet)`,
+				projectId,
+			});
+
 			return "pending";
 		}
 
@@ -67,10 +76,7 @@ export async function inviteUserToProjectInDB(
 			const targetUser = knownUser;
 			const project = existingProject;
 
-			// Fills both contact directories, not just the inviter's: the invitee
-			// joins the project workspace's directory, and the inviter joins the
-			// invitee's own. Sharing a project is a two-way working relationship, so
-			// each side should be able to find the other on their team page.
+			/** link mutual directories - establishes a two-way directory relationship to ensure mutual visibility. */
 			await linkWorkspaceDirectoriesInDB(tx, {
 				inviterId: user.id,
 				inviteeId: targetUser.id,
@@ -89,6 +95,15 @@ export async function inviteUserToProjectInDB(
 					target: [projectMembers.projectId, projectMembers.userId],
 					set: { deletedAt: null, position: jobRole, accessLevel },
 				});
+		});
+
+		await recordActivity({
+			workspaceId: existingProject.workspaceId,
+			actorId: user.id,
+			actionType: "INVITE_SENT",
+			details: `Invited ${normalizedEmail}`,
+			projectId,
+			targetUserId: knownUser.id,
 		});
 
 		return "invited";
@@ -129,6 +144,16 @@ export async function getProjectMembersDAL(
 				),
 			);
 
+		const teamMemberRows = await db
+			.select({ user: users })
+			.from(projectTeams)
+			.innerJoin(teamMembers, eq(projectTeams.teamId, teamMembers.teamId))
+			.innerJoin(teams, eq(projectTeams.teamId, teams.id))
+			.innerJoin(users, eq(teamMembers.userId, users.id))
+			.where(
+				and(eq(projectTeams.projectId, projectId), isNull(teams.deletedAt)),
+			);
+
 		const members: ProjectMemberOutputDTO[] = [];
 		if (owner) {
 			members.push({
@@ -139,6 +164,15 @@ export async function getProjectMembersDAL(
 			});
 		}
 		for (const { user: member } of memberRows) {
+			if (members.some((m) => m.userId === member.id)) continue;
+			members.push({
+				userId: member.id,
+				name: toMemberName(member),
+				email: member.email,
+				avatarUrl: member.imageUrl ?? "",
+			});
+		}
+		for (const { user: member } of teamMemberRows) {
 			if (members.some((m) => m.userId === member.id)) continue;
 			members.push({
 				userId: member.id,

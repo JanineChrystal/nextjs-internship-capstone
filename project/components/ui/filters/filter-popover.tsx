@@ -36,7 +36,7 @@ export function FilterPopover({
 }: FilterPopoverProps) {
 	const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
 
-	// Count how many total filter options are actively selected
+	/** active count - calculates the total number of filter options currently selected across all filter fields. */
 	const activeCount = Object.values(values).reduce(
 		(count, selectedArray) => count + selectedArray.length,
 		0,

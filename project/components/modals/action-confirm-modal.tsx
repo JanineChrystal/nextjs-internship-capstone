@@ -1,14 +1,6 @@
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+"use client";
+
+import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
 
 interface ActionConfirmModalProps {
 	isOpen: boolean;
@@ -21,6 +13,11 @@ interface ActionConfirmModalProps {
 	isDestructive?: boolean;
 }
 
+/**
+ * action confirm modal - serves as a legacy compatibility wrapper over
+ * ConfirmDialog to prevent visual drift without requiring immediate
+ * rewrites of existing call sites, slated for eventual removal.
+ */
 export function ActionConfirmModal({
 	isOpen,
 	onClose,
@@ -32,40 +29,23 @@ export function ActionConfirmModal({
 	isDestructive = false,
 }: ActionConfirmModalProps) {
 	return (
-		<AlertDialog open={isOpen} onOpenChange={onClose}>
-			<AlertDialogContent className="bg-background border-surface-variant max-w-md">
-				<AlertDialogHeader>
-					<AlertDialogTitle className="text-foreground font-h3 text-h3">
-						{title}
-					</AlertDialogTitle>
-					<AlertDialogDescription className="text-secondary font-body-sm text-body-sm">
-						{description}
-					</AlertDialogDescription>
-				</AlertDialogHeader>
-				<AlertDialogFooter className="mt-6">
-					<AlertDialogCancel
-						onClick={onClose}
-						className="font-label-md text-label-md border-outline-variant text-on-surface hover:bg-surface-container"
-					>
-						{cancelText}
-					</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={(e) => {
-							e.preventDefault();
-							onConfirm();
-							onClose();
-						}}
-						className={cn(
-							"font-label-md text-label-md",
-							isDestructive
-								? "bg-error text-on-error hover:bg-error/90"
-								: "bg-primary text-on-primary hover:bg-primary/90",
-						)}
-					>
-						{confirmText}
-					</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
+		<ConfirmDialog
+			isOpen={isOpen}
+			onClose={onClose}
+			/**
+			 * preserve legacy auto-close - maintains the old component's behavior
+			 * of closing itself after confirming, keeping existing call sites
+			 * functional without modification.
+			 */
+			onConfirm={() => {
+				onConfirm();
+				onClose();
+			}}
+			title={title}
+			description={description}
+			confirmLabel={confirmText}
+			cancelLabel={cancelText}
+			tone={isDestructive ? "danger" : "default"}
+		/>
 	);
 }

@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { redirect, unauthorized } from "next/navigation";
 import { cache } from "react";
+import { syncClerkUserToDbDAL } from "@/lib/dal/users";
 import { db } from "../db/index";
 import { users } from "../db/schema";
 
@@ -32,21 +33,16 @@ export const getCurrentUser = cache(async () => {
 });
 
 /**
- * The message actions return when there is no Clerk session behind the request.
- *
- * Kept distinct from "Unauthorized" because the two look identical to a user but
- * mean opposite things: one is "sign in again", the other is "you are not
- * allowed". Reporting an expired session as a permissions refusal sent us
- * hunting for a non-existent permissions bug when an owner's invite failed.
+ * session expired error message - provides a distinct message for missing
+ * clerk sessions to differentiate expired logins from explicit permission
+ * denials, aiding debugging.
  */
 export const SESSION_EXPIRED_ERROR =
 	"Your session expired. Refresh the page and sign in again.";
 
 /**
- * Whether the failure to resolve a user is a missing session or a missing row.
- *
- * Actions call this only on the failure path, so the happy path still costs one
- * cached lookup.
+ * get session failure reason - determines whether a missing user is due
+ * to an expired session or unauthorized access, caching the happy path.
  */
 export async function getSessionFailureReason(): Promise<string> {
 	const { userId } = await auth();
@@ -54,18 +50,10 @@ export async function getSessionFailureReason(): Promise<string> {
 }
 
 /**
- * Enforce authentication, distinguishing the two very different reasons
- * getCurrentUser can come back empty.
- *
- * No Clerk session at all sends the user to the public landing page, matching
- * what the middleware does at the edge so every path agrees on one destination.
- * This is now a backstop rather than the main guard - proxy.ts turns these
- * requests away before page code runs - but it is kept because the middleware is
- * routing while this is the data layer's own authority.
- *
- * A valid session with no matching row is genuinely unauthorized: the Clerk
- * webhook has not synced this user yet. Redirecting there would loop, so the 401
- * page is the right answer for that case.
+ * require user - enforces authentication by differentiating between missing
+ * clerk sessions (redirecting to public landing) and missing database rows
+ * despite a valid session (triggering a sync before ultimately 401ing if
+ * completely broken).
  */
 export const requireUser = cache(async () => {
 	const { userId } = await auth();
@@ -75,10 +63,15 @@ export const requireUser = cache(async () => {
 	}
 
 	const user = await getCurrentUser();
+	if (user) return user;
 
-	if (!user) {
-		unauthorized();
-	}
+	/**
+	 * sync delayed webhook - creates the user row directly from the session
+	 * if the clerk webhook was delayed or blocked, preventing a dead-end 401.
+	 */
+	const synced = await syncClerkUserToDbDAL();
+	if (synced) return synced;
 
-	return user;
+	/** handle broken state - triggers 401 if clerk cannot describe the session, indicating a genuinely broken state. */
+	unauthorized();
 });

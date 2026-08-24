@@ -13,9 +13,9 @@ import {
 } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
-import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { Button } from "@/components/ui/buttons/button";
+import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
 import { useKanbanBoard } from "../../../_hooks/use-kanban-board";
 import { Column } from "./column";
 
@@ -26,9 +26,7 @@ export function KanbanBoard({
 }: {
 	projectId: string;
 	externalFilters?: Record<string, string[]>;
-	// manage_boards belongs to owner and co-owner only, so a member clicking
-	// "Add Board" was always going to be refused by the server. Hiding it is the
-	// same treatment the Settings tab gets - the server remains the gate.
+	// board management gate - hides the add column button for members lacking permissions, reflecting server-side authorization visually.
 	canManageBoards?: boolean;
 }) {
 	const {
@@ -43,6 +41,7 @@ export function KanbanBoard({
 		initiateBulkComplete,
 		confirmWarningAction,
 		closeWarningModal,
+		confirmCopy,
 		addColumn,
 		handleDragStart,
 		handleDragOver,
@@ -88,7 +87,7 @@ export function KanbanBoard({
 						))}
 					</SortableContext>
 
-					{/* Add Column Button */}
+					{/* add column button - allows authorized users to create new board columns. */}
 					{canManageBoards && (
 						<div className="shrink-0 w-80 flex flex-col h-full">
 							<Button
@@ -110,24 +109,12 @@ export function KanbanBoard({
 				onComplete={initiateBulkComplete}
 			/>
 
-			<WarningModal
+			{/* confirmation dialog - reuses shared bulk action warnings centralized in the task hooks. */}
+			<ConfirmDialog
 				isOpen={warningModal.isOpen}
 				onClose={closeWarningModal}
 				onConfirm={confirmWarningAction}
-				variant={warningModal.actionType === "delete" ? "danger" : "warning"}
-				title={
-					warningModal.actionType === "delete"
-						? "Delete tasks with unfinished checklist items?"
-						: "Complete tasks with unfinished checklist items?"
-				}
-				message={
-					warningModal.actionType === "delete"
-						? "One or more selected tasks still have unchecked checklist items. Deleting them will also remove those items."
-						: "One or more selected tasks still have unchecked checklist items. Marking them complete won't check those items off."
-				}
-				confirmText={
-					warningModal.actionType === "delete" ? "Delete" : "Complete"
-				}
+				{...confirmCopy}
 			/>
 		</div>
 	);

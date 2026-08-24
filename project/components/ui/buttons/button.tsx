@@ -19,6 +19,13 @@ const buttonVariants = cva(
 				destructive:
 					"bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
 				link: "text-primary underline-offset-4 hover:underline",
+				/**
+				 * gradient variant - reserved strictly for the primary CTA on a screen
+				 * (like a hero button), utilizing `--on-gradient` to guarantee text
+				 * legibility across varying palette lightness levels.
+				 */
+				gradient:
+					"bg-[linear-gradient(135deg,var(--gradient-from),var(--gradient-to))] text-[var(--on-gradient)] shadow-sm hover:brightness-110",
 			},
 			size: {
 				default:

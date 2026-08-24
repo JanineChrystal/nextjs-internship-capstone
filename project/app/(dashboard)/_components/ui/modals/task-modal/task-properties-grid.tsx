@@ -54,23 +54,18 @@ export function TaskPropertiesGrid({
 	} = useCategoryStore();
 	const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
-	// The task itself knows which project it belongs to; the route param is the
-	// fallback for surfaces that open this modal outside /projects/[id].
+	// project context fallback - uses route parameters as a fallback when the modal is opened from global surfaces outside a project view.
 	const routeParams = useParams();
 	const projectId =
 		taskData.projectId ?? (routeParams?.id as string | undefined);
 
-	// Scoped to the project's workspace, not the viewer's. Reading with the
-	// "default" placeholder resolved whoever was looking, so a member opening a
-	// task in a shared project got an empty list.
+	// context-aware category fetch - ensures categories are fetched for the project's workspace to support users viewing tasks in shared projects.
 	useEffect(() => {
 		if (!projectId) return;
 		fetchProjectCategories(projectId, "task");
 	}, [fetchProjectCategories, projectId]);
 
-	// Registering the name in the shared Categories table is what makes it a
-	// reusable, styled option in this dropdown next time - saving it onto the
-	// task row alone would not bring it back as a selectable choice.
+	// category registration - saves new categories to the shared table to ensure they become reusable, styled options rather than isolated text values.
 	const handleCategoryChange = async (value: string) => {
 		handleChange({ category: value });
 
@@ -82,8 +77,7 @@ export function TaskPropertiesGrid({
 		);
 		if (!alreadyKnown && projectId) {
 			await addProjectCategory(projectId, trimmed, "task");
-			// A category created here gets a server-assigned colour, so the cached
-			// palette has to be reloaded before the new badge can paint with it.
+			// style refresh trigger - reloads the category palette after creation so the new server-assigned color can be rendered immediately.
 			await refreshCategoryStyles({
 				kind: "project",
 				id: projectId,
@@ -172,7 +166,7 @@ export function TaskPropertiesGrid({
 				isCommentsOpen ? "md:grid-cols-3" : "md:grid-cols-6"
 			}`}
 		>
-			{/* Category - user-manageable via CreatableCombobox, like project category */}
+			{/* dynamic category selection */}
 			<div className="space-y-1">
 				<span className="block text-xs font-medium text-secondary uppercase tracking-wider">
 					Category
@@ -190,8 +184,7 @@ export function TaskPropertiesGrid({
 				/>
 			</div>
 
-			{/* Status - independent of the board. Shows the derived value (which
-			    may be "Overdue"), but only real statuses are selectable. */}
+			{/* independent status selection - displays computed states like 'Overdue' while restricting choices to actual statuses. */}
 			<div className="space-y-1">
 				<span className="block text-xs font-medium text-secondary uppercase tracking-wider">
 					Status
@@ -213,7 +206,7 @@ export function TaskPropertiesGrid({
 				</DropdownMenu>
 			</div>
 
-			{/* Dynamically Rendered Dropdowns (Board, Priority) */}
+			{/* dynamic property dropdowns */}
 			{propertiesConfig.map((config) => (
 				<div key={config.id} className="space-y-1">
 					<span className="block text-xs font-medium text-secondary uppercase tracking-wider">
@@ -228,8 +221,7 @@ export function TaskPropertiesGrid({
 								<DropdownMenuItem
 									key={option}
 									onClick={() => {
-										// Board and status are independent now: moving a task
-										// between columns must not rewrite its status.
+										// decoupled board movement - updates board location independently without overwriting task status.
 										handleChange({ [config.id]: option } as Partial<GridTask>);
 									}}
 								>
@@ -241,7 +233,7 @@ export function TaskPropertiesGrid({
 				</div>
 			))}
 
-			{/* Date Pickers mapped from constants */}
+			{/* configured date pickers */}
 			{DATE_PICKER_CONFIG.map((datePicker) => (
 				<div key={datePicker.id} className="space-y-1">
 					<span className="block text-xs font-medium text-secondary uppercase tracking-wider">

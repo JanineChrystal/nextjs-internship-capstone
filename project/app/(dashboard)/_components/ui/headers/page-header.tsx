@@ -25,22 +25,26 @@ export function PageHeader({
 	return (
 		<div
 			className={cn(
-				"bg-card text-card-foreground p-6 rounded-xl border border-border flex flex-col gap-2 shadow-card-base",
+				"bg-card text-card-foreground p-4 sm:p-6 rounded-xl border border-border flex flex-col gap-2 shadow-card-base",
 				"transition-all duration-200 ease-in-out",
-				"hover:scale-[1.02]",
+				// hover scaling constraint - disables scaling animations on mobile where full-bleed headers would cause horizontal scrolling overflow.
+				"sm:hover:scale-[1.02]",
 				className,
 			)}
 		>
-			{/* Breadcrumbs Slot */}
+			{/* breadcrumbs container */}
 			{breadcrumbs && <div className="mb-2">{breadcrumbs}</div>}
-			{/* Title and Description */}
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 m-3">
-				<div className="w-full">
-					<h1 className="text-5xl font-bold mb-3 text-on-surface tracking-tight">
+			{/* title and description block */}
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 m-0 sm:m-3">
+				<div className="w-full min-w-0">
+					{/*
+					 * responsive typography scaling - scales font sizes across breakpoints to prevent long user-supplied titles from breaking layouts or causing excessive wrapping on small screens.
+					 */}
+					<h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 text-on-surface tracking-tight wrap-break-word">
 						{title}
 					</h1>
 					{description && (
-						<div className="text-sm text-card-foreground/70 mt-1 w-full max-w-3xl">
+						<div className="text-xs sm:text-sm text-card-foreground/70 mt-1 w-full max-w-3xl">
 							{description}
 						</div>
 					)}
@@ -49,7 +53,7 @@ export function PageHeader({
 			</div>
 
 			{(action || filters) && (
-				<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-2">
+				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mb-2">
 					{action && <div className="w-full sm:w-auto">{action}</div>}
 					{filters && (
 						<div className="flex flex-wrap items-center gap-2">{filters}</div>
@@ -58,7 +62,9 @@ export function PageHeader({
 			)}
 
 			{children && (
-				<div className="flex flex-wrap items-center gap-4 mx-3">{children}</div>
+				<div className="flex flex-wrap items-center gap-3 sm:gap-4 mx-0 sm:mx-3">
+					{children}
+				</div>
 			)}
 		</div>
 	);

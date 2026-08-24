@@ -29,8 +29,8 @@ export function CalendarView({ projectId }: CalendarViewProps) {
 			/>
 
 			<div className="grid grid-cols-1 xl:grid-cols-4 gap-6 w-full h-full min-h-[calc(100vh-200px)]">
-				{/* Main Calendar Grid */}
-				<div className="xl:col-span-3 bg-surface rounded-xl border border-outline-variant p-6 h-187.5">
+				{/* calendar grid - renders the main month view for scheduling tasks. */}
+				<div className="xl:col-span-3 bg-surface rounded-xl border border-outline-variant p-3 sm:p-6 h-[70vh] min-h-112.5 xl:h-187.5">
 					<BigCalendar
 						events={calendarEvents}
 						selectedEventId={selectedEventId}
@@ -42,7 +42,7 @@ export function CalendarView({ projectId }: CalendarViewProps) {
 					/>
 				</div>
 
-				{/* Side Panel for Deadlines */}
+				{/* side panel - displays upcoming task deadlines contextual to the selected date. */}
 				<CalendarSidePanel
 					title="Upcoming Tasks Deadlines"
 					items={sidePanelItems}

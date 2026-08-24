@@ -1,7 +1,12 @@
 "use server";
 
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { getSessionFailureReason } from "@/lib/dal/auth";
+import { after } from "next/server";
+import { ProjectInviteEmail } from "@/app/(dashboard)/notifications/_components/email/project-invite-email";
+import { recordActivity } from "@/lib/dal/activity-recorder";
+import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
+import { resolveProjectWorkspaceIdDAL } from "@/lib/dal/categories";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 import {
 	assignTeamToProjectInDB,
@@ -11,15 +16,21 @@ import {
 	updateMemberJobRoleInDB,
 	updateMemberRoleInDB,
 } from "@/lib/dal/project-members";
+import { findUserIdByEmailDAL } from "@/lib/dal/users";
+import { db } from "@/lib/db";
+import { projects, workspaces } from "@/lib/db/schema";
 import type { ProjectMemberDetailedOutputDTO } from "@/lib/dtos/project-member-dto";
+import { sendNotification } from "@/lib/email/send-notification";
+import { getAppBaseUrl } from "@/lib/utils/app-url";
+import {
+	INVITE_RATE_LIMIT_MESSAGE,
+	isWithinInviteRateLimit,
+} from "@/lib/utils/invite-rate-limit";
 
 /**
- * Server actions for project membership, mirroring the lib/dal/project-members
- * split one layer up.
- *
- * Keeping the action and DAL boundaries identical is the point: when the two
- * layers are carved differently, tracing a feature means jumping between files
- * that only half overlap.
+ * project member actions - delegates project membership operations
+ * to the DAL, maintaining matching boundaries for easier feature
+ * tracing.
  */
 
 export async function inviteUserToProjectAction(
@@ -37,6 +48,15 @@ export async function inviteUserToProjectAction(
 			return { success: false, error: await getSessionFailureReason() };
 		}
 
+		/**
+		 * rate limit evaluation - validates invite rate limits prior to
+		 * database writes to block unauthorized outbound emails.
+		 */
+		const limitActor = await getCurrentUser();
+		if (limitActor && !(await isWithinInviteRateLimit(limitActor.id))) {
+			return { success: false, error: INVITE_RATE_LIMIT_MESSAGE };
+		}
+
 		const outcome = await inviteUserToProjectInDB(
 			projectId,
 			email,
@@ -44,11 +64,90 @@ export async function inviteUserToProjectAction(
 			accessLevel,
 		);
 
+		/**
+		 * conditional notification - limits notifications to existing
+		 * users, leaving pending invites to be handled on signup.
+		 */
+		const actor = await getCurrentUser();
+		let invitedUserId: string | null = null;
+		/**
+		 * default email opt-in - assumes consent to email for pending
+		 * invites since unregistered users lack notification settings.
+		 */
+		let mayEmailInvitee = true;
+
+		if (actor && outcome === "invited") {
+			invitedUserId = await findUserIdByEmailDAL(email);
+			const recorded = await recordActivity({
+				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+				actorId: actor.id,
+				actionType: "PROJECT_MEMBER_ADDED",
+				details: `Added ${email} to the project`,
+				projectId,
+				targetUserId: invitedUserId,
+				notify: invitedUserId
+					? [
+							{
+								recipientId: invitedUserId,
+								message: "You were added to a project",
+							},
+						]
+					: [],
+			});
+
+			if (invitedUserId) {
+				mayEmailInvitee = recorded.some(
+					(entry) =>
+						entry.recipientId === invitedUserId && entry.shouldSendEmail,
+				);
+			}
+		}
+
 		revalidatePath(`/projects/${projectId}`);
 
-		// An address with no account is no longer a failure: the invitation is
-		// stored and claimed on signup, so the caller is told what happened rather
-		// than shown an error.
+		/**
+		 * graceful missing account handling - treats unknown addresses as
+		 * pending invites rather than errors, notifying the caller of the
+		 * outcome.
+		 */
+		if (outcome === "pending" || outcome === "invited") {
+			after(async () => {
+				try {
+					if (!actor) return;
+					const [project] = await db
+						.select({
+							projectName: projects.name,
+							workspaceName: workspaces.name,
+						})
+						.from(projects)
+						.innerJoin(workspaces, eq(projects.workspaceId, workspaces.id))
+						.where(eq(projects.id, projectId));
+
+					if (!project) return;
+
+					const invitedBy = actor.firstName
+						? `${actor.firstName} ${actor.lastName || ""}`.trim()
+						: actor.email;
+
+					const inviteUrl = `${getAppBaseUrl()}/sign-up`;
+
+					await sendNotification({
+						to: email,
+						subject: `You've been invited to ${project.projectName}`,
+						shouldSend: mayEmailInvitee,
+						template: ProjectInviteEmail({
+							invitedBy,
+							projectName: project.projectName,
+							workspaceName: project.workspaceName,
+							inviteUrl,
+						}),
+					});
+				} catch (error) {
+					console.error("Failed to send invite email:", error);
+				}
+			});
+		}
+
 		if (outcome === "pending") {
 			return {
 				success: true,
@@ -147,6 +246,23 @@ export async function removeMemberAction(
 		}
 
 		await removeMemberFromProjectDAL(projectId, userId);
+
+		/**
+		 * silent member removal - logs the removal activity but does not
+		 * notify the removed member, as the loss of access is immediate.
+		 */
+		const actor = await getCurrentUser();
+		if (actor) {
+			await recordActivity({
+				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+				actorId: actor.id,
+				actionType: "PROJECT_MEMBER_REMOVED",
+				details: "Removed a member from the project",
+				projectId,
+				targetUserId: userId,
+			});
+		}
+
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true };
 	} catch (error) {

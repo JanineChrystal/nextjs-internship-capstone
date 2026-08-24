@@ -46,11 +46,16 @@ export async function getTaskAssigneesByTaskIds(
 	}
 }
 
+/**
+ * set task assignees - replaces a task's assignee roster and calculates
+ * the diff of newly added members, allowing callers to accurately notify
+ * only new assignees without querying twice.
+ */
 export async function setTaskAssigneesInDB(
 	taskId: string,
 	projectId: string,
 	userIds: string[],
-): Promise<void> {
+): Promise<{ addedUserIds: string[] }> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
@@ -66,6 +71,16 @@ export async function setTaskAssigneesInDB(
 				),
 			);
 		if (!task) throw new Error("Task not found");
+
+		const existing = await db
+			.select({ userId: taskAssignees.userId })
+			.from(taskAssignees)
+			.where(
+				and(eq(taskAssignees.taskId, taskId), isNull(taskAssignees.deletedAt)),
+			);
+
+		const before = new Set(existing.map((row) => row.userId));
+		const addedUserIds = userIds.filter((userId) => !before.has(userId));
 
 		await db.transaction(async (tx) => {
 			await tx
@@ -88,7 +103,11 @@ export async function setTaskAssigneesInDB(
 					});
 			}
 		});
+
+		return { addedUserIds };
 	} catch (error) {
+		if (error instanceof Error && error.message === "Task not found")
+			throw error;
 		throw new Error("Failed to set task assignees in database", {
 			cause: error,
 		});

@@ -26,11 +26,9 @@ function getInitial(name: string): string {
 }
 
 /**
- * One member avatar for the whole app, replacing the six hand-rolled
- * `<Image>`/initial pairs that had drifted apart - some missing `object-cover`,
- * two with no fallback at all.
- * The fallback is also what shows while the image is still in flight, so there
- * is never an empty hole where an avatar will be.
+ * member avatar - a unified avatar component providing consistent sizes,
+ * guaranteed fallbacks, and proper image fitting across the application,
+ * eliminating the visual drift of disparate implementations.
  */
 export function MemberAvatar({
 	name,

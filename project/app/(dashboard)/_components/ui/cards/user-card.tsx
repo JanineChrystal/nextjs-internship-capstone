@@ -21,7 +21,7 @@ export const UserCard = ({
 }: UserCardProps) => {
 	return (
 		<div className="relative group overflow-hidden rounded-xl border border-outline-variant bg-surface transition-all hover:shadow-md">
-			{/* Selection Checkbox */}
+			{/* selection checkbox */}
 			<div className="absolute top-3 left-3 z-10">
 				<Checkbox
 					checked={isSelected}
@@ -31,7 +31,7 @@ export const UserCard = ({
 				/>
 			</div>
 
-			{/* Remove Button (Hover visible) */}
+			{/* hover removal action */}
 			<div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
 				<Button
 					type="button"
@@ -46,7 +46,7 @@ export const UserCard = ({
 			</div>
 
 			<div className="p-6 flex flex-col items-center text-center mt-2">
-				{/* Avatar - Clickable */}
+				{/* interactive avatar */}
 				<Link href={`/profile/${user.id}`} className="mb-4">
 					<div className="relative h-20 w-20 rounded-full overflow-hidden border-2 border-outline-variant hover:border-primary transition-colors cursor-pointer">
 						{user.avatarUrl ? (
@@ -64,7 +64,7 @@ export const UserCard = ({
 					</div>
 				</Link>
 
-				{/* User Info */}
+				{/* user identification */}
 				<Link href={`/profile/${user.id}`} className="hover:underline">
 					<h3 className="font-semibold text-lg text-on-surface truncate w-full max-w-50">
 						{user.name}
@@ -74,14 +74,14 @@ export const UserCard = ({
 					{user.email}
 				</p>
 
-				{/* Roles */}
+				{/* role tags */}
 				<div className="flex flex-wrap justify-center gap-2 mb-4 h-14 overflow-hidden">
 					{user.jobRoles.map((role) => (
 						<TagBadge key={role} tag={role} />
 					))}
 				</div>
 
-				{/* Projects Meta */}
+				{/* project statistics */}
 				<div className="flex items-center gap-2 text-sm text-secondary bg-surface-container-low px-3 py-1.5 rounded-md mt-auto">
 					<FolderKanban className="h-4 w-4" />
 					<span>

@@ -1,3 +1,4 @@
+import { TRASH_RETENTION_DAYS } from "@/lib/constants/archive";
 import type { ColumnDef } from "@/types/grid-table";
 import type { FlaggedCommentItem, ProjectMember } from "@/types/member";
 import type { DangerZoneActionConfig } from "@/types/project";
@@ -38,10 +39,13 @@ export const TEAM_ACCESS_COLUMNS: ColumnDef[] = [
 ];
 
 export const COMMENT_MODERATION_COLUMNS: ColumnDef[] = [
-	{ key: "author", title: "Author", className: "w-44" },
+	// Wide enough for a full name, and the cell truncates rather than
+	// overflowing - a long name used to run straight over the comment column.
+	{ key: "author", title: "Author", className: "w-52" },
 	{ key: "comment", title: "Comment", className: "flex-1 min-w-[250px]" },
 	{ key: "task", title: "Task", className: "w-40" },
 	{ key: "reason", title: "Flag Reason", className: "w-48" },
+	{ key: "flaggedAt", title: "Flagged", className: "w-40" },
 	{
 		key: "actions",
 		title: "Actions",
@@ -60,8 +64,7 @@ export const DANGER_ZONE_ACTIONS: DangerZoneActionConfig[] = [
 	{
 		id: "delete",
 		title: "Delete Project",
-		description:
-			"Permanently delete this project, all tasks, comments, and member associations. This action cannot be undone.",
+		description: `Move this project to the trash, along with its tasks, comments and member associations. It is restorable from the archive for ${TRASH_RETENTION_DAYS} days, then deleted permanently.`,
 		isDestructive: true,
 	},
 ];

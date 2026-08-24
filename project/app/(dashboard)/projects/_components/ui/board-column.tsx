@@ -34,10 +34,10 @@ export function BoardColumn({
 				</Button>
 			</div>
 
-			{/* Task Cards Container */}
+			{/* task container - holds the scrollable list of task cards. */}
 			<div className="flex flex-col gap-3 overflow-y-auto">{children}</div>
 
-			{/* Add Task Button */}
+			{/* add task button - triggers the creation of a new task in this column. */}
 			<Button className="w-full py-2.5 mt-auto flex items-center justify-center gap-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors text-sm font-medium border border-dashed border-border">
 				<Plus className="w-4 h-4" /> Add Tasks
 			</Button>

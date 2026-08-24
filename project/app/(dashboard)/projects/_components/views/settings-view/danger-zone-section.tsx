@@ -2,8 +2,8 @@
 
 import { Archive, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { Button } from "@/components/ui/buttons/button";
+import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
 import { SectionTitle } from "@/components/ui/sections";
 import type { RoleAccess } from "@/lib/types/member";
 import {
@@ -30,13 +30,15 @@ export function DangerZoneSection({
 }: DangerZoneSectionProps) {
 	const {
 		isArchiveActive,
+		isOwner,
+		archiveConfirm,
+		hasIncompleteTasks,
+		requestArchiveToggle,
+		closeArchiveConfirm,
+		confirmArchive,
 		isDeleteModalOpen,
 		setIsDeleteModalOpen,
-		warningModal,
-		setWarningModal,
-		confirmWarningAction,
-		isOwner,
-		handleToggleArchive,
+		isDeleting,
 		handleOpenDeleteModal,
 		handleDeleteProject,
 	} = useDangerZone(projectId, currentUserRole);
@@ -87,7 +89,7 @@ export function DangerZoneSection({
 								<Button
 									type="button"
 									variant="outline"
-									onClick={handleToggleArchive}
+									onClick={requestArchiveToggle}
 									className="border-outline-variant text-on-surface hover:bg-surface-variant shrink-0"
 								>
 									<Archive size={16} className="mr-2 text-secondary" />
@@ -114,32 +116,35 @@ export function DangerZoneSection({
 				})}
 			</div>
 
+			{/* confirmation modal - integrates open task warnings directly into the name-typing confirmation to streamline the deletion flow. */}
 			<DeleteProjectModal
 				open={isDeleteModalOpen}
 				onOpenChange={setIsDeleteModalOpen}
 				projectName={projectName}
 				onConfirmDelete={handleDeleteProject}
+				openTaskWarning={hasIncompleteTasks}
+				isDeleting={isDeleting}
 			/>
 
-			<WarningModal
-				isOpen={warningModal.isOpen}
-				onClose={() => setWarningModal({ isOpen: false, actionType: null })}
-				onConfirm={confirmWarningAction}
+			<ConfirmDialog
+				isOpen={archiveConfirm.isOpen}
+				onClose={closeArchiveConfirm}
+				onConfirm={confirmArchive}
+				tone={archiveConfirm.hasOpenTasks ? "warning" : "info"}
 				title={
-					warningModal.actionType === "delete"
-						? "Delete Project"
-						: "Archive Project"
+					archiveConfirm.isArchiving
+						? "Archive this project?"
+						: "Restore this project?"
 				}
-				message={
-					warningModal.actionType === "delete"
-						? "This project has ongoing tasks. Are you sure you want to delete it? This action cannot be undone."
-						: "There are still ongoing tasks in this project. Are you sure you want to archive it?"
+				description={
+					archiveConfirm.isArchiving
+						? archiveConfirm.hasOpenTasks
+							? "It disappears from active dashboards for everyone on it, and it still has unfinished tasks. Nothing is deleted - you can restore it from here at any time."
+							: "It disappears from active dashboards for everyone on it. Nothing is deleted - you can restore it from here at any time."
+						: "It returns to active dashboards for everyone on it."
 				}
-				variant={warningModal.actionType === "delete" ? "danger" : "warning"}
-				confirmText={
-					warningModal.actionType === "delete"
-						? "Delete Anyway"
-						: "Archive Anyway"
+				confirmLabel={
+					archiveConfirm.isArchiving ? "Archive project" : "Restore project"
 				}
 			/>
 		</section>

@@ -19,7 +19,7 @@ interface ProjectViewHeaderProps {
 	onEdit: () => void;
 }
 
-// Formats a UTC ISO string (e.g., "2026-08-14T20:30") to a human-readable string.
+// iso formatter - converts UTC ISO strings into a human-readable date and time format.
 function formatDateDisplay(isoString: string): string {
 	const [datePart, timePart] = isoString.split("T");
 	const [year, month, day] = (datePart ?? "").split("-").map(Number);
@@ -77,7 +77,7 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 			description={project.description || "No description provided."}
 			className="transition-all"
 		>
-			{/* Status Badge */}
+			{/* status badge - displays the current workflow state with a color-coded dot. */}
 			{project.status && (
 				<div className="flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded-full text-label-sm font-medium capitalize transition-all">
 					<span
@@ -89,7 +89,7 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 				</div>
 			)}
 
-			{/* Priority Badge */}
+			{/* priority badge - shows the assigned priority level with matching styling. */}
 			{project.priority && (
 				<div
 					className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-label-sm font-medium capitalize border transition-all ${
@@ -102,14 +102,14 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 				</div>
 			)}
 
-			{/* Category Badge */}
+			{/* category badge - indicates the assigned category classification. */}
 			{project.category && (
 				<div className="flex items-center gap-2 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-sm font-medium transition-all">
 					{project.category}
 				</div>
 			)}
 
-			{/* Start Date */}
+			{/* start date - renders the formatted project commencement date. */}
 			{project.startDate && (
 				<div className="flex items-center gap-2 text-secondary text-label-sm px-2 py-1 rounded-md transition-all">
 					<Calendar size={14} className="shrink-0" />
@@ -121,7 +121,7 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 				<span className="text-outline-variant hidden sm:inline">•</span>
 			)}
 
-			{/* Due Date */}
+			{/* due date - renders the formatted project deadline. */}
 			{project.dueDate && (
 				<div className="flex items-center gap-2 text-secondary text-label-sm px-2 py-1 rounded-md transition-all">
 					<Calendar size={14} className="shrink-0" />

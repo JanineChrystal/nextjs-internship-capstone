@@ -1,15 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionFailureReason } from "@/lib/dal/auth";
+import { recordActivity } from "@/lib/dal/activity-recorder";
+import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	countTasksInBoardDAL,
 	createBoardDAL,
 	deleteBoardDAL,
+	getProjectBoardsDAL,
 	renameBoardDAL,
 	reorderBoardsDAL,
 	setCompletionBoardDAL,
 } from "@/lib/dal/boards";
+import { resolveProjectWorkspaceIdDAL } from "@/lib/dal/categories";
 import { verifyProjectPermissionDAL } from "@/lib/dal/permissions";
 
 export async function reorderBoardsAction(
@@ -52,6 +55,18 @@ export async function createBoardAction(
 		}
 
 		const board = await createBoardDAL(projectId, name);
+
+		const user = await getCurrentUser();
+		if (user) {
+			await recordActivity({
+				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+				actorId: user.id,
+				actionType: "BOARD_CREATED",
+				details: `Created board "${board.name}"`,
+				projectId,
+			});
+		}
+
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true, data: board };
 	} catch (error) {
@@ -140,10 +155,64 @@ export async function deleteBoardAction(
 		}
 
 		await deleteBoardDAL(boardId, projectId);
+
+		const user = await getCurrentUser();
+		if (user) {
+			await recordActivity({
+				workspaceId: await resolveProjectWorkspaceIdDAL(projectId),
+				actorId: user.id,
+				actionType: "BOARD_DELETED",
+				details: "Deleted a board",
+				projectId,
+			});
+		}
+
 		revalidatePath(`/projects/${projectId}`);
 		return { success: true };
 	} catch (error) {
 		console.error("deleteBoardAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+/**
+ * get project boards - fetches a project's board columns for
+ * components outside the project page, requiring view permissions.
+ */
+export async function getProjectBoardsAction(projectId: string): Promise<{
+	success: boolean;
+	data?: {
+		id: string;
+		name: string;
+		position: number;
+		isCompletionBoard: boolean;
+	}[];
+	error?: string;
+}> {
+	try {
+		const user = await getCurrentUser();
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
+
+		const allowed = await verifyProjectPermissionDAL(projectId, "view_project");
+		if (!allowed)
+			return {
+				success: false,
+				error: "You do not have access to that project",
+			};
+
+		const boards = await getProjectBoardsDAL(projectId);
+		return {
+			success: true,
+			data: boards.map((board) => ({
+				id: board.id,
+				name: board.name,
+				position: board.position,
+				isCompletionBoard: board.isCompletionBoard,
+			})),
+		};
+	} catch (error) {
+		console.error("getProjectBoardsAction error:", error);
+		return { success: false, error: "Could not load the project's columns" };
 	}
 }

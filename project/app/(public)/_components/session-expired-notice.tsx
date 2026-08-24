@@ -4,13 +4,9 @@ import { Clock } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 /**
- * Explains an involuntary landing on the marketing page, which the middleware
- * triggers with `?session=expired` once a session passes 24 hours.
- *
- * A client component reading the param rather than the page reading
- * `searchParams` on the server: taking `searchParams` in the page opts the whole
- * route into dynamic rendering, and this is the one page that benefits from
- * staying prerendered.
+ * session expired notice - a client component that reads URL parameters
+ * to display an expiration warning, keeping the main page prerendered
+ * rather than opting into dynamic rendering.
  */
 export function SessionExpiredNotice() {
 	const searchParams = useSearchParams();

@@ -4,6 +4,7 @@ import { unionAll } from "drizzle-orm/pg-core";
 import { cache } from "react";
 import { hasPermission, resolveEffectiveRole } from "@/lib/config/permissions";
 import { getCurrentUser } from "@/lib/dal/auth";
+import type { ProjectScope } from "@/lib/dal/projects";
 import { db } from "@/lib/db";
 import {
 	projectMembers,
@@ -17,30 +18,27 @@ import {
 import type { Permission, RoleAccess } from "@/lib/types/member";
 
 /**
- * Resolves the single role that governs a user's access to a project.
- *
- * Access can arrive by three independent routes, and a user may hold several at
- * once, so all three are gathered in ONE round trip and collapsed to the
- * highest-ranked role:
- *
- *   1. Project owner
- *   2. A direct ProjectMembers row
- *   3. Membership of a Team that has been linked to the project
- *
- * Route 3 was previously ignored entirely, which meant anyone whose access came
- * through a team failed every permission check.
- *
- * Returns null when the user has no access at all, or the project does not
- * exist - both are indistinguishable to the caller by design, so a probe cannot
- * confirm whether another tenant's project exists.
- *
- * Cached per request so the many permission checks a single action performs
- * collapse to one query.
+ * get effective project role - resolves a user's highest-ranked access
+ * level across ownership, direct membership, and team membership in a
+ * single round trip. Incorporates a 'scope' parameter to correctly
+ * authorize actions on trashed projects, and caches per request to
+ * optimize multi-check actions.
  */
 export const getEffectiveProjectRoleDAL = cache(
-	async (projectId: string): Promise<RoleAccess | null> => {
+	async (
+		projectId: string,
+		scope: ProjectScope = "live",
+	): Promise<RoleAccess | null> => {
 		const user = await getCurrentUser();
 		if (!user) return null;
+
+		/**
+		 * visibility resolution - relaxes project deletion filters for the
+		 * 'all' scope, but strictly maintains revocation filters (deleted
+		 * memberships/teams) to prevent unauthorized access to archived items.
+		 */
+		const projectVisibility =
+			scope === "live" ? isNull(projects.deletedAt) : undefined;
 
 		const ownerBranch = db
 			.select({ role: sql<string>`'owner'`.as("role") })
@@ -49,7 +47,7 @@ export const getEffectiveProjectRoleDAL = cache(
 				and(
 					eq(projects.id, projectId),
 					eq(projects.ownerId, user.id),
-					isNull(projects.deletedAt),
+					projectVisibility,
 				),
 			);
 
@@ -62,13 +60,14 @@ export const getEffectiveProjectRoleDAL = cache(
 					eq(projectMembers.projectId, projectId),
 					eq(projectMembers.userId, user.id),
 					isNull(projectMembers.deletedAt),
-					isNull(projects.deletedAt),
+					projectVisibility,
 				),
 			);
 
-		// A soft-deleted team must stop granting access immediately, hence the
-		// teams.deletedAt filter. TeamMembers is hard-deleted, so a missing row
-		// already means no access and needs no filter of its own.
+		/**
+		 * team revocation filter - strictly filters out soft-deleted teams to
+		 * instantly revoke access, relying on hard deletion for TeamMembers.
+		 */
 		const teamBranch = db
 			.select({ role: sql<string>`${projectTeams.accessLevel}`.as("role") })
 			.from(projectTeams)
@@ -80,7 +79,7 @@ export const getEffectiveProjectRoleDAL = cache(
 					eq(projectTeams.projectId, projectId),
 					eq(teamMembers.userId, user.id),
 					isNull(teams.deletedAt),
-					isNull(projects.deletedAt),
+					projectVisibility,
 				),
 			);
 
@@ -93,19 +92,104 @@ export const getEffectiveProjectRoleDAL = cache(
 	},
 );
 
+/**
+ * get effective project roles - retrieves governing roles for all accessible
+ * projects via three bulk queries, eliminating the N+1 problem inherent in
+ * calling the single-project resolver repeatedly.
+ */
+export const getEffectiveProjectRolesDAL = cache(
+	async (): Promise<Map<string, RoleAccess>> => {
+		const user = await getCurrentUser();
+		if (!user) return new Map();
+
+		try {
+			const [owned, direct, viaTeams] = await Promise.all([
+				db
+					.select({ projectId: projects.id })
+					.from(projects)
+					.where(
+						and(eq(projects.ownerId, user.id), isNull(projects.deletedAt)),
+					),
+
+				db
+					.select({
+						projectId: projectMembers.projectId,
+						role: projectMembers.accessLevel,
+					})
+					.from(projectMembers)
+					.innerJoin(projects, eq(projectMembers.projectId, projects.id))
+					.where(
+						and(
+							eq(projectMembers.userId, user.id),
+							isNull(projectMembers.deletedAt),
+							isNull(projects.deletedAt),
+						),
+					),
+
+				/**
+				 * team revocation filter - strictly filters out soft-deleted teams to
+				 * instantly revoke access, aligning with single-project resolution.
+				 */
+				db
+					.select({
+						projectId: projectTeams.projectId,
+						role: projectTeams.accessLevel,
+					})
+					.from(projectTeams)
+					.innerJoin(teamMembers, eq(projectTeams.teamId, teamMembers.teamId))
+					.innerJoin(teams, eq(projectTeams.teamId, teams.id))
+					.innerJoin(projects, eq(projectTeams.projectId, projects.id))
+					.where(
+						and(
+							eq(teamMembers.userId, user.id),
+							isNull(teams.deletedAt),
+							isNull(projects.deletedAt),
+						),
+					),
+			]);
+
+			const routes = new Map<string, RoleAccess[]>();
+			const add = (projectId: string, role: RoleAccess) => {
+				const existing = routes.get(projectId);
+				if (existing) existing.push(role);
+				else routes.set(projectId, [role]);
+			};
+
+			for (const row of owned) add(row.projectId, "owner");
+			for (const row of direct) add(row.projectId, row.role as RoleAccess);
+			for (const row of viaTeams) add(row.projectId, row.role as RoleAccess);
+
+			const resolved = new Map<string, RoleAccess>();
+			for (const [projectId, held] of routes) {
+				const role = resolveEffectiveRole(held);
+				if (role) resolved.set(projectId, role);
+			}
+
+			return resolved;
+		} catch (error) {
+			throw new Error("Failed to resolve project access", { cause: error });
+		}
+	},
+);
+
+/**
+ * verify project permission - evaluates a specific permission against the
+ * user's effective role, passing the scope parameter through to support
+ * archive operations.
+ */
 export async function verifyProjectPermissionDAL(
 	projectId: string,
 	permission: Permission,
+	scope: ProjectScope = "live",
 ): Promise<boolean> {
-	const role = await getEffectiveProjectRoleDAL(projectId);
+	const role = await getEffectiveProjectRoleDAL(projectId, scope);
 	return role ? hasPermission(role, permission) : false;
 }
 
 /**
- * Whether the current user belongs to a workspace, as owner or active member.
- *
- * Workspace administration is intentionally binary - WorkspaceMembers carries no
- * role column - so this is a membership check, not a permission check.
+ * verify workspace membership - determines if the user is an owner or
+ * active member of a workspace, functioning as a binary access check
+ * since workspaces lack granular roles.
  */
 export const verifyWorkspaceMembershipDAL = cache(
 	async (workspaceId: string): Promise<boolean> => {

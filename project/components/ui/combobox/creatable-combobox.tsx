@@ -13,7 +13,7 @@ import {
 	ComboboxSeparator,
 } from "@/components/ui/combobox";
 
-// Sentinel for the "Manage Categories" row - a command, never a real value.
+/** command sentinel - a unique constant representing the 'Manage Categories' action, never saved as a real value. */
 const MANAGE_ACTION_VALUE = "MANAGE_CATEGORIES_ACTION";
 
 export interface CreatableComboboxOption {
@@ -57,7 +57,7 @@ export function CreatableCombobox({
 	const handleValueChange = (val: string | null) => {
 		if (val === MANAGE_ACTION_VALUE) {
 			onManageClick?.();
-			// Keep previous inputValue
+			/** preserve input - retains the typed text when the user clicks the manage action instead of clearing it. */
 			setInputValue(value || "");
 			return;
 		}
@@ -67,19 +67,13 @@ export function CreatableCombobox({
 		}
 	};
 
-	// Selecting an option/creating one via click already commits through
-	// handleValueChange above. This covers the case where the user types a
-	// new value and blurs the field (e.g. clicking Save) without explicitly
-	// selecting the "Create ..." row - otherwise that typed value was silently
-	// discarded and never reached onChange at all.
+	/** blur commit handler - ensures typed values are saved when the user clicks away from the field without explicitly selecting the 'Create' option. */
 	const handleInputBlur = (event: React.FocusEvent<HTMLInputElement>) => {
 		if (containerRef.current?.contains(event.relatedTarget as Node)) return;
 
 		const trimmed = inputValue.trim();
 
-		// The "Manage Categories" row is a command, not a value. Highlighting it
-		// can leave its sentinel in the input, and committing that on blur would
-		// save it as a real category name.
+		/** sentinel guard - prevents the 'Manage Categories' command ID from being accidentally saved as a real category name if the user blurs while it is highlighted. */
 		if (trimmed === MANAGE_ACTION_VALUE) {
 			setInputValue(value || "");
 			return;

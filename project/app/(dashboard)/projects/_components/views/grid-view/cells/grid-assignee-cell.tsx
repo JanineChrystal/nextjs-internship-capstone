@@ -27,7 +27,7 @@ export function GridAssigneeCell({
 							size="xs"
 							className="border-2 border-surface hover:ring-2 ring-primary/30 transition-all"
 						/>
-						{/* Custom CSS Tooltip */}
+						{/* custom css tooltip - pure css implementation to display assignee name on hover. */}
 						<div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-max opacity-0 transition-opacity group-hover/tooltip:opacity-100 bg-surface-container-highest text-foreground text-xs px-2 py-1 rounded shadow-sm z-50">
 							{assignee.name}
 						</div>

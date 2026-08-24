@@ -44,6 +44,81 @@
 	--color-destructive-foreground: var(--on-error);
 	--color-error: var(--error);
 	--color-error-container: var(--error-container);
+	--color-on-error-container: var(--on-error-container);
+
+	/* Semantic status. These say what HAPPENED - it worked, it needs attention,
+	   it failed, here is a fact - and that meaning is independent of branding.
+	   Like chart-status-*, they are excluded from Phase 7's palette recolouring:
+	   a "saved successfully" toast that renders red under some decorative
+	   palette is worse than no toast at all.
+
+	   Each tone is three tokens, not one: the accent (border and icon), the
+	   tinted container behind it, and the text colour that clears contrast on
+	   that container. Colouring text with the accent - which is what the
+	   reference design does - drops to roughly 3:1 and fails WCAG AA. */
+	--color-success: var(--success);
+	--color-success-container: var(--success-container);
+	--color-on-success-container: var(--on-success-container);
+
+	--color-warning: var(--warning);
+	--color-warning-container: var(--warning-container);
+	--color-on-warning-container: var(--on-warning-container);
+
+	--color-info: var(--info);
+	--color-info-container: var(--info-container);
+	--color-on-info-container: var(--on-info-container);
+
+	/* Solid fills for buttons that carry a tone, and the text drawn on them.
+	   These are a SEPARATE role from the accents above, not a convenience alias.
+	   An accent dresses a border or an icon, where 3:1 is the correct bar; a
+	   filled button has a text label sitting on it and needs 4.5:1. Painting a
+	   14px label with --warning on --warning-container measures about 2:1, which
+	   is how "Archive Anyway" ended up unreadable.
+
+	   Excluded from Phase 7 palette recolouring, like the other status tokens. */
+	--color-danger-solid: var(--danger-solid);
+	--color-on-danger-solid: var(--on-danger-solid);
+	--color-warning-solid: var(--warning-solid);
+	--color-on-warning-solid: var(--on-warning-solid);
+	--color-info-solid: var(--info-solid);
+	--color-on-info-solid: var(--on-info-solid);
+
+	/* The shadcn sidebar's own token family.
+	   These were missing entirely, which is not a cosmetic gap: `bg-sidebar`
+	   compiles to `background-color: var(--sidebar)`, an undefined variable
+	   makes the whole declaration invalid, and the element renders TRANSPARENT.
+	   On desktop that was invisible - the sidebar sits on a page of nearly the
+	   same colour - but the mobile sheet floats over the content, so the page
+	   showed straight through it. */
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
+
+	/* Data visualisation palette. Validated for colour-vision deficiency and
+	   for contrast against the card surface in BOTH themes - see
+	   app/(dashboard)/_constants/analytics.ts for the rules these obey. */
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+	--color-chart-grid: var(--chart-grid);
+	--color-chart-axis: var(--chart-axis);
+
+	--color-chart-status-not-started: var(--chart-status-not-started);
+	--color-chart-status-overdue: var(--chart-status-overdue);
+	--color-chart-status-in-progress: var(--chart-status-in-progress);
+	--color-chart-status-completed: var(--chart-status-completed);
+
+	--color-chart-ramp-1: var(--chart-ramp-1);
+	--color-chart-ramp-2: var(--chart-ramp-2);
+	--color-chart-ramp-3: var(--chart-ramp-3);
+	--color-chart-ramp-4: var(--chart-ramp-4);
 
 	/* Spacing */
 	--spacing-container-max: 1280px;
@@ -56,6 +131,12 @@
 	/* Typography */
 	--font-sans: "Inter", sans-serif;
 	--font-heading: "Geist", sans-serif;
+	/* Resolves to the Geist Mono face loaded in app/layout.tsx. The fallbacks
+	   are named rather than left to `monospace` because the error screens draw
+	   block glyphs, and a proportional fallback would break the numerals apart. */
+	--font-mono:
+		var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas,
+		monospace;
 
 	/* Border Radii */
 	--radius-lg: var(--radius);
@@ -97,6 +178,45 @@
 		--error: #ba1a1a;
 		--on-error: #ffffff;
 		--error-container: #ffdad6;
+		--on-error-container: #8c0009;
+
+		/* Status tones, light. Container is a near-white tint so the toast reads
+		   as a surface rather than a solid colour block; the on-* value is the
+		   accent hue driven dark enough to clear 7:1 on that tint. */
+		--success: #0d9488;
+		--success-container: #edfbf8;
+		--on-success-container: #0b544c;
+
+		--warning: #d97706;
+		--warning-container: #fff8ee;
+		--on-warning-container: #8a4b06;
+
+		--info: #0284c7;
+		--info-container: #e9f6fe;
+		--on-info-container: #075985;
+
+		/* Solid tone fills. Deliberately NOT redefined in .dark below.
+		   A tinted container has to adapt, because it is a thin wash over the
+		   page and the page changes. A filled button brings its own ground: the
+		   label only ever sits on this colour, never on the surface, so one value
+		   is correct in both themes - and it means a destructive button stays
+		   unmistakably red instead of becoming pale pink in dark mode, which is
+		   what --error would have given.
+		   White labels on all three, measured: 5.6:1, 5.0:1, 5.9:1. */
+		/* The two ends of a gradient surface, and the ink that stays legible
+		   across the whole ramp rather than only at the two ends. Derived by
+		   lib/theme/derive-palette-tokens.ts for every other palette; these are the
+		   Default values, hand-authored to match what that rule produces. */
+		--gradient-from: #003178;
+		--gradient-to: #2b5bb5;
+		--on-gradient: #ffffff;
+
+		--danger-solid: #c62828;
+		--on-danger-solid: #ffffff;
+		--warning-solid: #b45309;
+		--on-warning-solid: #ffffff;
+		--info-solid: #0369a1;
+		--on-info-solid: #ffffff;
 
 		--background: var(--surface);
 		--foreground: var(--on-surface);
@@ -111,6 +231,53 @@
 		--border: var(--outline-variant);
 		--input: var(--outline-variant);
 		--ring: var(--primary);
+
+		/* Defined once, in terms of tokens that are themselves redefined under
+		   `.dark`. That is the whole reason for the indirection: the sidebar
+		   follows light and dark - and, later, the Phase 7 palettes - without a
+		   second set of values here that could fall out of step.
+
+		   The surface is deliberately one step away from the page rather than
+		   equal to it: `surface-container-lowest` is lighter than the page in
+		   light mode and darker in dark mode, so the sidebar reads as its own
+		   plane in both without needing a heavier border. */
+		--sidebar: var(--surface-container-lowest);
+		--sidebar-foreground: var(--on-surface);
+		--sidebar-primary: var(--primary);
+		--sidebar-primary-foreground: var(--on-primary);
+		--sidebar-accent: var(--surface-container);
+		--sidebar-accent-foreground: var(--on-surface);
+		--sidebar-border: var(--outline-variant);
+		--sidebar-ring: var(--primary);
+
+		/* Categorical series (identity). Fixed slot order - a series keeps its
+		   colour when the chart is filtered, so hue never means "rank". */
+		--chart-1: #2a78d6;
+		--chart-2: #eb6834;
+		--chart-3: #1baf7a;
+		--chart-4: #eda100;
+		--chart-5: #e87ba4;
+
+		/* Task status, which is its own palette rather than four categorical
+		   slots: these four values mean something, and the meaning has to survive
+		   being read by someone who cannot separate red from green. The ORDER of
+		   these four is part of the validation, not cosmetic - see
+		   app/(dashboard)/_constants/analytics.ts. */
+		--chart-status-not-started: #a89ceb;
+		--chart-status-overdue: #d03b3b;
+		--chart-status-in-progress: #2a78d6;
+		--chart-status-completed: #1baf7a;
+
+		/* Ordinal ramp (one hue, light -> dark) for scales that have an order,
+		   such as priority. Darker reads as "more" on a light surface. */
+		--chart-ramp-1: #86b6ef;
+		--chart-ramp-2: #3987e5;
+		--chart-ramp-3: #256abf;
+		--chart-ramp-4: #0d366b;
+
+		/* Chart chrome stays recessive so the data is the loudest thing. */
+		--chart-grid: #e1e0d9;
+		--chart-axis: #c3c2b7;
 
 		--radius: 0.25rem;
 	}
@@ -146,6 +313,51 @@
 		--error: #ffb4ab;
 		--on-error: #690005;
 		--error-container: #93000a;
+		--on-error-container: #ffdad6;
+
+		--gradient-from: #001945;
+		--gradient-to: #0d47a1;
+		--on-gradient: #ffffff;
+
+		/* Status tones, dark. Not an inversion of the light set: the container
+		   becomes a deep, desaturated version of the hue so it sits on #121212
+		   without glowing, and the text becomes a pale tint of the same hue.
+		   Reusing the light containers here would produce four bright rectangles
+		   on a dark page. */
+		--success: #2dd4bf;
+		--success-container: #0b2b28;
+		--on-success-container: #a7f0e5;
+
+		--warning: #fbbf24;
+		--warning-container: #2d2010;
+		--on-warning-container: #fce0ad;
+
+		--info: #38bdf8;
+		--info-container: #0a2434;
+		--on-info-container: #bae3fd;
+
+		/* Re-stepped for the dark card surface (#121212) and re-validated as a
+		   set - the light steps would fail contrast if simply reused. */
+		--chart-1: #3987e5;
+		--chart-2: #d95926;
+		--chart-3: #199e70;
+		--chart-4: #c98500;
+		--chart-5: #d55181;
+
+		--chart-status-not-started: #9085e9;
+		--chart-status-overdue: #e66767;
+		--chart-status-in-progress: #3987e5;
+		--chart-status-completed: #199e70;
+
+		/* The ordinal ramp inverts in dark mode: on a dark surface the LIGHTEST
+		   step is the most prominent, so "more" has to be lighter, not darker. */
+		--chart-ramp-1: #184f95;
+		--chart-ramp-2: #3987e5;
+		--chart-ramp-3: #86b6ef;
+		--chart-ramp-4: #cde2fb;
+
+		--chart-grid: #2c2c2a;
+		--chart-axis: #383835;
 	}
 }
 
@@ -169,5 +381,31 @@
 	}
 	.hide-scrollbar::-webkit-scrollbar {
 		display: none;
+	}
+
+	/* The blinking caret on the error screens.
+	   `steps(1)` rather than an eased fade: a real terminal caret snaps between
+	   on and off, and a cross-fade reads as a pulsing glow instead. */
+	@keyframes terminal-caret {
+		0%,
+		49% {
+			opacity: 1;
+		}
+		50%,
+		100% {
+			opacity: 0;
+		}
+	}
+	.animate-caret {
+		animation: terminal-caret 1.06s steps(1) infinite;
+	}
+	/* A caret is the one thing on the page that moves, and for a reader with
+	   vestibular sensitivity a permanent blink is exactly the kind of motion
+	   they turned off. It stays visible - it just stops flashing. */
+	@media (prefers-reduced-motion: reduce) {
+		.animate-caret {
+			animation: none;
+			opacity: 1;
+		}
 	}
 }

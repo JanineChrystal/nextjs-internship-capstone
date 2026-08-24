@@ -6,6 +6,7 @@ import {
 	getCommentsAction,
 } from "@/lib/actions/comment-actions";
 import type { CommentOutputDTO } from "@/lib/dtos/comment-dto";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import { COMMENTS_PAGE_SIZE } from "../_constants/comments";
 
 export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
@@ -23,19 +24,40 @@ export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 		authorName: string;
 	} | null>(null);
 
+	// Set when a posted comment came back flagged, so the author is told once,
+	// in a dialog they have to dismiss, rather than in a toast they may miss.
+	const [underReviewNotice, setUnderReviewNotice] = React.useState(false);
+
 	// Handlers
 	const handleSubmitComment = async () => {
 		const body = newComment.trim();
 		if (!body || !taskId || !projectId) return;
 
-		setNewComment("");
 		const parentId = replyingTo?.id;
+		const replyContext = replyingTo;
+
+		setNewComment("");
 		setReplyingTo(null);
 
 		const result = await createCommentAction(taskId, projectId, body, parentId);
+
 		if (result.success && result.data) {
 			setComments((prev) => [...prev, result.data as CommentOutputDTO]);
+
+			// Flagged comments get a dialog rather than a toast. It is the one
+			// outcome the author genuinely has to read, and a toast that fades after
+			// four seconds is the wrong shape for "your comment is being reviewed".
+			if (result.underReview) setUnderReviewNotice(true);
+			else reportActionSuccess("Comment posted");
+			return;
 		}
+
+		// The box was cleared optimistically before the request. Putting the text
+		// back matters more than the toast does - losing what someone typed is the
+		// worst possible outcome of a failed post.
+		setNewComment(body);
+		setReplyingTo(replyContext);
+		reportActionError("Could not post comment", result.error);
 	};
 
 	const handleReply = (comment: CommentOutputDTO) => {
@@ -58,6 +80,7 @@ export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 		const result = await deleteCommentAction(commentId, projectId);
 		if (!result.success) {
 			setComments(previousComments);
+			reportActionError("Could not delete comment", result.error);
 		}
 	};
 
@@ -123,5 +146,7 @@ export function useTaskComments(taskId: string | undefined, isOpen: boolean) {
 		replyingTo,
 		handleReply,
 		cancelReply,
+		underReviewNotice,
+		dismissUnderReviewNotice: () => setUnderReviewNotice(false),
 	};
 }

@@ -13,21 +13,9 @@ interface CategoryBadgeProps {
 }
 
 /**
- * A tag badge that knows its colour comes from the database.
- *
- * Kept separate from TagBadge so the presentational badge stays free of data
- * access - TagBadge also renders job roles and access levels, which have no
- * Categories row. This component is the one place that joins a category name to
- * the colour someone chose for it, which is why editing a colour in Manage
- * Categories now repaints every badge instead of only newly created ones.
- *
- * Fetching is requested per badge but performed once per scope: the store holds
- * one promise per scope key, so a board rendering forty cards issues a single
- * request rather than forty.
- *
- * The scope is destructured to primitives before it reaches the effect. Callers
- * build the object inline, so a fresh reference arrives on every render and an
- * effect depending on the object itself would re-run forever.
+ * category badge component - extends TagBadge with database-driven colors by
+ * resolving category scopes and managing deduplicated, scoped fetch requests
+ * without passing object references into dependency arrays.
  */
 export function CategoryBadge({ name, scope, className }: CategoryBadgeProps) {
 	const kind = scope?.kind;

@@ -1,6 +1,10 @@
 "use server";
 
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { ProjectCompletedEmail } from "@/app/(dashboard)/notifications/_components/email/project-completed-email";
+import { recordActivity } from "@/lib/dal/activity-recorder";
 import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import {
 	upsertProjectCategoryDAL,
@@ -10,6 +14,7 @@ import {
 	getEffectiveProjectRoleDAL,
 	verifyProjectPermissionDAL,
 } from "@/lib/dal/permissions";
+import { getProjectMembersDAL } from "@/lib/dal/project-members";
 import {
 	bulkArchiveProjectsInDB,
 	bulkCompleteProjectsInDB,
@@ -18,7 +23,11 @@ import {
 	deleteProjectInDB,
 	updateProjectInDB,
 } from "@/lib/dal/projects";
+import { db } from "@/lib/db";
+import { projects, users } from "@/lib/db/schema";
 import type { ProjectOutputDTO } from "@/lib/dtos/project-dto";
+import { sendNotification } from "@/lib/email/send-notification";
+import { getAppBaseUrl } from "@/lib/utils/app-url";
 import {
 	createProjectSchema,
 	editProjectSchema,
@@ -34,7 +43,10 @@ export async function createProjectAction(
 			return { success: false, error: await getSessionFailureReason() };
 		}
 
-		// Parse
+		/**
+		 * parse form data - extracts values from the incoming form data
+		 * request.
+		 */
 		const rawData = {
 			title: formData.get("title"),
 			description: formData.get("description"),
@@ -45,7 +57,10 @@ export async function createProjectAction(
 			priority: formData.get("priority"),
 		};
 
-		// ZOD
+		/**
+		 * validate form data - validates the parsed values using zod
+		 * schema.
+		 */
 		const validationResult = createProjectSchema.safeParse(rawData);
 		if (!validationResult.success) {
 			return { success: false, error: "Invalid form data" };
@@ -70,10 +85,13 @@ export async function createProjectAction(
 			priority: data.priority || "medium",
 		});
 
-		// Cache Revalidation
+		/**
+		 * cache revalidation - triggers a cache revalidation for the
+		 * projects page.
+		 */
 		revalidatePath("/projects");
 
-		// Return DTO Payload
+		/** return dto payload - returns the newly created project data. */
 		return { success: true, data: newProject };
 	} catch (error: unknown) {
 		console.error("createProjectAction error:", error);
@@ -120,9 +138,11 @@ export async function updateProjectAction(
 
 		const data = validationResult.data;
 
-		// Archiving is a Danger Zone action and belongs to the owner alone, but it
-		// travels through this generic update, so edit_project would otherwise let
-		// a co-owner archive a project whose Danger Zone the UI hides from them.
+		/**
+		 * enforce owner archiving - restricts the archive action strictly
+		 * to the project owner to prevent unauthorized archiving by
+		 * co-owners.
+		 */
 		if (data.status === "archived") {
 			const role = await getEffectiveProjectRoleDAL(projectId);
 			if (role !== "owner") {
@@ -133,9 +153,10 @@ export async function updateProjectAction(
 			}
 		}
 
-		// The category belongs to the workspace that owns this project, which the
-		// DAL now resolves itself - replacing the inline dynamic imports and the
-		// unverified workspace id that were doing that job here.
+		/**
+		 * update project category - upserts the category into the workspace
+		 * via the DAL which safely resolves workspace ownership.
+		 */
 		if (data.category) {
 			await upsertProjectCategoryDAL(projectId, data.category, "project");
 		}
@@ -193,7 +214,10 @@ export async function bulkDeleteProjectsAction(
 	projectIds: string[],
 ): Promise<{ success: boolean; error?: string }> {
 	try {
-		// Verify permission for all projects (or fast-fail on first unauthorized)
+		/**
+		 * verify bulk delete permissions - checks authorization for all
+		 * selected projects and fails immediately if any check fails.
+		 */
 		for (const id of projectIds) {
 			const hasPermission = await verifyProjectPermissionDAL(
 				id,
@@ -260,10 +284,99 @@ export async function bulkCompleteProjectsAction(
 		}
 
 		await bulkCompleteProjectsInDB(projectIds);
+
+		/**
+		 * record bulk completion activity - records completion activity
+		 * here instead of the DAL as actions have the context to resolve
+		 * workspace and member details.
+		 */
+		const user = await getCurrentUser();
+		if (user) {
+			for (const projectId of projectIds) {
+				await recordProjectCompletion(projectId, user);
+			}
+		}
+
 		revalidatePath("/projects");
 		return { success: true };
 	} catch (error) {
 		console.error("bulkCompleteProjectsAction error:", error);
 		return { success: false, error: "An unexpected error occurred" };
+	}
+}
+
+/**
+ * record project completion - records the completion activity and
+ * asynchronously emails all project members without risking the
+ * success of the bulk operation.
+ */
+async function recordProjectCompletion(
+	projectId: string,
+	actor: {
+		id: string;
+		firstName: string | null;
+		lastName: string | null;
+		email: string;
+	},
+): Promise<void> {
+	try {
+		const [project] = await db
+			.select({ name: projects.name, workspaceId: projects.workspaceId })
+			.from(projects)
+			.where(eq(projects.id, projectId));
+
+		if (!project) return;
+
+		const members = await getProjectMembersDAL(projectId);
+
+		const recorded = await recordActivity({
+			workspaceId: project.workspaceId,
+			actorId: actor.id,
+			actionType: "PROJECT_COMPLETED",
+			details: `Marked "${project.name}" complete`,
+			projectId,
+			notify: members.map((member) => ({
+				recipientId: member.userId,
+				message: `A project you are part of was completed`,
+			})),
+		});
+
+		const mayEmail = recorded.filter((entry) => entry.shouldSendEmail);
+		if (mayEmail.length === 0) return;
+
+		const recipients = await db
+			.select({ email: users.email })
+			.from(users)
+			.where(
+				inArray(
+					users.id,
+					mayEmail.map((entry) => entry.recipientId),
+				),
+			);
+
+		const completedBy = actor.firstName
+			? `${actor.firstName} ${actor.lastName || ""}`.trim()
+			: actor.email;
+
+		after(async () => {
+			for (const recipient of recipients) {
+				await sendNotification({
+					to: recipient.email,
+					subject: `${project.name} was marked complete`,
+					/**
+					 * verified notification dispatch - sends emails only to members who
+					 * passed the notification preferences check in recordActivity.
+					 */
+					shouldSend: true,
+					template: ProjectCompletedEmail({
+						completedBy,
+						projectName: project.name,
+						projectUrl: `${getAppBaseUrl()}/projects/${projectId}`,
+					}),
+				});
+			}
+		});
+	} catch (error) {
+		console.error("Failed to record project completion:", error);
 	}
 }

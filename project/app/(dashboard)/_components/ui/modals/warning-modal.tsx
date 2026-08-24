@@ -1,8 +1,7 @@
 "use client";
 
-import { BaseModal } from "@/components/modals/base-modal";
-import { Button } from "@/components/ui/buttons/button";
-import { WARNING_MODAL_CONFIG } from "../../../_constants/warning-modal";
+import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
+import type { ConfirmTone } from "@/lib/types/feedback";
 
 interface WarningModalProps {
 	isOpen: boolean;
@@ -13,8 +12,13 @@ interface WarningModalProps {
 	confirmText?: string;
 	cancelText?: string;
 	variant?: "danger" | "warning" | "info";
+	/** hide cancel toggle - drops the cancel button to turn the dialog into an acknowledgement for irreversible actions. */
+	hideCancel?: boolean;
 }
 
+/**
+ * warning modal component - a compatibility wrapper that delegates to ConfirmDialog to centralize confirmation rendering while allowing gradual migration of call sites.
+ */
 export function WarningModal({
 	isOpen,
 	onClose,
@@ -24,39 +28,23 @@ export function WarningModal({
 	confirmText = "Confirm",
 	cancelText = "Cancel",
 	variant = "danger",
+	hideCancel = false,
 }: WarningModalProps) {
-	const config = WARNING_MODAL_CONFIG[variant];
-	const Icon = config.icon;
-
 	return (
-		<BaseModal isOpen={isOpen} onClose={onClose} title={title} maxWidth="md">
-			<div className="p-6 space-y-6">
-				<div className="flex items-start gap-4">
-					<div className="p-3 bg-muted rounded-full shrink-0">
-						<Icon className={`h-6 w-6 ${config.iconClass}`} />
-					</div>
-					<div className="space-y-1">
-						<p className="text-sm text-muted-foreground leading-relaxed">
-							{message}
-						</p>
-					</div>
-				</div>
-
-				<div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
-					<Button variant="outline" onClick={onClose}>
-						{cancelText}
-					</Button>
-					<Button
-						variant={config.confirmVariant}
-						onClick={() => {
-							onConfirm();
-							onClose();
-						}}
-					>
-						{confirmText}
-					</Button>
-				</div>
-			</div>
-		</BaseModal>
+		<ConfirmDialog
+			isOpen={isOpen}
+			onClose={onClose}
+			// auto-close behavior - wraps the confirm callback to preserve legacy behavior of closing immediately upon confirmation.
+			onConfirm={() => {
+				onConfirm();
+				onClose();
+			}}
+			title={title}
+			description={message}
+			confirmLabel={confirmText}
+			cancelLabel={cancelText}
+			tone={variant satisfies ConfirmTone}
+			hideCancel={hideCancel}
+		/>
 	);
 }

@@ -16,8 +16,7 @@ interface AddMemberModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	scope: "project" | "workspace";
-	// Project id for project-scoped invites. Omitted for workspace scope, which
-	// resolves the caller's own workspace on the server.
+	// target scope identifier - required for project invites, but omitted for workspace invites as the backend resolves the workspace automatically.
 	targetId?: string;
 }
 
@@ -59,7 +58,7 @@ export function AddMemberModal({
 						scope={scope}
 					/>
 
-					{/* Actions */}
+					{/* modal actions container */}
 					<div className="flex justify-end gap-3 pt-2">
 						<Button
 							type="button"

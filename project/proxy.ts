@@ -1,5 +1,6 @@
 import { clerkClient, clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { globalRateLimiter } from "./lib/rate-limit";
 
 const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const SESSION_START_COOKIE = "takda_session_started_at";
@@ -35,6 +36,17 @@ function readSessionStart(
 }
 
 export default clerkMiddleware(async (auth, req) => {
+	const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
+
+	try {
+		const { success } = await globalRateLimiter.limit(`global_${ip}`);
+		if (!success) {
+			return new NextResponse("Too Many Requests", { status: 429 });
+		}
+	} catch (error) {
+		console.error("Global rate limiter failed, bypassing:", error);
+	}
+
 	const { sessionId } = await auth();
 
 	// Anonymous request: no clock to check, and nothing to guard. Public pages

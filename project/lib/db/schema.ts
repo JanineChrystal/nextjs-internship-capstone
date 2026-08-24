@@ -37,6 +37,14 @@ export const taskPriorityEnum = pgEnum("TaskPriority", [
 	"urgent",
 ]);
 export const attachmentTypeEnum = pgEnum("AttachmentType", ["file", "link"]);
+// The reason someone is writing in from the landing page. An enum rather than
+// free text so the inbox can be filtered without relying on how people type.
+export const contactTopicEnum = pgEnum("ContactTopic", [
+	"general",
+	"demo",
+	"support",
+	"partnership",
+]);
 export const actionTypeEnum = pgEnum("ActionType", [
 	"INVITE_SENT",
 	"INVITE_ACCEPTED",
@@ -46,9 +54,20 @@ export const actionTypeEnum = pgEnum("ActionType", [
 	"BOARD_CREATED",
 	"BOARD_REORDERED",
 	"BOARD_DELETED",
+	"TASK_CREATED",
+	"TASK_UPDATED",
 	"TASK_ASSIGNED",
 	"TASK_COMPLETED",
 	"COMMENT_ADDED",
+	// A project reaching "completed". Needed as its own value because
+	// emailProjectCompletions has to be governed by something, and no existing
+	// value describes it.
+	"PROJECT_COMPLETED",
+	// A comment the language filter flagged. Previously recorded as
+	// COMMENT_ADDED, which meant one action type covered three unrelated events -
+	// a comment on your task, a mention, and a violation - and no email
+	// preference could tell them apart.
+	"COMMENT_FLAGGED",
 ]);
 
 export const categoryTypeEnum = pgEnum("CategoryType", ["project", "task"]);
@@ -176,11 +195,26 @@ export const notificationSettings = pgTable("NotificationSettings", {
 	emailWorkspaceInvites: boolean("emailWorkspaceInvites")
 		.default(true)
 		.notNull(),
+	// Separate from emailWorkspaceInvites because the two are genuinely different
+	// events to the person receiving them: being added to someone's directory is
+	// not the same as being given access to a project. Both are recorded as
+	// INVITE_SENT, so they are told apart by whether the row carries a projectId.
+	emailProjectInvites: boolean("emailProjectInvites").default(true).notNull(),
 	emailTaskCompletions: boolean("emailTaskCompletions").default(true).notNull(),
 	emailProjectCompletions: boolean("emailProjectCompletions")
 		.default(true)
 		.notNull(),
 	emailCommentMentions: boolean("emailCommentMentions").default(true).notNull(),
+	// Both of these are stored and editable now, but nothing fires them yet.
+	// emailCommentViolations waits on Phase 6's moderation pipeline, and
+	// emailProjectOverdue waits on something that actually checks a project's due
+	// date - there is no equivalent of isTaskOverdue() running for projects.
+	// Adding the columns now means the preference survives; it does not mean the
+	// email sends.
+	emailCommentViolations: boolean("emailCommentViolations")
+		.default(true)
+		.notNull(),
+	emailProjectOverdue: boolean("emailProjectOverdue").default(true).notNull(),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
 	updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 	deletedAt: timestamp("deletedAt"),
@@ -204,6 +238,12 @@ export const projects = pgTable("Projects", {
 	dueDate: timestamp("dueDate"),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
 	updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+	// Set when the item is put aside deliberately. Kept separate from deletedAt
+	// because the two mean different things and have different exits: archived
+	// items are hidden from lists but permanent, trashed items are hidden and on
+	// a countdown to real deletion. One nullable timestamp each keeps "which
+	// state is this in" a question the WHERE clause can answer.
+	archivedAt: timestamp("archivedAt"),
 	deletedAt: timestamp("deletedAt"),
 });
 
@@ -374,6 +414,7 @@ export const tasks = pgTable("Tasks", {
 	notes: text("notes"),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
 	updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+	archivedAt: timestamp("archivedAt"),
 	deletedAt: timestamp("deletedAt"),
 });
 
@@ -434,6 +475,9 @@ export const comments = pgTable("Comments", {
 	body: text("body").notNull(),
 	isFlagged: boolean("isFlagged").default(false).notNull(),
 	flagReason: text("flagReason"),
+	pendingProfanityCheck: boolean("pendingProfanityCheck")
+		.default(false)
+		.notNull(),
 	moderatedById: uuid("moderatedById").references(() => users.id),
 	moderatedAt: timestamp("moderatedAt"),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -744,3 +788,43 @@ export const projectTeamsRelations = relations(projectTeams, ({ one }) => ({
 		references: [teams.id],
 	}),
 }));
+
+/**
+ * Messages sent from the public landing page's contact drawer.
+ *
+ * Deliberately has no `userId` and no relation to any other table: the whole
+ * point of the form is that someone who does not have an account can reach us.
+ * Adding a foreign key would mean either rejecting exactly the people the
+ * landing page exists to serve, or carrying a nullable column that is null in
+ * almost every row.
+ *
+ * `topic` is an enum rather than free text so the inbox can be filtered without
+ * anyone having to agree on spelling, and `respondedAt` gives triage a place to
+ * live later without a second migration.
+ */
+export const contactMessages = pgTable(
+	"ContactMessages",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		name: text("name").notNull(),
+		email: text("email").notNull(),
+		organization: text("organization"),
+		topic: contactTopicEnum("topic").notNull(),
+		message: text("message").notNull(),
+		respondedAt: timestamp("respondedAt"),
+		// When the alert actually reached a person, on any channel. Null means it
+		// never did - the row is still safe, but nobody was told about it, which is
+		// exactly the case worth being able to query for after an outage.
+		notifiedAt: timestamp("notifiedAt"),
+		createdAt: timestamp("createdAt").defaultNow().notNull(),
+		updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+		deletedAt: timestamp("deletedAt"),
+	},
+	(table) => [
+		// The inbox is always read newest-first, and the duplicate check the action
+		// runs looks up by sender. Both are covered here rather than left to a
+		// sequential scan that only starts hurting once the form is working.
+		index("contact_messages_created_at_idx").on(table.createdAt),
+		index("contact_messages_email_idx").on(table.email),
+	],
+);

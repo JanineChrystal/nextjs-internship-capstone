@@ -24,15 +24,9 @@ const categorySchema = z.object({
 });
 
 /**
- * Project-scoped category actions.
- *
- * The task modal must read and write the categories of the workspace that owns
- * the *project*, not the caller's own workspace. Passing the "default"
- * placeholder resolved the viewer's workspace, so a member opening a task in a
- * shared project saw an empty dropdown.
- *
- * Authorisation lives in the DAL, which gates every one of these on
- * getEffectiveProjectRoleDAL.
+ * project-scoped category actions - ensures operations read and
+ * write categories for the workspace owning the project rather than
+ * the viewer's workspace, with authorization handled by the DAL.
  */
 export async function getProjectCategoriesAction(
 	projectId: string,

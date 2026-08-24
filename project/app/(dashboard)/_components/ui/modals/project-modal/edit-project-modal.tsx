@@ -35,7 +35,7 @@ export function EditProjectModal({
 
 	return (
 		<form onSubmit={handleSubmit} className="p-6 space-y-8">
-			{/* Project Title */}
+			{/* project title input */}
 			<div className="space-y-2">
 				<input
 					type="text"
@@ -51,7 +51,7 @@ export function EditProjectModal({
 				)}
 			</div>
 
-			{/* Form Grid mapped dynamically */}
+			{/* dynamic form grid */}
 			<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 				{projectFormFields.map((field) => (
 					<div key={field.id} className="space-y-2">
@@ -123,10 +123,10 @@ export function EditProjectModal({
 				))}
 			</div>
 
-			{/* Team Members */}
+			{/* team members section */}
 			<ProjectTeamSection projectId={initialData.id} />
 
-			{/* Description */}
+			{/* project description text area */}
 			<div className="space-y-2">
 				<label
 					htmlFor="description"
@@ -143,7 +143,7 @@ export function EditProjectModal({
 				/>
 			</div>
 
-			{/* Footer */}
+			{/* modal footer controls */}
 			<div className="flex items-center justify-between gap-3 pt-4 border-t border-border mt-4">
 				<div>
 					<Button variant="outline" asChild>

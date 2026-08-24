@@ -63,9 +63,7 @@ export function useManageCategories({
 		defaultValues: { name: "", color: "#94a3b8" },
 	});
 
-	// The scope whose palette this modal edits. Task categories belong to the
-	// project's workspace, project categories to the caller's own, and the badges
-	// on screen cache their colours under exactly this key.
+	/** category scope - determines if the modal edits project or workspace categories, matching the exact cache key used for badge colors. */
 	const categoryScope: CategoryScope = projectId
 		? { kind: "project", id: projectId, type }
 		: { kind: "workspace", id: workspaceId, type };
@@ -89,9 +87,7 @@ export function useManageCategories({
 			if (!success) return;
 
 			setEditingRowId(null);
-			// Badges cache colours per scope, so a rename or recolour has to
-			// invalidate that cache or the board keeps painting the old colour until
-			// the next full page load.
+			/** cache invalidation - forces a refresh of category styles after an edit so badges don't keep painting the old color. */
 			await refreshCategoryStyles(categoryScope);
 		});
 

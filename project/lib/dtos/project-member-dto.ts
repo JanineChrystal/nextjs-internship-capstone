@@ -1,13 +1,9 @@
 import type { RoleAccess } from "@/lib/types/member";
 
 /**
- * The minimal member shape the UI needs to render an avatar and a label -
- * assignee pickers, member chips, the toolbar stack.
- *
- * Deliberately omits the access level. A picker showing who can be assigned has
- * no business knowing who is a co-owner, and a DTO that carries fields its
- * consumer does not need is how permission data leaks into surfaces that were
- * never reviewed for it.
+ * project member output dto - defines the minimal member shape needed for
+ * avatar and label rendering, deliberately excluding access levels to prevent
+ * unauthorized permission leakage into generic UI pickers.
  */
 export interface ProjectMemberOutputDTO {
 	userId: string;
@@ -17,13 +13,9 @@ export interface ProjectMemberOutputDTO {
 }
 
 /**
- * The fuller shape for the Team & Access table, which is the one surface that
- * genuinely needs role and join information.
- *
- * `status` is the literal "joined" rather than a union: a row here always
- * represents real membership. Someone invited but not yet signed up has no
- * ProjectMembers row at all - they live in PendingInvites and are rendered
- * separately.
+ * project member detailed output dto - defines the comprehensive member shape
+ * needed for the Team & Access table, using a literal 'joined' status since
+ * pending invites are handled by a separate table.
  */
 export interface ProjectMemberDetailedOutputDTO {
 	userId: string;
@@ -37,12 +29,9 @@ export interface ProjectMemberDetailedOutputDTO {
 }
 
 /**
- * A display name from whatever the user record actually has.
- *
- * Falls back to the email rather than rendering an empty string, because Clerk
- * does not require a name and a blank cell reads as a broken row. This was
- * written out twice - once in the projects DAL and once in the task-assignees
- * DAL - so the two could have drifted on what "no name" should show.
+ * to member name - resolves a display name from the user record, providing
+ * a robust fallback to the email address to prevent rendering broken rows
+ * when Clerk profiles lack explicit names.
  */
 export function toMemberName(user: {
 	firstName: string | null;

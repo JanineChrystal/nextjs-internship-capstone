@@ -1,17 +1,22 @@
 "use client";
 
-import { AlertCircle, RotateCcw } from "lucide-react";
-import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/buttons/button";
+import { ErrorTerminal } from "@/components/ui/error-terminal/error-terminal";
+import { TerminalAction } from "@/components/ui/error-terminal/terminal-routes";
+import { DASHBOARD_RECOVERY_ROUTES } from "@/lib/constants/error-pages";
+import type { RecoveryRoute } from "@/lib/types/error-page";
+
+/** sign-in routes - offered on the 401 branch where authentication is required. */
+const SIGN_IN_ROUTES: readonly RecoveryRoute[] = [
+	{ href: "/sign-in", label: "/sign-in", hint: "sign in and come back" },
+	...DASHBOARD_RECOVERY_ROUTES,
+];
 
 /**
- * Recovery boundary for the dashboard.
- *
- * The data layer signals a refusal by throwing - getTasksByProjectId and its
- * siblings throw "Unauthorized" rather than returning an empty list, so that a
- * denial is never mistaken for an empty project. Without a boundary those throws
- * blank the whole page, so this is the surface those throws assume exists.
+ * dashboard error boundary - handles DAL access refusals by sniffing error
+ * messages and checking Clerk session state to distinguish between 401
+ * (expired session) and 403 (revoked access) instead of showing a generic 500.
  */
 export default function DashboardError({
 	error,
@@ -20,44 +25,56 @@ export default function DashboardError({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
+	const { isLoaded, isSignedIn } = useAuth();
+
 	useEffect(() => {
 		console.error("Dashboard route error:", error);
 	}, [error]);
 
-	const isAccessError = /unauthorized|forbidden|not found/i.test(error.message);
+	const isAccessError = /unauthorized|forbidden/i.test(error.message);
+
+	// delay 401 check - waits for Clerk to fully load before claiming a 401 to prevent flashing a sign-in screen to authenticated users.
+	if (isAccessError && isLoaded && !isSignedIn) {
+		return (
+			<ErrorTerminal
+				code="401"
+				title="Your session has ended"
+				description="You are not signed in, so this view could not be loaded. Signing in again will bring you straight back."
+				reference={error.digest}
+				routes={SIGN_IN_ROUTES}
+				className="min-h-[60vh]"
+			/>
+		);
+	}
+
+	if (isAccessError) {
+		return (
+			<ErrorTerminal
+				code="403"
+				title="You do not have access to this"
+				description="This project or workspace is not shared with you, or your access was removed. Ask the owner to invite you again - retrying will not change the answer."
+				reference={error.digest}
+				routes={DASHBOARD_RECOVERY_ROUTES}
+				className="min-h-[60vh]"
+			/>
+		);
+	}
 
 	return (
-		<div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-			<AlertCircle className="h-10 w-10 text-error" />
-
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold text-on-surface">
-					{isAccessError
-						? "You do not have access to this"
-						: "Something went wrong"}
-				</h2>
-				<p className="max-w-md text-sm text-secondary">
-					{isAccessError
-						? "This project or workspace is not shared with you, or your access was removed. Ask the owner to invite you again."
-						: "This page could not be loaded. Trying again usually resolves it."}
-				</p>
-			</div>
-
-			{/* The digest is the only handle on the server-side stack, which is
-			    stripped from the client in production. */}
-			{error.digest && (
-				<p className="text-xs text-secondary/70">Reference: {error.digest}</p>
-			)}
-
-			<div className="flex items-center gap-2">
-				<Button type="button" onClick={reset} className="gap-2">
-					<RotateCcw className="h-4 w-4" />
-					Try again
-				</Button>
-				<Button type="button" variant="outline" asChild>
-					<Link href="/projects">Back to projects</Link>
-				</Button>
-			</div>
-		</div>
+		<ErrorTerminal
+			code="500"
+			title="This page could not be loaded"
+			description="Something failed while building this view. Trying again usually resolves it. If it keeps happening, quote the reference below."
+			reference={error.digest}
+			routes={DASHBOARD_RECOVERY_ROUTES}
+			className="min-h-[60vh]"
+			actions={
+				<TerminalAction
+					onClick={reset}
+					label="retry"
+					hint="load this view again"
+				/>
+			}
+		/>
 	);
 }

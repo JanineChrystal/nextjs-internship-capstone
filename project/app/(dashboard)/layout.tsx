@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { claimPendingInvitesForUserDAL } from "@/lib/dal/pending-invites";
+import { syncClerkUserToDbDAL } from "@/lib/dal/users";
 import { AppSidebar } from "./_components/layouts/app-sidebar";
 import { TopBar } from "./_components/layouts/top-bar";
 
@@ -20,31 +21,47 @@ export default async function DashboardLayout({
 		redirect("/sign-in");
 	}
 
-	// Fallback for the Clerk webhook, which needs a publicly reachable URL and so
-	// cannot be relied on in local development. Runs after the response is sent so
-	// it never delays a page, and is safe to repeat because claiming is
-	// idempotent - a claimed invite is stamped and skipped next time.
+	// webhook fallback sync - safely syncs users and claims invites in a non-blocking `after` hook in case the Clerk webhook fails.
 	after(async () => {
 		try {
-			const user = await getCurrentUser();
+			// ordered sync - ensures the user row is created before attempting to claim invites, avoiding deadlocks for new signups.
+			const user = (await getCurrentUser()) ?? (await syncClerkUserToDbDAL());
 			if (user?.email) {
 				await claimPendingInvitesForUserDAL(user.email, user.id);
 			}
 		} catch (error) {
-			console.error("Pending invite claim (layout fallback) failed:", error);
+			console.error(
+				"Clerk sync / invite claim (layout fallback) failed:",
+				error,
+			);
 		}
 	});
 
 	return (
 		<TooltipProvider>
+			{/*
+			  default collapsed sidebar - starts closed across all viewports to
+			  prevent layout shift on load and respects user preference by letting
+			  them choose when to expand it.
+			*/}
 			<SidebarProvider defaultOpen={false}>
 				<AppSidebar />
-				<SidebarInset className="flex flex-col min-h-screen bg-background overflow-hidden">
+				<SidebarInset className="flex min-h-screen flex-col overflow-hidden bg-background">
 					<TopBar />
-					<main className="flex-1 overflow-y-auto p-4 md:p-8">{children}</main>
+					{/*
+					  centred constrained layout - caps maximum width to maintain
+					  readable line lengths for text and tables on ultra-wide screens.
+					*/}
+					<main className="flex-1 overflow-y-auto">
+						<div className="mx-auto w-full max-w-container-max p-4 md:p-6 lg:p-8">
+							{children}
+						</div>
+					</main>
 				</SidebarInset>
-				{/* Mounted once here so every dashboard route can report a failed
-				    server action instead of silently rolling its UI back. */}
+				{/*
+				  global toaster - mounted here to ensure all dashboard routes can
+				  report server action failures without silently rolling back.
+				*/}
 				<Toaster />
 			</SidebarProvider>
 		</TooltipProvider>

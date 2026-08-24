@@ -16,6 +16,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { CalendarEvent } from "@/lib/types/calendar";
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -44,6 +45,10 @@ interface GenericCalendarProps {
 	className?: string;
 }
 
+/**
+ * custom toolbar component - renders the calendar navigation header, using responsive
+ * flex layouts to stack controls on mobile while keeping a single DOM structure.
+ */
 function CustomToolbar({
 	label,
 	onNavigate,
@@ -52,17 +57,21 @@ function CustomToolbar({
 	view,
 }: ToolbarProps<CalendarEvent>) {
 	return (
-		<div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
-			<h2 className="text-2xl font-bold text-foreground">{label}</h2>
+		<div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+			{/* responsive title - truncates long date labels to prevent pushing navigation controls off-screen on small devices. */}
+			<h2 className="truncate text-lg font-bold text-foreground sm:text-2xl">
+				{label}
+			</h2>
 
-			<div className="flex items-center gap-4">
-				{/* Prev / Next Navigation */}
-				<div className="flex space-x-2">
+			<div className="flex items-center gap-2 sm:gap-4">
+				{/* navigation controls */}
+				<div className="flex shrink-0 gap-2">
 					<Button
 						variant="outline"
 						size="icon"
 						onClick={() => onNavigate(Navigate.PREVIOUS)}
-						className="bg-surface border-outline-variant hover:bg-surface-variant"
+						aria-label="Previous period"
+						className="size-9 bg-surface border-outline-variant hover:bg-surface-variant"
 					>
 						<ChevronLeft className="h-4 w-4" />
 					</Button>
@@ -70,20 +79,22 @@ function CustomToolbar({
 						variant="outline"
 						size="icon"
 						onClick={() => onNavigate(Navigate.NEXT)}
-						className="bg-surface border-outline-variant hover:bg-surface-variant"
+						aria-label="Next period"
+						className="size-9 bg-surface border-outline-variant hover:bg-surface-variant"
 					>
 						<ChevronRight className="h-4 w-4" />
 					</Button>
 				</div>
 
-				{/* View Toggles (Month, Week, Day) */}
-				<div className="flex bg-surface-container rounded-lg p-1">
+				{/* view toggles */}
+				<div className="flex flex-1 rounded-lg bg-surface-container p-1 sm:flex-none">
 					{(views as View[]).map((viewName) => (
 						<button
 							key={viewName}
 							type="button"
 							onClick={() => onView(viewName)}
-							className={`px-4 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${
+							aria-pressed={view === viewName}
+							className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium capitalize transition-colors sm:flex-none sm:px-4 sm:text-sm ${
 								view === viewName
 									? "bg-primary text-primary-foreground shadow-sm"
 									: "text-secondary hover:text-foreground"
@@ -147,25 +158,27 @@ function CustomEvent({ event }: { event: CalendarEvent }) {
 	);
 }
 
-// Week/Day views give each event a real block of space, so show the full
-// detail set there instead of the single-line pill used in Month view.
+/**
+ * custom detailed event component - renders full event metadata for Week/Day views
+ * on desktop, falling back to a compact title-only display on mobile to fit narrow columns.
+ */
 function CustomDetailedEvent({ event }: { event: CalendarEvent }) {
 	const { priority, type, category, status } = event.extendedProps ?? {};
 
 	return (
-		<div className="flex flex-col gap-0.5 h-full w-full overflow-hidden px-1.5 py-1 text-left">
-			<div className="flex items-center gap-1.5 min-w-0">
+		<div className="flex flex-col gap-0.5 h-full w-full overflow-hidden px-1 py-0.5 text-left sm:px-1.5 sm:py-1">
+			<div className="flex items-center gap-1 min-w-0 sm:gap-1.5">
 				<span
 					className={`w-1.5 h-1.5 rounded-full shrink-0 ${
 						PRIORITY_DOT_CLASSES[priority ?? ""] ?? "bg-primary"
 					}`}
 				/>
-				<span className="text-[11px] font-semibold text-foreground truncate">
+				<span className="text-[10px] font-semibold text-foreground truncate sm:text-[11px]">
 					{event.title}
 				</span>
 			</div>
 
-			<div className="flex flex-wrap items-center gap-1 min-w-0">
+			<div className="hidden flex-wrap items-center gap-1 min-w-0 sm:flex">
 				{category && (
 					<span className="px-1 py-px rounded bg-primary/10 text-primary text-[9px] font-medium uppercase tracking-wide truncate max-w-full">
 						{category}
@@ -179,7 +192,7 @@ function CustomDetailedEvent({ event }: { event: CalendarEvent }) {
 			</div>
 
 			{priority && (
-				<span className="text-[9px] text-secondary capitalize truncate">
+				<span className="hidden text-[9px] text-secondary capitalize truncate sm:inline">
 					{priority} priority{type ? ` · ${type}` : ""}
 				</span>
 			)}
@@ -200,33 +213,46 @@ export function BigCalendar({
 }: GenericCalendarProps) {
 	const [view, setView] = useState<View>(defaultView);
 	const [date, setDate] = useState<Date>(new Date());
+	const isMobile = useIsMobile();
 
-	// Custom Month Date Header component with inline interaction
+	// custom month date header - provides interactive date cells for the month grid.
 	const CustomMonthDateHeader = useCallback(
 		({ date: headerDate, label }: { date: Date; label: string }) => {
 			return (
-				<div className="flex items-center justify-end w-full group p-1">
+				<div className="flex items-center justify-between w-full group px-0.5 sm:p-1">
+					{/*
+					 * touch-aware add button - keeps the creation icon permanently visible on mobile where hover states don't exist.
+					 */}
 					<button
 						type="button"
 						onClick={(e) => {
 							e.stopPropagation();
 							onDateClick?.(headerDate);
 						}}
-						className="mr-auto opacity-0 group-hover:opacity-100 p-0.5 hover:bg-surface-variant rounded transition-all text-secondary hover:text-primary"
+						className="rounded p-0.5 text-secondary opacity-60 transition-all hover:bg-surface-variant hover:text-primary focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+						aria-label={`Create on ${label}`}
 						title="Create on this date"
 					>
 						<Plus className="w-3 h-3" />
 					</button>
+					{/*
+					 * interactive date label - wires direct click handlers to the date number to bypass unreliable touch-gesture layers for side panel filtering.
+					 */}
 					<button
 						type="button"
-						className="text-sm font-medium hover:underline focus:outline-none"
+						onClick={(e) => {
+							// propagation stop - prevents the underlying slot from triggering a duplicate selection event.
+							e.stopPropagation();
+							onDateCellClick?.(headerDate);
+						}}
+						className="rounded px-1 text-xs font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
 					>
 						{label}
 					</button>
 				</div>
 			);
 		},
-		[onDateClick],
+		[onDateClick, onDateCellClick],
 	);
 
 	const views = useMemo(() => ["month", "week", "day"], []);
@@ -254,13 +280,14 @@ export function BigCalendar({
 				style: {
 					borderRadius: "4px",
 					outline: "none",
-					// The detailed renderer needs room to show its extra rows;
-					// short events would otherwise clip them entirely.
-					...(view === "month" ? {} : { minHeight: "58px" }),
+					// minimum height sizing - ensures detailed events have enough vertical space for their content, scaling down on mobile to prevent grid overflow.
+					...(view === "month"
+						? {}
+						: { minHeight: isMobile ? "38px" : "58px" }),
 				},
 			};
 		},
-		[selectedEventId, view],
+		[selectedEventId, view, isMobile],
 	);
 
 	const dayPropGetter = useCallback(
@@ -271,6 +298,18 @@ export function BigCalendar({
 			return {};
 		},
 		[selectedDate],
+	);
+
+	/**
+	 * responsive date formats - abbreviates day labels on mobile devices to prevent
+	 * table column expansion from breaking the grid layout.
+	 */
+	const formats = useMemo(
+		() =>
+			isMobile
+				? { dayFormat: "EEEEE d", weekdayFormat: "EEEEE" }
+				: { dayFormat: "dd EEE" },
+		[isMobile],
 	);
 
 	return (
@@ -287,14 +326,19 @@ export function BigCalendar({
 				views={views as View[]}
 				onSelectEvent={onEventSingleClick}
 				onDoubleClickEvent={onEventDoubleClick}
-				selectable={true}
+				/*
+				 * selective slot interaction - ignores drag-selection over events so they can handle their own click events without interference from the background grid.
+				 */
+				selectable="ignoreEvents"
 				onSelectSlot={(slotInfo) => onDateCellClick?.(slotInfo.start)}
+				/*
+				 * flat layout algorithm - renders concurrent events side-by-side rather than overlapping them, which is critical for legibility in narrow mobile columns.
+				 */
+				dayLayoutAlgorithm="no-overlap"
 				components={components}
 				eventPropGetter={eventPropGetter}
 				dayPropGetter={dayPropGetter}
-				formats={{
-					dayFormat: "dd EEE",
-				}}
+				formats={formats}
 			/>
 		</div>
 	);

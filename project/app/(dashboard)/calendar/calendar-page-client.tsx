@@ -85,7 +85,11 @@ export function CalendarPageClient({
 				title="Calendar"
 				description="View project deadlines and team schedules"
 				action={
-					<div className="flex items-center gap-3 w-full sm:w-auto">
+					// Stacked on a phone. Both buttons carry `w-full sm:w-auto`, so in a
+					// flex ROW each one demanded the container's full width and the
+					// second overflowed the header card - a stray button edge poking past
+					// the right margin. The column is what `w-full` was written for.
+					<div className="flex flex-col gap-3 w-full sm:w-auto sm:flex-row sm:items-center">
 						<Button
 							type="button"
 							variant="outline"
@@ -111,7 +115,7 @@ export function CalendarPageClient({
 			/>
 
 			<div className="grid grid-cols-1 xl:grid-cols-4 gap-6 flex-1">
-				<div className="xl:col-span-3 bg-surface rounded-xl border border-outline-variant p-6 h-187.5">
+				<div className="xl:col-span-3 bg-surface rounded-xl border border-outline-variant p-3 sm:p-6 h-[70vh] min-h-112.5 xl:h-187.5">
 					<BigCalendar
 						events={calendarEvents}
 						selectedEventId={selectedEventId}

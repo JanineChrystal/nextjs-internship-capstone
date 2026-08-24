@@ -6,7 +6,7 @@ import {
 	renameBoardAction,
 	setCompletionBoardAction,
 } from "@/lib/actions/board-actions";
-import { reportActionError } from "@/lib/utils/toast";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import { useBoardStore } from "@/stores/use-board-store";
 
 export function useBoardMutations(projectId: string) {
@@ -39,6 +39,7 @@ export function useBoardMutations(projectId: string) {
 					c.id === localId && c.title === title ? { ...c, id: newBoardId } : c,
 				);
 			useBoardStore.getState().setColumns(newColumns);
+			reportActionSuccess(`Board "${title}" created`);
 		} catch (error) {
 			useBoardStore.getState().setColumns(previousColumns);
 			reportActionError("Could not create board column", error);
@@ -87,6 +88,7 @@ export function useBoardMutations(projectId: string) {
 		try {
 			const result = await deleteBoardAction(boardId, projectId);
 			if (!result.success) throw new Error(result.error);
+			reportActionSuccess("Board deleted");
 		} catch (error) {
 			useBoardStore.getState().setColumns(previousColumns);
 			reportActionError("Could not delete board column", error);

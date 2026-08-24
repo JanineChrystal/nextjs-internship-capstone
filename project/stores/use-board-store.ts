@@ -45,9 +45,7 @@ export const useBoardStore = create<BoardState>((set) => ({
 		set((state) => {
 			const columnToDelete = state.columns.find((c) => c.id === id);
 
-			// Board deletion sends the board's tasks to trash (soft-deleted
-			// server-side), matching the server behavior in deleteBoardDAL -
-			// not a reassignment to a fallback column.
+			/** cascading delete - sends the column's tasks to the trash (soft-deleted server-side), matching the server behavior instead of reassigning them. */
 			if (columnToDelete) {
 				const tasksStore = useTaskStore.getState();
 				const taskIdsInColumn = tasksStore.tasks

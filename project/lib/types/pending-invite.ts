@@ -4,10 +4,7 @@ export type DbPendingInvite = typeof pendingInvites.$inferSelect;
 export type NewDbPendingInvite = typeof pendingInvites.$inferInsert;
 
 /**
- * What an invite call reports back.
- *
- * "invited" means the person already had an account and now holds real
- * membership rows; "pending" means the invitation was stored and will be
- * claimed when they sign up. The caller needs to tell the user which happened.
+ * invite outcome - categorizes the result of an invite request, distinguishing
+ * between direct membership grants ('invited') and deferred storage ('pending').
  */
 export type InviteOutcome = "invited" | "pending";

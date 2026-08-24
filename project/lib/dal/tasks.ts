@@ -10,16 +10,18 @@ import {
 	type TaskWithBoardOutputDTO,
 	toTaskDTO,
 } from "@/lib/dtos/task-dto";
-import type { NewDbTask } from "@/lib/types/task";
+import type { DbTask, NewDbTask } from "@/lib/types/task";
+import { describeTaskChanges } from "@/lib/utils/activity";
 
 export async function createTaskInDB(data: NewDbTask): Promise<TaskOutputDTO> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	// Access is resolved centrally rather than by ownership: a direct member or
-	// a team member holds create_task, and the ownerId filter that used to sit
-	// here rejected them outright even though createTaskAction had already
-	// passed them through the permission check.
+	/**
+	 * central access resolution - authorizes task creation via comprehensive
+	 * project roles rather than an ownership filter that would incorrectly
+	 * reject permitted members.
+	 */
 	const role = await getEffectiveProjectRoleDAL(data.projectId);
 	if (!role) {
 		throw new Error("Unauthorized: No access to this project");
@@ -46,7 +48,11 @@ export async function createTaskInDB(data: NewDbTask): Promise<TaskOutputDTO> {
 
 		const result = await db
 			.insert(tasks)
-			.values({ ...data, position: maxPosition + 1 })
+			.values({
+				...data,
+				notes: data.notes,
+				position: maxPosition + 1,
+			})
 			.returning();
 
 		return toTaskDTO(result[0]);
@@ -64,7 +70,7 @@ export async function moveTaskBoardDAL(
 	if (!user) throw new Error("Unauthorized");
 
 	try {
-		// Get the new board to find its name to sync the status
+		/** sync status - retrieves the target board to keep the task's status field in sync with its new column. */
 		const [board] = await db
 			.select()
 			.from(boards)
@@ -78,6 +84,7 @@ export async function moveTaskBoardDAL(
 				and(
 					eq(tasks.id, taskId),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			)
@@ -91,17 +98,20 @@ export async function moveTaskBoardDAL(
 	}
 }
 
-// Cross-project task fetch for surfaces like the global calendar page, which
-// need every task the user can reach rather than one project's tasks. Includes
-// the board title directly since callers span many projects at once.
+/**
+ * get all user tasks - fetches every task the user can reach across all
+ * accessible projects, including board titles to support global views like
+ * the cross-project calendar.
+ */
 export async function getAllUserTasksDAL(): Promise<TaskWithBoardOutputDTO[]> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	// Scoped to the same three access routes as the project list rather than
-	// ownership alone. Filtering on projects.ownerId here left the global
-	// calendar showing a shared project with none of its tasks, because
-	// getAllUserProjectsDAL already resolves all three routes.
+	/**
+	 * inclusive project scope - scopes the task fetch to all accessible
+	 * projects resolved centrally, avoiding an owner-only filter that would
+	 * hide shared tasks.
+	 */
 	const accessibleProjects = await getAllUserProjectsDAL();
 	const projectIds = accessibleProjects.map((project) => project.id);
 
@@ -116,6 +126,7 @@ export async function getAllUserTasksDAL(): Promise<TaskWithBoardOutputDTO[]> {
 			.where(
 				and(
 					inArray(tasks.projectId, projectIds),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 					isNull(projects.deletedAt),
 				),
@@ -139,10 +150,11 @@ export async function getTasksByProjectId(
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	// This is the real security boundary for at least one caller (getTasksAction
-	// performs no permission check of its own), so denial must throw rather than
-	// return an empty list - silently returning [] would disguise the refusal as
-	// "this project has no tasks".
+	/**
+	 * strict denial - throws on permission failure rather than returning an
+	 * empty list, acting as a hard security boundary for callers that lack
+	 * their own checks.
+	 */
 	const role = await getEffectiveProjectRoleDAL(projectId);
 	if (!role) throw new Error("Unauthorized");
 
@@ -156,6 +168,7 @@ export async function getTasksByProjectId(
 			.where(
 				and(
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 					isNull(projects.deletedAt),
 				),
@@ -168,22 +181,48 @@ export async function getTasksByProjectId(
 	}
 }
 
+/**
+ * update task - updates a task and generates a concise change summary for
+ * activity logging by reading the before-state, returning a null summary if
+ * no tracked fields were actually altered.
+ */
 export async function updateTaskInDB(
 	taskId: string,
 	projectId: string,
 	data: Partial<NewDbTask>,
-): Promise<TaskOutputDTO> {
+): Promise<{ task: TaskOutputDTO; changeSummary: string | null }> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
 	try {
-		const result = await db
-			.update(tasks)
-			.set({ ...data, updatedAt: new Date() })
+		const [before] = await db
+			.select()
+			.from(tasks)
 			.where(
 				and(
 					eq(tasks.id, taskId),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
+					isNull(tasks.deletedAt),
+				),
+			);
+
+		if (!before) throw new Error("Task not found");
+
+		const updateData = {
+			...data,
+			...(data.notes !== undefined && { notes: data.notes }),
+			updatedAt: new Date(),
+		};
+
+		const result = await db
+			.update(tasks)
+			.set(updateData)
+			.where(
+				and(
+					eq(tasks.id, taskId),
+					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			)
@@ -191,8 +230,15 @@ export async function updateTaskInDB(
 
 		if (result.length === 0) throw new Error("Task not found");
 
-		return toTaskDTO(result[0]);
+		const after = result[0] as DbTask;
+
+		return {
+			task: toTaskDTO(after),
+			changeSummary: describeTaskChanges(before as DbTask, after),
+		};
 	} catch (error) {
+		if (error instanceof Error && error.message === "Task not found")
+			throw error;
 		throw new Error("Failed to update task in database", { cause: error });
 	}
 }
@@ -212,6 +258,7 @@ export async function deleteTaskInDB(
 				and(
 					eq(tasks.id, taskId),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			);
@@ -236,6 +283,7 @@ export async function bulkDeleteTasksInDB(
 				and(
 					inArray(tasks.id, taskIds),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			);
@@ -255,9 +303,11 @@ export async function bulkCompleteTasksInDB(
 	if (!user) throw new Error("Unauthorized");
 
 	try {
-		// The completion column is identified by its flag, not its name, and is
-		// scoped to this project - the previous name lookup searched every
-		// project's boards and could move tasks into an unrelated project.
+		/**
+		 * find project completion board - locates the completion column
+		 * specifically for this project using its boolean flag, rather than
+		 * relying on a cross-project name search.
+		 */
 		const [completionBoard] = await db
 			.select({ id: boards.id, name: boards.name })
 			.from(boards)
@@ -269,9 +319,11 @@ export async function bulkCompleteTasksInDB(
 				),
 			);
 
-		// isCompleted is authoritative and always set. Moving the task into a
-		// completion column is a best-effort convenience: if no column is
-		// designated, the task simply stays where it is.
+		/**
+		 * authoritative completion - sets the isCompleted flag authoritatively,
+		 * treating the move to a completion board as a best-effort convenience
+		 * if one is designated.
+		 */
 		const updateData: Partial<NewDbTask> = {
 			isCompleted: true,
 			updatedAt: new Date(),
@@ -290,6 +342,7 @@ export async function bulkCompleteTasksInDB(
 				and(
 					inArray(tasks.id, taskIds),
 					eq(tasks.projectId, projectId),
+					isNull(tasks.archivedAt),
 					isNull(tasks.deletedAt),
 				),
 			);
@@ -319,6 +372,7 @@ export async function reorderTasksInDB(
 							eq(tasks.id, taskIds[i]),
 							eq(tasks.boardId, boardId),
 							eq(tasks.projectId, projectId),
+							isNull(tasks.archivedAt),
 							isNull(tasks.deletedAt),
 						),
 					);

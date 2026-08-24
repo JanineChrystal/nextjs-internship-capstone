@@ -1,6 +1,5 @@
 "use client";
 
-import { AlertCircle, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
@@ -8,7 +7,7 @@ import { TeamToolbar } from "@/app/(dashboard)/team/_components/team-toolbar";
 import { BoardView } from "@/app/(dashboard)/team/_components/views/board-view";
 import { GridView } from "@/app/(dashboard)/team/_components/views/grid-view";
 import { PendingView } from "@/app/(dashboard)/team/_components/views/pending-view";
-import { Button } from "@/components/ui/buttons/button";
+import { useRecordSkeletonCount } from "@/hooks/use-skeleton-count";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
 import { useDirectorySelection } from "../_hooks/use-directory-selection";
 import { useWorkspaceDirectory } from "../_hooks/use-workspace-directory";
@@ -26,10 +25,10 @@ interface TeamPageClientProps {
 }
 
 export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
+	// row count tracking - records the actual member count to size the loading skeleton correctly next time.
+	useRecordSkeletonCount("team-members", initialMembers.length);
 	const {
 		members,
-		error,
-		clearError,
 		removal,
 		pendingRefreshKey,
 		requestRemoveMember,
@@ -52,7 +51,7 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 		handleSort,
 	} = useDirectorySelection(members);
 
-	// A single-row removal names the person; a bulk removal counts them.
+	// removal scope tracking - distinguishes between individual and bulk actions to tailor the warning modal text.
 	const removalCount = removal.userIds?.size ?? selectedIds.size;
 	const isSingleRemoval = removal.userIds?.size === 1;
 	const singleTargetName = isSingleRemoval
@@ -71,22 +70,7 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 				description="Manage workspace members and their roles across all projects."
 			/>
 
-			{error && (
-				<div className="p-3 bg-error/10 border border-error/20 rounded-md flex items-start gap-3">
-					<AlertCircle className="w-5 h-5 text-error shrink-0 mt-0.5" />
-					<p className="text-sm text-error flex-1">{error}</p>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon-sm"
-						onClick={clearError}
-						className="h-5 w-5 text-error/70 hover:text-error"
-						aria-label="Dismiss error"
-					>
-						<X className="w-4 h-4" />
-					</Button>
-				</div>
-			)}
+			{/* centralized error reporting - delegates error handling to global toasts rather than shifting layout with inline banners. */}
 
 			<div className="flex-1 overflow-auto">
 				<TeamToolbar
@@ -118,13 +102,11 @@ export function TeamPageClient({ initialMembers }: TeamPageClientProps) {
 					/>
 				)}
 
-				{/* Remounted when an invite is sent, so a newly stored invitation shows
-				    up without needing a tab switch. */}
+				{/* pending list refresh - forces a remount on invite actions to ensure new invitations are immediately visible. */}
 				{activeView === "Pending" && <PendingView key={pendingRefreshKey} />}
 			</div>
 
-			{/* Selection belongs to the directory views; the Pending list has its own
-			    per-row revoke and nothing bulk to act on. */}
+			{/* conditional bulk actions - hides the bulk action bar on views that don't support multi-selection operations. */}
 			{activeView !== "Pending" && (
 				<BulkActionBar
 					selectedCount={selectedIds.size}

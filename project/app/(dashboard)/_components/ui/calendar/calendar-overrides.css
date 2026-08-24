@@ -1,3 +1,18 @@
+/*
+ * react-big-calendar, restyled and made to fit a phone.
+ *
+ * Written mobile-first: the base rules are the small-screen sizes, and the
+ * roomier desktop treatment is added back at 640px. That direction matters here
+ * because the library ships generous fixed paddings - overriding them downward
+ * inside a max-width query means every rule exists twice, and the pair drifts.
+ *
+ * The layout is not rebuilt. react-big-calendar already produces the structure
+ * the mobile design calls for - a seven-column month grid, a day-header row over
+ * a time gutter for week, one column for day - so all that is needed is for it to
+ * stop reserving desktop-sized space. Replacing the grid would have meant
+ * re-implementing slot selection, navigation and event hit-testing.
+ */
+
 /* Remove all default borders from the library */
 .rbc-month-view,
 .rbc-month-row,
@@ -9,23 +24,28 @@
 	border: none;
 }
 
-/* Style the Day Headers (Mon, Tue, Wed) */
+/* Day headers (S, M, T ... on a phone; Mon, Tue on a desktop) */
 .rbc-header {
 	font-weight: 500;
 	color: var(--color-secondary);
-	padding-bottom: 1rem;
-	font-size: 0.875rem;
-	line-height: 1.25rem;
+	padding-bottom: 0.375rem;
+	font-size: 0.6875rem;
+	line-height: 1rem;
 	text-align: center;
 	text-transform: uppercase;
-	letter-spacing: 0.05em;
+	letter-spacing: 0.02em;
+	/* Seven equal columns at 360px leave ~50px each. Without this, one long
+	   weekday name sets a minimum width for the whole table and the grid
+	   overflows the card. */
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
-/* Create the "Floating Card" look for each day */
+/* The "floating card" look for each day */
 .rbc-day-bg {
 	background-color: var(--color-surface-container);
-	border-radius: 0.75rem;
-	margin: 0.25rem;
+	border-radius: 0.5rem;
+	margin: 0.0625rem;
 	transition: background-color 150ms ease-in-out;
 }
 
@@ -45,24 +65,30 @@
 	border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
-/* Highlight the date cell the user clicked (side-panel filter target) */
-.rbc-day-selected {
-	background-color: color-mix(
-		in srgb,
-		var(--color-primary) 16%,
-		transparent
-	) !important;
-	border: 1px solid var(--color-primary) !important;
+/*
+ * The date cell the reader clicked, which filters the side panel.
+ *
+ * Two class names deep on purpose. This has to beat `.rbc-day-bg` and
+ * `.rbc-today`, which are single-class rules the library also sets, and raising
+ * specificity is the honest way to win that - `!important` was used here before
+ * and reverses the cascade for anything that later needs to override this.
+ */
+.rbc-day-bg.rbc-day-selected,
+.rbc-day-slot.rbc-day-selected,
+.rbc-header.rbc-day-selected {
+	background-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
+	border: 1px solid var(--color-primary);
 }
 
-/* Position the date number in the top-left */
+/* The date number. Its inner layout is a flex row set by CustomMonthDateHeader,
+   so only the box around it is sized here. */
 .rbc-date-cell {
 	text-align: left;
-	padding: 0.75rem;
+	padding: 0.25rem 0.125rem;
 	font-weight: 600;
 	color: var(--color-secondary);
-	font-size: 0.875rem;
-	line-height: 1.25rem;
+	font-size: 0.75rem;
+	line-height: 1rem;
 }
 
 .rbc-date-cell.rbc-now {
@@ -70,7 +96,7 @@
 	font-weight: 700;
 }
 
-/* Remove default event backgrounds since we use CustomEvent */
+/* Remove default event backgrounds since the event renderers draw their own */
 .rbc-event {
 	background-color: transparent;
 	padding: 0;
@@ -84,6 +110,118 @@
 }
 
 .rbc-row-segment {
-	padding-left: 0.25rem;
-	padding-right: 0.25rem;
+	padding-left: 0.0625rem;
+	padding-right: 0.0625rem;
+}
+
+/* The "+2 more" link, which is how a phone-sized cell stays usable */
+.rbc-show-more {
+	font-size: 0.625rem;
+	padding: 0 0.125rem;
+	color: var(--color-primary);
+	background-color: transparent;
+}
+
+/*
+ * Week and Day views.
+ *
+ * The hour gutter is the main thing standing between this and a phone: the
+ * library sizes it for "12:00 AM" at desktop type sizes, which on a 360px screen
+ * takes an eighth of the width before a single day column exists.
+ */
+.rbc-time-gutter,
+.rbc-time-gutter .rbc-timeslot-group {
+	font-size: 0.625rem;
+	min-width: 2.75rem;
+}
+
+.rbc-timeslot-group {
+	min-height: 2.5rem;
+}
+
+.rbc-time-header-gutter {
+	min-width: 2.75rem;
+}
+
+/* Keeps a tapped event distinguishable from the hour lines behind it */
+.rbc-time-view .rbc-event {
+	border-radius: 0.25rem;
+}
+
+/*
+ * The library's own "8:40 PM – 9:40 PM" label on Week/Day events.
+ *
+ * Hidden on a phone. It is rendered ABOVE the custom event body and is a fixed
+ * ~90px of text, so in a 45px day column it pushed the task title out of the box
+ * entirely - the row of events read as a wall of clipped timestamps with no
+ * indication of what any of them were. The times are still on the event's
+ * tooltip and in its modal; the title is the thing that has to survive.
+ */
+.rbc-event-label {
+	display: none;
+}
+
+/*
+ * The all-day strip above the hour grid.
+ *
+ * It reserves its full height whether or not anything is in it, which on a phone
+ * was an empty box the size of three hour rows sitting between the day headers
+ * and the first slot.
+ */
+.rbc-allday-cell {
+	max-height: 2rem;
+}
+
+@media (min-width: 640px) {
+	.rbc-header {
+		padding-bottom: 1rem;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		letter-spacing: 0.05em;
+	}
+
+	.rbc-day-bg {
+		border-radius: 0.75rem;
+		margin: 0.25rem;
+	}
+
+	.rbc-date-cell {
+		padding: 0.75rem;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+	}
+
+	.rbc-row-segment {
+		padding-left: 0.25rem;
+		padding-right: 0.25rem;
+	}
+
+	.rbc-show-more {
+		font-size: 0.75rem;
+		padding: 0 0.25rem;
+	}
+
+	.rbc-time-gutter,
+	.rbc-time-gutter .rbc-timeslot-group {
+		font-size: 0.75rem;
+		min-width: 4rem;
+	}
+
+	.rbc-time-header-gutter {
+		min-width: 4rem;
+	}
+
+	.rbc-timeslot-group {
+		min-height: 3.5rem;
+	}
+
+	/* There is room for the time range beside the title again. */
+	.rbc-event-label {
+		display: block;
+		font-size: 0.625rem;
+	}
+
+	.rbc-allday-cell {
+		max-height: 3rem;
+	}
 }

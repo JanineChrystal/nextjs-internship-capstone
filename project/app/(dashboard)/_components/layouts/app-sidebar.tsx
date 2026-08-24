@@ -1,183 +1,348 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
+import {
+	ChevronRight,
+	PanelLeftClose,
+	PanelLeftOpen,
+	User,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { BrandMark } from "@/components/ui/brand-mark";
 import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
 	Sidebar,
 	SidebarContent,
 	SidebarFooter,
 	SidebarGroup,
+	SidebarGroupLabel,
 	SidebarHeader,
 	SidebarMenu,
+	SidebarMenuBadge,
 	SidebarMenuButton,
 	SidebarMenuItem,
-	SidebarMenuSub,
-	SidebarMenuSubButton,
-	SidebarMenuSubItem,
+	SidebarSeparator,
 	useSidebar,
 } from "@/components/ui/sidebar";
+import { getUnreadNotificationCountAction } from "@/lib/actions/notification-actions";
+import { clerkAppearance } from "@/lib/clerk/appearance";
+import type { NavItem, NavSubItem } from "@/lib/types/nav";
 import { cn } from "@/lib/utils";
-import { bottomNavigation, mainNavigation } from "../../_constants/nav";
+import { useSettingsNavStore } from "@/stores/use-settings-nav-store";
+import { bottomNavigation, navigationGroups } from "../../_constants/nav";
 
+/**
+ * base entry styles - defines shared structural styling for navigation items,
+ * deferring color management to active/idle classes to support dynamic themes.
+ */
+const ENTRY_BASE =
+	"font-medium rounded-lg transition-colors group-data-[collapsible=icon]:justify-center";
+
+/**
+ * active entry styles - enforces theme-aware active state coloring by using
+ * important declarations to override the component's internal attribute selectors.
+ */
+const ENTRY_ACTIVE =
+	"bg-primary! text-primary-foreground! hover:bg-primary/90!";
+
+const ENTRY_IDLE =
+	"text-muted-foreground hover:bg-accent hover:text-foreground";
+
+/**
+ * app sidebar component - provides the main navigation structure for the dashboard,
+ * dynamically fetching notification counts based on route changes to ensure
+ * data freshness across client-side navigations.
+ */
 export function AppSidebar({ className }: { className?: string }) {
 	const pathname = usePathname();
-	const { state, setOpen } = useSidebar();
+	const { state, toggleSidebar, setOpenMobile, isMobile } = useSidebar();
+
+	const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+	const activeSettingsSection = useSettingsNavStore(
+		(store) => store.activeNavId,
+	);
+	const requestSettingsScroll = useSettingsNavStore(
+		(store) => store.requestScrollTo,
+	);
+
+	// notification count fetcher - triggers on pathname changes to keep the unread badge synchronized, using a cancellation flag to handle rapid navigation races.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: pathname is the refetch trigger
+	useEffect(() => {
+		let cancelled = false;
+
+		getUnreadNotificationCountAction().then((value) => {
+			if (!cancelled) setUnreadNotifications(value);
+		});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [pathname]);
+
+	const badgeCount = (item: NavItem): number =>
+		item.badge === "unreadNotifications" ? unreadNotifications : 0;
+
+	/**
+	 * is sub-item active logic - determines active state for grouped sections like
+	 * settings based on scroll position tracking rather than solely URL matching.
+	 */
+	const isSubItemActive = (subItem: NavSubItem): boolean => {
+		if (!subItem.settingsSectionId) return pathname === subItem.href;
+		return (
+			pathname === subItem.href &&
+			activeSettingsSection === subItem.settingsSectionId
+		);
+	};
+
+	// mobile auto-close - ensures the navigation sheet dismisses itself upon selection on small screens while remaining persistent on desktop.
+	const closeOnMobile = () => {
+		if (isMobile) setOpenMobile(false);
+	};
 
 	return (
 		<Sidebar
 			collapsible="icon"
 			className={cn("border-r border-border bg-sidebar", className)}
 		>
-			{/* Top: Logo */}
-			<SidebarHeader>
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<SidebarMenuButton
-							size="lg"
-							className="hover:bg-transparent cursor-default group-data-[collapsible=icon]:justify-center"
-						>
-							<div className="flex aspect-square size-8 group-data-[collapsible=icon]:size-5 items-center justify-center rounded-lg group-data-[collapsible=icon]:rounded-md bg-[#0D47A1] text-white transition-all">
-								<span className="font-bold text-lg group-data-[collapsible=icon]:text-sm">
-									T
-								</span>
-							</div>
-							<div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-								<span className="text-[22px] font-bold text-[#0D47A1] tracking-tight">
-									Takda PH
-								</span>
-							</div>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				</SidebarMenu>
+			{/* structural alignment - equalizes container padding across sections so the collapsed rail remains perfectly vertical. */}
+			<SidebarHeader className="p-2">
+				{/* brand mark interaction - links to the dashboard root, replacing an inactive button state for better UX. */}
+				<Link
+					href="/dashboard"
+					onClick={closeOnMobile}
+					className="flex items-center gap-2 rounded-lg px-1 py-1 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+				>
+					<BrandMark />
+					<span className="truncate text-lg font-semibold tracking-tight text-on-surface group-data-[collapsible=icon]:hidden">
+						Takda PH
+					</span>
+				</Link>
 			</SidebarHeader>
 
-			{/* Middle: Navigation Links */}
 			<SidebarContent>
-				<SidebarGroup>
-					<SidebarMenu className="gap-1.5">
-						{mainNavigation.map((item) => {
-							const Icon = item.icon;
-							const isActive = pathname.startsWith(item.href);
+				{navigationGroups.map((group) => (
+					<SidebarGroup key={group.label}>
+						{/* conditional group label - hides the text when the sidebar is collapsed to save space. */}
+						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+							{group.label}
+						</SidebarGroupLabel>
 
+						<SidebarMenu className="gap-1">
+							{group.items.map((item) => {
+								const Icon = item.icon;
+								const isActive = pathname.startsWith(item.href);
+								const count = badgeCount(item);
+
+								return (
+									<SidebarMenuItem key={item.name}>
+										<SidebarMenuButton
+											asChild
+											tooltip={
+												count > 0 ? `${item.name} (${count})` : item.name
+											}
+											isActive={isActive}
+											className={cn(
+												ENTRY_BASE,
+												isActive ? ENTRY_ACTIVE : ENTRY_IDLE,
+											)}
+										>
+											<Link href={item.href} onClick={closeOnMobile}>
+												{Icon && <Icon className="size-4.5 shrink-0" />}
+												<span>{item.name}</span>
+											</Link>
+										</SidebarMenuButton>
+
+										{/* conditional badge - hides notification counts in collapsed mode since they are provided in tooltips and would clutter the small icons. */}
+										{count > 0 && (
+											<SidebarMenuBadge
+												className={cn(
+													"pointer-events-none tabular-nums group-data-[collapsible=icon]:hidden",
+													isActive
+														? "text-primary-foreground"
+														: "bg-primary/10 text-primary",
+												)}
+											>
+												{count > 99 ? "99+" : count}
+											</SidebarMenuBadge>
+										)}
+									</SidebarMenuItem>
+								);
+							})}
+						</SidebarMenu>
+					</SidebarGroup>
+				))}
+			</SidebarContent>
+
+			<SidebarFooter className="gap-2 p-2">
+				<SidebarMenu className="gap-1">
+					{bottomNavigation.map((item) => {
+						const Icon = item.icon;
+						const isActive = pathname.startsWith(item.href);
+						const subItems = item.subItems ?? [];
+
+						if (subItems.length === 0) {
 							return (
 								<SidebarMenuItem key={item.name}>
 									<SidebarMenuButton
 										asChild
 										tooltip={item.name}
 										isActive={isActive}
-										className={
-											isActive
-												? "bg-[#0D47A1] text-white hover:bg-[#0D47A1]/90 hover:text-white font-medium rounded-lg"
-												: "text-muted-foreground hover:bg-accent hover:text-foreground font-medium rounded-lg transition-colors"
-										}
+										className={cn(
+											ENTRY_BASE,
+											isActive ? ENTRY_ACTIVE : ENTRY_IDLE,
+										)}
 									>
-										<Link href={item.href}>
-											{Icon && <Icon className="w-5 h-5" />}
+										<Link href={item.href} onClick={closeOnMobile}>
+											{Icon && <Icon className="size-4.5 shrink-0" />}
 											<span>{item.name}</span>
 										</Link>
 									</SidebarMenuButton>
 								</SidebarMenuItem>
 							);
-						})}
-					</SidebarMenu>
-				</SidebarGroup>
-			</SidebarContent>
-
-			{/* Bottom: Settings with Expandable Submenus */}
-			<SidebarFooter className="p-4 pb-12 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:pb-12">
-				<SidebarMenu className="gap-1.5">
-					{bottomNavigation.map((item) => {
-						const Icon = item.icon;
-						const isActive = pathname.startsWith(item.href);
-						const hasSubItems = item.subItems && item.subItems.length > 0;
-
-						const buttonStyles = isActive
-							? "bg-[#0D47A1] text-white hover:bg-[#0D47A1]/90 hover:text-white font-medium rounded-lg group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
-							: "text-muted-foreground hover:bg-accent hover:text-foreground font-medium rounded-lg transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0";
-
-						if (hasSubItems) {
-							return (
-								<Collapsible
-									key={item.name}
-									asChild
-									defaultOpen={isActive}
-									className="group/collapsible"
-								>
-									<SidebarMenuItem>
-										<CollapsibleTrigger asChild>
-											<SidebarMenuButton
-												size="lg"
-												tooltip={item.name}
-												isActive={isActive}
-												className={buttonStyles}
-												onClick={() => {
-													if (state === "collapsed") {
-														setOpen(true);
-													}
-												}}
-											>
-												{Icon && <Icon className="w-5 h-5 shrink-0" />}
-												<span className="group-data-[collapsible=icon]:hidden">
-													{item.name}
-												</span>
-												<ChevronRight className="ml-auto w-4 h-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
-											</SidebarMenuButton>
-										</CollapsibleTrigger>
-
-										<CollapsibleContent>
-											<SidebarMenuSub className="mt-1 border-l-border">
-												{item.subItems?.map((subItem) => (
-													<SidebarMenuSubItem key={subItem.name}>
-														<SidebarMenuSubButton
-															asChild
-															isActive={pathname === subItem.href}
-															className="font-medium hover:bg-accent/50 text-muted-foreground hover:text-foreground"
-														>
-															<Link href={subItem.href}>
-																<span>{subItem.name}</span>
-															</Link>
-														</SidebarMenuSubButton>
-													</SidebarMenuSubItem>
-												))}
-											</SidebarMenuSub>
-										</CollapsibleContent>
-									</SidebarMenuItem>
-								</Collapsible>
-							);
 						}
 
+						/**
+						 * settings menu popover - utilizes a floating dropdown for settings sub-items to prevent layout shifting and support collapsed sidebar interactions.
+						 */
 						return (
 							<SidebarMenuItem key={item.name}>
-								<SidebarMenuButton
-									asChild
-									size="lg"
-									tooltip={item.name}
-									isActive={isActive}
-									className={buttonStyles}
-									onClick={() => {
-										if (state === "collapsed") {
-											setOpen(true);
-										}
-									}}
-								>
-									<Link href={item.href}>
-										{Icon && <Icon className="w-5 h-5 shrink-0" />}
-										<span className="group-data-[collapsible=icon]:hidden">
-											{item.name}
-										</span>
-									</Link>
-								</SidebarMenuButton>
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<SidebarMenuButton
+											tooltip={item.name}
+											isActive={isActive}
+											className={cn(
+												ENTRY_BASE,
+												isActive ? ENTRY_ACTIVE : ENTRY_IDLE,
+											)}
+										>
+											{Icon && <Icon className="size-4.5 shrink-0" />}
+											<span className="group-data-[collapsible=icon]:hidden">
+												{item.name}
+											</span>
+											<ChevronRight className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+										</SidebarMenuButton>
+									</DropdownMenuTrigger>
+
+									{/* popover placement - positions the dropdown relative to the sidebar orientation based on device size. */}
+									<DropdownMenuContent
+										side={isMobile ? "top" : "right"}
+										align="end"
+										sideOffset={8}
+										className="min-w-48"
+									>
+										<DropdownMenuLabel>{item.name}</DropdownMenuLabel>
+										<DropdownMenuSeparator />
+										{subItems.map((subItem) => (
+											<DropdownMenuItem key={subItem.name} asChild>
+												<Link
+													href={subItem.href}
+													data-active={isSubItemActive(subItem)}
+													className="data-[active=true]:text-primary data-[active=true]:font-medium"
+													onClick={() => {
+														// scroll request delegation - dispatches scroll navigation events to the store to handle both internal scrolling and cross-page navigation uniformly.
+														if (subItem.settingsSectionId) {
+															requestSettingsScroll(subItem.settingsSectionId);
+														}
+														closeOnMobile();
+													}}
+												>
+													{subItem.name}
+												</Link>
+											</DropdownMenuItem>
+										))}
+									</DropdownMenuContent>
+								</DropdownMenu>
 							</SidebarMenuItem>
 						);
 					})}
+
+					{/* desktop collapse toggle - embeds the sidebar collapse control at the bottom of the navigation area, hiding it on mobile where the sidebar functions as an overlay. */}
+					<SidebarMenuItem className="hidden md:block">
+						<SidebarMenuButton
+							tooltip={state === "collapsed" ? "Expand sidebar" : undefined}
+							onClick={toggleSidebar}
+							className={cn(ENTRY_BASE, ENTRY_IDLE)}
+						>
+							{state === "collapsed" ? (
+								<PanelLeftOpen className="size-4.5 shrink-0" />
+							) : (
+								<PanelLeftClose className="size-4.5 shrink-0" />
+							)}
+							<span className="group-data-[collapsible=icon]:hidden">
+								Collapse sidebar
+							</span>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
 				</SidebarMenu>
+
+				<SidebarSeparator className="mx-0" />
+
+				{/* identity footer - positions the user account menu at the bottom of the sidebar to distinguish it from the operational tools in the top bar. */}
+				{/* footer padding alignment - ensures the avatar container aligns perfectly with the navigation icons above it when expanded. */}
+				<div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+					<AccountMenu collapsed={state === "collapsed" && !isMobile} />
+				</div>
 			</SidebarFooter>
 		</Sidebar>
+	);
+}
+
+/**
+ * account menu component - defers Clerk's UserButton rendering until client hydration,
+ * utilizing an identically sized skeleton placeholder to eliminate layout shifts on load.
+ */
+function AccountMenu({ collapsed }: { collapsed: boolean }) {
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => setMounted(true), []);
+
+	if (!mounted) {
+		return (
+			<div className="flex items-center gap-2">
+				<div className="size-8 shrink-0 animate-pulse rounded-full bg-muted" />
+				{!collapsed && (
+					<div className="h-4 w-24 animate-pulse rounded bg-muted" />
+				)}
+			</div>
+		);
+	}
+
+	return (
+		<UserButton
+			// name suppression - hides the user's name when the sidebar is collapsed to save space.
+			showName={!collapsed}
+			appearance={{
+				...clerkAppearance,
+				elements: {
+					rootBox: "w-full",
+					userButtonBox:
+						"flex flex-row gap-2 font-medium text-sm w-full justify-start",
+					userButtonOuterIdentifier:
+						"text-on-surface truncate max-w-36 text-left",
+					userButtonPopoverActionButton__manageAccount: "!hidden",
+					userButtonPopoverFooter: "!hidden",
+				},
+			}}
+		>
+			{/* static profile link - preserves the existing profile route link, noting that the hardcoded 'u1' parameter requires future correction. */}
+			<UserButton.MenuItems>
+				<UserButton.Link
+					label="Workspace Profile"
+					labelIcon={<User className="size-4" />}
+					href="/profile/u1"
+				/>
+			</UserButton.MenuItems>
+		</UserButton>
 	);
 }

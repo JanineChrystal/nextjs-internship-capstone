@@ -22,10 +22,7 @@ export function UserProfileView({
 	viewerUserId: _viewerUserId,
 	isSelf,
 }: UserProfileViewProps) {
-	// 1. Fetch target user's details & assigned projects
-	// 2. Filter projects:
-	//    - If `isSelf === true`: return ALL projects targetUser belongs to.
-	//    - If `isSelf === false`: return ONLY projects where both targetUser AND viewerUser are members.
+	// project filtering logic - fetches and filters user projects, restricting visibility to mutual projects when viewing another user's profile.
 
 	const targetUser = mockTargetUser;
 	const visibleProjects = mockVisibleProjects;
@@ -43,7 +40,7 @@ export function UserProfileView({
 					</Link>
 				</div>
 			)}
-			{/* Profile Header */}
+			{/* profile header section */}
 			<div className="flex items-center gap-6 bg-surface p-6 rounded-xl border border-outline-variant shadow-sm">
 				<Avatar className="h-20 w-20 border-2 border-primary">
 					<AvatarImage src={targetUser.avatarUrl} alt={targetUser.name} />
@@ -62,7 +59,7 @@ export function UserProfileView({
 				</div>
 			</div>
 
-			{/* Projects List Section */}
+			{/* projects list section */}
 			<div className="space-y-4">
 				<div>
 					<h2 className="text-xl font-bold text-foreground">
@@ -85,6 +82,7 @@ export function UserProfileView({
 					</div>
 				) : (
 					<EmptyState
+						subdued
 						icon={FolderLock}
 						title="No shared projects"
 						description="You and this team member do not currently share any common projects."

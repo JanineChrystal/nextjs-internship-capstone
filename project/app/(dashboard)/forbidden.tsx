@@ -1,21 +1,23 @@
-import { Lock } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/buttons/button";
+import type { Metadata } from "next";
+import { ErrorTerminal } from "@/components/ui/error-terminal/error-terminal";
+import { DASHBOARD_RECOVERY_ROUTES } from "@/lib/constants/error-pages";
 
+export const metadata: Metadata = {
+	title: "403 Forbidden",
+};
+
+/**
+ * forbidden page - explicitly omits a retry control for 403 responses
+ * since retrying will not bypass server-enforced access restrictions.
+ */
 export default function ForbiddenPage() {
 	return (
-		<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
-			<Lock className="w-16 h-16 text-yellow-500" />
-			<h2 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">
-				403 - Forbidden
-			</h2>
-			<p className="text-payne's_gray-500 dark:text-french_gray-500 max-w-md">
-				You are not authorized to access this resource. If you believe this is a
-				mistake, contact your project manager.
-			</p>
-			<Button asChild className="mt-4">
-				<Link href="/dashboard">Return to Dashboard</Link>
-			</Button>
-		</div>
+		<ErrorTerminal
+			code="403"
+			title="This is not shared with your account"
+			description="You are signed in, but you do not have permission to open this. If you think that is wrong, ask the project owner or your workspace admin to add you."
+			routes={DASHBOARD_RECOVERY_ROUTES}
+			className="min-h-[60vh]"
+		/>
 	);
 }

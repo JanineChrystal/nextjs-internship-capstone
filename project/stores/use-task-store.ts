@@ -9,9 +9,25 @@ interface TaskState {
 	selectedTaskIds: Set<string>;
 	createBoardTitle: string | null;
 	createDate: Date | null;
+	/**
+	 * Which project the modal was opened for, when the opener is not on that
+	 * project's page.
+	 *
+	 * The task modal normally reads the project from the route. That works
+	 * everywhere it has ever been opened from - the board, the grid, the
+	 * calendar - because all of those live under /projects/[id]. The dashboard's
+	 * "Create Task" shortcut does not, so it passes the project here instead.
+	 *
+	 * It sits beside createBoardTitle and createDate because it is the same kind
+	 * of thing: context the opener knows and the modal cannot work out for
+	 * itself. Threading it as a prop instead would mean passing it through the
+	 * modal, the properties grid and the assignee picker, none of which are
+	 * otherwise related.
+	 */
+	createProjectId: string | null;
 	openTaskModal: (
 		taskId?: string,
-		options?: { board?: string; date?: Date },
+		options?: { board?: string; date?: Date; projectId?: string },
 	) => void;
 	closeTaskModal: () => void;
 	createTask: (task: GridTask) => void;
@@ -35,6 +51,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 	selectedTaskIds: new Set<string>(),
 	createBoardTitle: null,
 	createDate: null,
+	createProjectId: null,
 
 	openTaskModal: (taskId, options) =>
 		set({
@@ -42,13 +59,16 @@ export const useTaskStore = create<TaskState>((set) => ({
 			selectedTaskId: taskId || null,
 			createBoardTitle: options?.board || null,
 			createDate: options?.date || null,
+			createProjectId: options?.projectId || null,
 		}),
+	/** context teardown - clears modal context on close so a dashboard-selected project doesn't leak into subsequent modals opened elsewhere. */
 	closeTaskModal: () =>
 		set({
 			isTaskModalOpen: false,
 			selectedTaskId: null,
 			createBoardTitle: null,
 			createDate: null,
+			createProjectId: null,
 		}),
 
 	createTask: (task) => set((state) => ({ tasks: [task, ...state.tasks] })),
@@ -72,7 +92,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 			const taskToDuplicate = state.tasks.find((t) => t.id === id);
 			if (!taskToDuplicate) return state;
 
-			// Logic to append (1), (2) etc.
+			/** duplication sequence - logic to append sequential numbers like (1), (2) to duplicated task names. */
 			const baseName = taskToDuplicate.name.replace(/\s\(\d+\)$/, "");
 			const similarTasks = state.tasks.filter((t) =>
 				t.name.startsWith(baseName),
@@ -85,7 +105,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 
 			for (const t of similarTasks) {
 				if (t.name === baseName) {
-					// Base exists, so at least 1 is needed
+					/** base collision - the original name exists without a suffix, so the next duplicate must be at least index 1. */
 					if (nextIndex < 1) nextIndex = 1;
 				} else {
 					const match = t.name.match(regex);
@@ -107,7 +127,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 			};
 			newTaskId = duplicatedTask.id;
 
-			// Insert duplicate right after original
+			/** adjacency insertion - inserts the duplicated task immediately following its original in the list. */
 			const index = state.tasks.findIndex((t) => t.id === id);
 			const newTasks = [...state.tasks];
 			newTasks.splice(index + 1, 0, duplicatedTask);
@@ -126,8 +146,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 
 	bulkCompleteTasks: (ids) =>
 		set((state) => {
-			// Move into the designated completion column if the project has one;
-			// otherwise tasks stay put and are simply flagged complete.
+			/** completion routing - moves tasks to the designated completion column if one exists, otherwise just flags them in place. */
 			const completionColumn = useBoardStore
 				.getState()
 				.columns.find((col) => col.isCompletionBoard);
@@ -182,8 +201,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 			};
 		}),
 
-	// Only the board changes: status is its own field and must not be
-	// overwritten by a column name when a card is dragged.
+	/** column assignment - updates only the board assignment on drag since status is tracked independently and shouldn't be overwritten. */
 	moveTaskToColumn: (taskId, targetBoardTitle) =>
 		set((state) => ({
 			tasks: state.tasks.map((task) =>

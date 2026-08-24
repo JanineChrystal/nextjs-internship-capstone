@@ -50,7 +50,7 @@ export function BaseTaskCard({
 			tabIndex={onClick ? 0 : undefined}
 			className={`bg-surface border border-outline-variant p-4 rounded-lg flex flex-col gap-3 transition-colors shadow-sm group ${className}`}
 		>
-			{/* Top Header Row */}
+			{/* top header row */}
 			{(topHeaderLeft || task.priority || task.category || headerAction) && (
 				<div className="flex justify-between items-start">
 					<div className="flex items-center gap-2">
@@ -81,12 +81,12 @@ export function BaseTaskCard({
 				</div>
 			)}
 
-			{/* Title */}
+			{/* title text */}
 			<p className="font-body-sm text-body-sm text-foreground leading-tight font-medium group-hover:text-primary transition-colors">
 				{task.title}
 			</p>
 
-			{/* Checklist Progress */}
+			{/* checklist progress bar */}
 			{task.tasksTotal ? (
 				<div className="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
 					<div
@@ -98,7 +98,7 @@ export function BaseTaskCard({
 				</div>
 			) : null}
 
-			{/* Footer Metadata */}
+			{/* footer metadata metrics */}
 			{(showAvatar ||
 				task.comments ||
 				task.attachments ||

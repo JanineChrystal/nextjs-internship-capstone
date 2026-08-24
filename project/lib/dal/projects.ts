@@ -85,10 +85,11 @@ export async function getProjectById(
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	// Access is resolved centrally so direct members and team members reach the
-	// project too - an ownerId filter here would 404 anyone but the owner.
-	// Returning null rather than throwing keeps notFound() behaving the same
-	// whether the project is missing or merely invisible to this user.
+	/**
+	 * central access resolution - resolves access via all valid routes (direct,
+	 * team, owner) and returns null on denial to uniformly trigger notFound()
+	 * without exposing existence to unauthorized users.
+	 */
 	const role = await getEffectiveProjectRoleDAL(projectId);
 	if (!role) return null;
 
@@ -131,30 +132,31 @@ export async function getProjectsByWorkspaceId(
 }
 
 /**
- * Every project the user can reach: owned, joined directly, or joined through a
- * team.
- *
- * Previously filtered on ownerId alone, so anyone invited to a project simply
- * never saw it. The three routes mirror getEffectiveProjectRoleDAL exactly, so
- * a project can never be listed here yet deny access on open (or vice versa).
- *
- * Cached per request because it is now the scoping primitive for several other
- * reads (getProjectStatsDAL, getAllUserTasksDAL). Without this, one /projects
- * render issued the three-query fan-out twice.
+ * get all user projects - retrieves all projects accessible via ownership,
+ * direct membership, or team membership. Caches per request as it serves
+ * as the primary scoping primitive for other DAL reads. Supports a 'scope'
+ * string ('live' or 'all') to correctly include trashed projects for archive
+ * views without busting the cache with object references.
  */
+export type ProjectScope = "live" | "all";
+
 export const getAllUserProjectsDAL = cache(
-	async (): Promise<ProjectOutputDTO[]> => {
+	async (scope: ProjectScope = "live"): Promise<ProjectOutputDTO[]> => {
 		const user = await getCurrentUser();
 		if (!user) throw new Error("Unauthorized");
+
+		/** scope visibility - relaxes deletion filters for the 'all' scope to allow the archive page to see trashed projects. */
+		const visibility =
+			scope === "live"
+				? and(isNull(projects.archivedAt), isNull(projects.deletedAt))
+				: undefined;
 
 		try {
 			const [owned, direct, viaTeams] = await Promise.all([
 				db
 					.select()
 					.from(projects)
-					.where(
-						and(eq(projects.ownerId, user.id), isNull(projects.deletedAt)),
-					),
+					.where(and(eq(projects.ownerId, user.id), visibility)),
 
 				db
 					.select({ project: projects })
@@ -164,7 +166,7 @@ export const getAllUserProjectsDAL = cache(
 						and(
 							eq(projectMembers.userId, user.id),
 							isNull(projectMembers.deletedAt),
-							isNull(projects.deletedAt),
+							visibility,
 						),
 					),
 
@@ -178,12 +180,12 @@ export const getAllUserProjectsDAL = cache(
 						and(
 							eq(teamMembers.userId, user.id),
 							isNull(teams.deletedAt),
-							isNull(projects.deletedAt),
+							visibility,
 						),
 					),
 			]);
 
-			// A user holding several routes to the same project must see it once.
+			/** deduplicate projects - ensures projects accessible via multiple routes (e.g., owner and team) appear only once. */
 			const byId = new Map<string, (typeof owned)[number]>();
 			for (const project of owned) byId.set(project.id, project);
 			for (const row of direct) byId.set(row.project.id, row.project);
@@ -199,21 +201,15 @@ export const getAllUserProjectsDAL = cache(
 );
 
 /**
- * Aggregated per-project counts for every project the user can reach.
- *
- * Scoped to the same three access routes as getAllUserProjectsDAL rather than
- * ownership alone - otherwise a project appears in the list but its card shows
- * zero tasks and zero members, because the stats lookup simply missed it.
- *
- * Grouped queries rather than per-project lookups, so the cost stays constant
- * regardless of how many projects exist.
+ * get project stats - retrieves aggregated task and member counts for all
+ * accessible projects using constant-cost grouped queries, ensuring counts
+ * match the visibility defined by getAllUserProjectsDAL.
  */
 export async function getProjectStatsDAL(): Promise<Map<string, ProjectStats>> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	// Resolve the accessible project ids first; aggregating per project would be
-	// an N+1 across the whole list.
+	/** resolve accessible ids - scopes the aggregation to accessible projects first to avoid an N+1 query problem. */
 	const accessibleProjects = await getAllUserProjectsDAL();
 	const projectIds = accessibleProjects.map((project) => project.id);
 
@@ -293,10 +289,11 @@ export async function updateProjectInDB(
 	if (!user) throw new Error("Unauthorized");
 
 	try {
-		// Scoped by id only: the action layer already gated this through
-		// verifyProjectPermissionDAL, which resolves all three access routes. An
-		// ownerId filter here would silently override that decision and make a
-		// permitted co-owner's update match zero rows.
+		/**
+		 * ID-only scope - relies on the action layer's prior permission check
+		 * to authorize the update, avoiding an owner-only filter that would
+		 * silently block permitted co-owners.
+		 */
 		const result = await db
 			.update(projects)
 			.set({ ...data, updatedAt: new Date() })
@@ -316,7 +313,7 @@ export async function deleteProjectInDB(projectId: string): Promise<void> {
 	if (!user) throw new Error("Unauthorized");
 
 	try {
-		// Gated by the action layer's permission check; see updateProjectInDB.
+		/** action gated - relies on the action layer's permission check for authorization before soft-deleting. */
 		await db
 			.update(projects)
 			.set({ deletedAt: new Date(), updatedAt: new Date() })

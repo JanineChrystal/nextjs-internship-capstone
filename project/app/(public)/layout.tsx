@@ -1,16 +1,25 @@
+import { Toaster } from "@/components/ui/toaster";
+import { FloatingDock } from "./_components/layouts/floating-dock";
+import { Footer } from "./_components/layouts/footer";
+import { Navbar } from "./_components/layouts/navbar";
+
+/**
+ * public layout - mounts the FloatingDock and Toaster at the root to
+ * ensure they survive navigation between public routes without remounting
+ * or dropping toast notifications.
+ */
 export default function PublicLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
 	return (
-		// A clean container for all public-facing pages
-		<div className="flex min-h-screen flex-col">
-			{/* <header>Project Flow Public Header</header> */}
-
+		<div className="flex min-h-screen flex-col bg-background">
+			<Navbar />
 			<main className="flex-1">{children}</main>
-
-			{/* <footer>Public Footer © 2026</footer> */}
+			<Footer />
+			<FloatingDock />
+			<Toaster />
 		</div>
 	);
 }

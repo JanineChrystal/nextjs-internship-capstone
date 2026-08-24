@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { WorkspaceMemberOutputDTO } from "@/lib/dtos/workspace-member-dto";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import { useMemberStore } from "@/stores/use-member-store";
 import { useWorkspaceMemberStore } from "@/stores/use-workspace-member-store";
 
@@ -12,30 +13,26 @@ interface RemovalTarget {
 const CLOSED_REMOVAL: RemovalTarget = { isOpen: false, userIds: null };
 
 /**
- * Owns the directory data and its mutations. Selection state deliberately lives
- * in a separate hook so sorting/selection re-renders do not touch data logic.
+ * use-workspace-directory hook - manages workspace member data and mutations,
+ * separated from selection state to prevent display-only re-renders from
+ * interfering with data logic.
  */
 export function useWorkspaceDirectory(
 	initialMembers: WorkspaceMemberOutputDTO[],
 ) {
 	const members = useWorkspaceMemberStore((state) => state.members);
-	const error = useWorkspaceMemberStore((state) => state.error);
 	const setMembers = useWorkspaceMemberStore((state) => state.setMembers);
-	const setError = useWorkspaceMemberStore((state) => state.setError);
-	const clearError = useWorkspaceMemberStore((state) => state.clearError);
 	const refreshMembers = useWorkspaceMemberStore(
 		(state) => state.refreshMembers,
 	);
 	const removeMembers = useWorkspaceMemberStore((state) => state.removeMembers);
 
 	const [removal, setRemoval] = useState<RemovalTarget>(CLOSED_REMOVAL);
-	// Bumped after invites are sent so the Pending view can remount and pick up
-	// a newly stored invitation.
+	// pending refresh key - increments to force remounts of the Pending view after new invitations are dispatched.
 	const [pendingRefreshKey, setPendingRefreshKey] = useState(0);
 	const isHydrated = useRef(false);
 
-	// Hydrate once from the server-fetched props. Guarded by a ref so client
-	// mutations are not overwritten when this effect's deps change.
+	// server hydration guard - ensures initial member data is loaded exactly once without overwriting subsequent client-side mutations.
 	useEffect(() => {
 		if (!isHydrated.current) {
 			setMembers(initialMembers);
@@ -56,27 +53,41 @@ export function useWorkspaceDirectory(
 	const confirmRemoval = useCallback(
 		async (selectedIds: Set<string>) => {
 			const targets = removal.userIds ?? selectedIds;
+			// removal count snapshot - captures the size of the target set before removal for accurate success reporting.
+			const count = targets.size;
+
 			setRemoval(CLOSED_REMOVAL);
-			return removeMembers(targets);
+			const removed = await removeMembers(targets);
+
+			if (removed) {
+				reportActionSuccess(
+					`${count} ${count === 1 ? "member" : "members"} removed`,
+				);
+			} else {
+				// transient error handling - retrieves and displays store errors as toasts before clearing them, as inline error banners were removed.
+				const reason = useWorkspaceMemberStore.getState().error;
+				reportActionError("Could not remove members", reason);
+				useWorkspaceMemberStore.getState().clearError();
+			}
+
+			return removed;
 		},
 		[removal.userIds, removeMembers],
 	);
 
-	// Called when the add-member modal closes. Invites are sent by the member
-	// store, so this hook has to pull the resulting directory changes in, and
-	// surface any invite failures through the same banner as removals.
+	// handle invites settled - synchronizes directory state and processes any errors originating from the member store after the invite modal closes.
 	const handleInvitesSettled = useCallback(async () => {
 		const inviteError = useMemberStore.getState().inviteError;
-		setError(inviteError);
+		if (inviteError) {
+			reportActionError("Could not send every invitation", inviteError);
+		}
 		useMemberStore.setState({ inviteError: null });
 		setPendingRefreshKey((key) => key + 1);
 		await refreshMembers();
-	}, [refreshMembers, setError]);
+	}, [refreshMembers]);
 
 	return {
 		members,
-		error,
-		clearError,
 		removal,
 		pendingRefreshKey,
 		requestRemoveMember,

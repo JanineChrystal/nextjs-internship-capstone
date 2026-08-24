@@ -24,11 +24,9 @@ export interface DangerZoneActionConfig {
 }
 
 /**
- * Aggregated per-project counts backing the project cards.
- *
- * Kept here rather than beside the query that builds it: the card components
- * that consume it are client-side and must never reach into the DAL, which is
- * `server-only`.
+ * project stats - aggregated per-project metrics backing project cards,
+ * declared outside the DAL to strictly prevent client-side components from
+ * reaching into server-only modules.
  */
 export interface ProjectStats {
 	taskCount: number;
@@ -37,11 +35,9 @@ export interface ProjectStats {
 }
 
 /**
- * The five views on a project detail page.
- *
- * This existed twice, declared identically in project-detail-client.tsx and in
- * _constants/project.ts, with different files importing different copies. They
- * happened to agree; nothing made them.
+ * project view type - defines the allowed view states for a project detail
+ * page, serving as the single source of truth across client components and
+ * constants.
  */
 export type ProjectViewType =
 	| "grid"

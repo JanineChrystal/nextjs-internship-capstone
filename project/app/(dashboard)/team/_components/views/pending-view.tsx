@@ -4,8 +4,8 @@ import { PendingInvitesList } from "@/app/(dashboard)/_components/ui/pending-inv
 import { usePendingInvites } from "@/app/(dashboard)/_hooks/use-pending-invites";
 
 /**
- * Every invitation in the workspace that is still waiting on a sign-up,
- * including directory-only ones with no project attached.
+ * pending view component - displays a list of all active workspace invitations
+ * that have not yet been accepted by the invitees, regardless of project attachment.
  */
 export function PendingView() {
 	const { invites, isLoading, revoke } = usePendingInvites("workspace");

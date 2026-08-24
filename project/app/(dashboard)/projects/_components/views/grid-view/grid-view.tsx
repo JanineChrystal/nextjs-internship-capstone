@@ -1,9 +1,9 @@
 "use client";
 import { useMemo } from "react";
 import { PageHeader } from "@/app/(dashboard)/_components/ui/headers/page-header";
-import { WarningModal } from "@/app/(dashboard)/_components/ui/modals/warning-modal";
 import { BulkActionBar } from "@/app/(dashboard)/_components/ui/toolbar/bulk-action-bar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/feedback/confirm-dialog";
 import { GridTable } from "@/components/views/grid-table/grid-table";
 import { useProjectStore } from "@/stores/use-project-store";
 import { GRID_COLUMNS } from "../../../_constants/grid-view";
@@ -35,6 +35,7 @@ export function GridView({
 		initiateBulkComplete,
 		confirmWarningAction,
 		closeWarningModal,
+		confirmCopy,
 	} = useGridView(projectId || "", externalFilters);
 
 	const isSelectionActive = isSelectionModeActive || selectedTaskIds.size > 0;
@@ -55,7 +56,7 @@ export function GridView({
 					),
 				};
 			}
-			// All these columns sortable except select and assignee
+			// selective sorting - enables sorting on all columns except selection checkboxes and assignees.
 			return { ...col, sortable: col.key !== "assignee" };
 		});
 	}, [isSelectionActive, handleToggleSelectionMode]);
@@ -91,24 +92,12 @@ export function GridView({
 				onComplete={initiateBulkComplete}
 			/>
 
-			<WarningModal
+			{/* confirmation dialog - displays dynamic warnings based on selection state and task progress provided by the view hook. */}
+			<ConfirmDialog
 				isOpen={warningModal.isOpen}
 				onClose={closeWarningModal}
 				onConfirm={confirmWarningAction}
-				variant={warningModal.actionType === "delete" ? "danger" : "warning"}
-				title={
-					warningModal.actionType === "delete"
-						? "Delete tasks with unfinished checklist items?"
-						: "Complete tasks with unfinished checklist items?"
-				}
-				message={
-					warningModal.actionType === "delete"
-						? "One or more selected tasks still have unchecked checklist items. Deleting them will also remove those items."
-						: "One or more selected tasks still have unchecked checklist items. Marking them complete won't check those items off."
-				}
-				confirmText={
-					warningModal.actionType === "delete" ? "Delete" : "Complete"
-				}
+				{...confirmCopy}
 			/>
 		</div>
 	);

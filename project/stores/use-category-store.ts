@@ -85,9 +85,7 @@ interface CategoryState {
 		type: CategoryType,
 	) => Promise<boolean>;
 
-	// Project-scoped equivalents, resolving the project's workspace server-side.
-	// The task modal needs these: a member opening a task in a shared project must
-	// see that project's categories, not their own.
+	/** project scope actions - resolves the project's workspace server-side so members see shared project categories instead of their personal ones. */
 	fetchProjectCategories: (
 		projectId: string,
 		type: CategoryType,
@@ -111,8 +109,7 @@ interface CategoryState {
 		type: CategoryType,
 	) => Promise<boolean>;
 
-	// Palette lookups for badges. Read-only as far as the rest of the app is
-	// concerned - nothing here writes categories, it only caches their colours.
+	/** palette caching - read-only cache lookups for rendering badge colors without mutating category data. */
 	ensureCategoryStyles: (scope: CategoryScope) => Promise<void>;
 	refreshCategoryStyles: (scope: CategoryScope) => Promise<void>;
 }
@@ -148,7 +145,7 @@ async function loadCategoryStyles(
 				}));
 			}
 		} catch {
-			// Left uncached rather than cached empty, so navigating back retries.
+			/** retry fallback - leaves failed requests uncached so navigating back triggers a retry instead of showing an empty palette forever. */
 		} finally {
 			inFlightStyleRequests.delete(key);
 		}

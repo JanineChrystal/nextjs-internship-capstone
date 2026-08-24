@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { updateProjectAction } from "@/lib/actions/project-actions";
-import { reportActionError } from "@/lib/utils/toast";
+import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import {
 	type EditProjectFormValues,
 	editProjectSchema,
@@ -69,6 +69,8 @@ export function useEditProject(
 				// Rollback
 				updateProject(projectId, previousProject);
 				reportActionError("Could not save project", result.error);
+			} else if (result.success) {
+				reportActionSuccess("Project updated");
 			}
 		} catch (error) {
 			if (previousProject) {
