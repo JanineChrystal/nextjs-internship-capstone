@@ -10,11 +10,7 @@ interface IncomingInvitesPanelProps {
 	onRespond: (inviteId: string, response: "accept" | "reject") => Promise<void>;
 }
 
-/**
- * incoming invites panel - invitations addressed to the signed-in person, with
- * the accept and reject they previously never got: being invited used to write
- * the membership immediately, so there was nothing to answer.
- */
+/** incoming invites panel - the accept and decline that did not exist while being invited wrote the membership immediately. */
 export function IncomingInvitesPanel({
 	invites,
 	onRespond,

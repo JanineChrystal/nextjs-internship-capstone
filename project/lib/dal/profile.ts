@@ -17,12 +17,7 @@ import type {
 } from "@/lib/types/profile";
 import { toProfileStatus } from "@/lib/utils/profile";
 
-/**
- * profile visibility rule - you may look at anyone you share a project with,
- * and you see only the projects you share. That keeps a profile from becoming a
- * directory of everything a colleague works on, while still letting the people
- * who actually work together see each other's assignments.
- */
+/** profile visibility - you see only the projects you share with someone, so a profile never becomes a directory of everything a colleague works on. */
 export interface UserProfileDTO {
 	user: ProfileUser;
 	isSelf: boolean;
@@ -43,14 +38,7 @@ function toProfileUser(row: typeof users.$inferSelect): ProfileUser {
 	};
 }
 
-/**
- * get user profile - resolves the person named in the URL and the projects the
- * viewer shares with them, with the tasks assigned to that person inside each.
- *
- * `"me"` is accepted as the id because the sidebar links here without knowing
- * the viewer's database id - it only ever sees the Clerk id, which is not what
- * this route is keyed by.
- */
+/** get user profile - the person named in the URL plus the projects you share; "me" is accepted because the sidebar only knows the Clerk id, not the database one. */
 export async function getUserProfileDAL(
 	targetUserId: string,
 ): Promise<UserProfileDTO | null> {
@@ -75,11 +63,7 @@ export async function getUserProfileDAL(
 
 	const viewerProjectIds = viewerProjects.map((project) => project.id);
 
-	/**
-	 * shared scope - for another person, narrow to the projects they are also on.
-	 * Ownership counts as membership: a project owner has no ProjectMembers row,
-	 * so checking that table alone would hide every project they own.
-	 */
+	/** shared scope - narrows to projects they are also on; ownership counts, since an owner has no ProjectMembers row. */
 	let sharedProjectIds = viewerProjectIds;
 	if (!isSelf) {
 		const memberships = await db

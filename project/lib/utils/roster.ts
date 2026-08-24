@@ -1,18 +1,6 @@
-/**
- * roster comparison - set questions about two lists of user ids.
- *
- * These live here rather than inside the groups DAL because the same two
- * questions are asked on both sides of the wire: the server refuses to save a
- * group whose roster already exists, and the settings UI decides from the same
- * comparison whether to offer "Add to project" and "Sync members". Two copies of
- * this drifting apart would show a button that the action then refuses.
- *
- * Every function treats its inputs as sets, so order and duplicates never change
- * the answer - which matters because one side comes from a SQL aggregate and the
- * other from a store.
- */
+/** roster comparison - set questions about two lists of user ids, shared by the groups DAL and the settings UI so a button and the action behind it cannot disagree. */
 
-/** same roster - the two lists contain exactly the same people. */
+/** same roster - the two lists hold exactly the same people, ignoring order and duplicates. */
 export function isSameRoster(a: string[], b: string[]): boolean {
 	const left = new Set(a);
 	const right = new Set(b);
@@ -24,13 +12,7 @@ export function isSameRoster(a: string[], b: string[]): boolean {
 	return true;
 }
 
-/**
- * fully contained - every id in `subset` is present in `superset`.
- *
- * An empty subset is deliberately **not** treated as contained. A group with no
- * members has nothing to add, but answering "yes, it is all applied" would hide
- * the control on an empty group and leave no way to see that it is empty.
- */
+/** fully contained - every id in `subset` is present in `superset`; an empty subset is false, so an empty group still shows its controls. */
 export function isRosterContainedIn(
 	subset: string[],
 	superset: Iterable<string>,

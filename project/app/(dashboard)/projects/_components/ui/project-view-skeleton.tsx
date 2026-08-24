@@ -6,15 +6,7 @@ import {
 } from "@/components/ui/skeletons";
 import type { ProjectViewType } from "@/lib/types/project";
 
-/**
- * project view skeleton - the placeholder for whichever view is about to render.
- *
- * The route-level `loading.tsx` cannot do this job: it is replaced the moment
- * the server component resolves, but the stores those views read from are filled
- * in an effect one paint later. That gap is why the board flashed empty with
- * only an "Add Board" button on it. Switching views has the same gap, and
- * `loading.tsx` does not run for that at all, since no navigation takes place.
- */
+/** project view skeleton - covers the gap loading.tsx cannot: it is replaced once the server resolves, but the stores fill an effect later, and it never runs on a view switch at all. */
 export function ProjectViewSkeleton({ view }: { view: ProjectViewType }) {
 	if (view === "board") return <SkeletonBoard />;
 

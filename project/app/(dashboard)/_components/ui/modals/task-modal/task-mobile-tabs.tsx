@@ -20,16 +20,7 @@ interface TaskMobileTabsProps {
 	commentCount?: number;
 }
 
-/**
- * task modal bottom strip - the phone-sized replacement for the desktop's
- * side-by-side panes.
- *
- * Below `md` there is no room to show details and comments at once, and the
- * previous layout stacked them: the comments panel and its composer sat under
- * the details column and took most of the screen, leaving the task's own fields
- * in a sliver. Here only one panel is on screen at a time and this strip is the
- * only pinned element, so whichever panel is showing gets the full height.
- */
+/** task modal bottom strip - below md only one panel fits, so this swaps between them instead of stacking comments under the details and leaving the fields in a sliver. */
 export function TaskMobileTabs({
 	activePane,
 	onPaneChange,

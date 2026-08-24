@@ -1,20 +1,8 @@
 import type { ProfileTask } from "@/lib/types/profile";
 
-/**
- * profile presentation helpers - pure functions pulled out of the profile DAL
- * and view so they can be tested without a database or a render. Each one is a
- * small rule that is easy to get subtly wrong and impossible to notice by eye.
- */
+/** profile helpers - pure functions kept out of the server-only DAL and the view so they can be tested. */
 
-/**
- * task status label - collapses the stored status into the three the profile
- * badge renders.
- *
- * `isCompleted` wins over `status` because it is the authoritative completion
- * flag: the schema keeps it deliberately independent of `status` and of which
- * board the task sits in, so reading `status` alone would call a finished task
- * "In Progress" whenever its text status was never updated.
- */
+/** task status label - isCompleted wins over status, which the schema keeps deliberately independent of it. */
 export function toProfileStatus(task: {
 	isCompleted: boolean;
 	status: string;
@@ -33,11 +21,7 @@ export function initialsOf(name: string): string {
 		.join("");
 }
 
-/**
- * completion percentage - guards the zero case, which became reachable once the
- * profile started listing shared projects the person has no tasks in. Dividing
- * there renders "NaN%".
- */
+/** completion percentage - guards the zero case, reachable since the profile lists shared projects with no assigned tasks. */
 export function completionPercentage(completed: number, total: number): number {
 	if (total <= 0) return 0;
 	return Math.round((completed / total) * 100);

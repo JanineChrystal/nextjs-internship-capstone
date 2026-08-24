@@ -8,14 +8,7 @@ interface SkeletonBoardProps {
 	className?: string;
 }
 
-/**
- * kanban board skeleton - a row of columns, matching the real board's
- * horizontal layout at every width.
- *
- * It scrolls sideways for the same reason the board does: drawing the
- * placeholder as a vertical stack on a phone and then replacing it with a
- * horizontal row is a layout shift the reader watches happen.
- */
+/** kanban board skeleton - a row of columns that scrolls sideways, matching the real board at every width so nothing shifts when it arrives. */
 export function SkeletonBoard({
 	columns = 3,
 	cardsPerColumn = 3,

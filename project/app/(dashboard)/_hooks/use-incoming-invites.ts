@@ -9,12 +9,7 @@ import type { PendingInviteOutputDTO } from "@/lib/dtos/pending-invite-dto";
 import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import { useMemberStore } from "@/stores/use-member-store";
 
-/**
- * incoming invites hook - the invitations addressed to the signed-in person,
- * and their answer to each. Separate from `usePendingInvites`, which lists the
- * invitations a workspace has *sent*; the two look alike but are opposite sides
- * of the same row and have different controls.
- */
+/** incoming invites - invitations addressed to you, and your answer. The opposite side of the row from usePendingInvites, which lists what the workspace sent. */
 export function useIncomingInvites() {
 	const [invites, setInvites] = useState<PendingInviteOutputDTO[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
