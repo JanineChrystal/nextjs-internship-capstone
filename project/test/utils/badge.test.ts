@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { getCategoryBadgeStyle, getDynamicBadgeColor } from "@/lib/utils/badge";
 
 describe("getDynamicBadgeColor", () => {
@@ -7,14 +7,27 @@ describe("getDynamicBadgeColor", () => {
 	});
 
 	it("returns different colours for clearly different texts", () => {
-		// With enough palette entries it is possible (though unlikely) to collide;
-		// these two were verified to differ against the real palette.
-		const a = getDynamicBadgeColor("Alpha");
-		const b = getDynamicBadgeColor("Beta");
-		// At minimum we assert both are non-empty strings.
-		expect(typeof a).toBe("string");
-		expect(a.length).toBeGreaterThan(0);
-		expect(typeof b).toBe("string");
+		/** verified pair - a collision is possible with enough entries, so these two were checked against the real palette. */
+		expect(getDynamicBadgeColor("Alpha")).not.toBe(
+			getDynamicBadgeColor("Beta"),
+		);
+	});
+
+	it("spreads categories across the palette rather than favouring one", () => {
+		/** spread, not just non-empty - a function returning one colour for everything would pass a string-only assertion. */
+		const labels = [
+			"Design",
+			"Engineering",
+			"Marketing",
+			"Research",
+			"Operations",
+			"Finance",
+			"Legal",
+			"Support",
+		];
+		const distinct = new Set(labels.map(getDynamicBadgeColor));
+
+		expect(distinct.size).toBeGreaterThan(1);
 	});
 
 	it("always returns a non-empty string", () => {

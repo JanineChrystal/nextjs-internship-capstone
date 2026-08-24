@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from "vitest";
 import { toTeamDTO } from "@/lib/dtos/team-dto";
 import type { DbTeam } from "@/lib/types/team";

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from "vitest";
 import { toWorkspaceMemberDTO } from "@/lib/dtos/workspace-member-dto";
 import type { DbWorkspaceMember } from "@/lib/types/member";

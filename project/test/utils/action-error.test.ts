@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { toUserFacingError } from "@/lib/utils/action-error";
 
 const ALLOWED = ["Not found", "Unauthorized", "Already exists"] as const;

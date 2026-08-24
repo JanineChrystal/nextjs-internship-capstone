@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from "vitest";
 import { toProjectDTO, toProjectUI } from "@/lib/dtos/project-dto";
 import type { DbProject } from "@/lib/types/project";

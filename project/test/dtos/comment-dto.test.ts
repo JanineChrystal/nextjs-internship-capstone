@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi } from "vitest";
 import { toCommentDTO } from "@/lib/dtos/comment-dto";
 import type { DbComment } from "@/lib/types/activity";

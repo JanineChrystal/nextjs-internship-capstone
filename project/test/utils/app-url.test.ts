@@ -1,4 +1,4 @@
-﻿import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getAppBaseUrl } from "@/lib/utils/app-url";
 
 // Save originals so each test starts clean

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from "vitest";
 import { toPendingInviteDTO } from "@/lib/dtos/pending-invite-dto";
 import type { DbPendingInvite } from "@/lib/types/pending-invite";
