@@ -18,6 +18,7 @@ import {
 	toGroupDTO,
 	toGroupMemberDTO,
 } from "@/lib/dtos/group-dto";
+import { isSameRoster } from "@/lib/utils/roster";
 
 /**
  * groups template model - defines groups as static templates utilizing
@@ -60,13 +61,6 @@ export async function getWorkspaceGroupsDAL(): Promise<GroupOutputDTO[]> {
 	return rows.map((row) =>
 		toGroupDTO(row.team, Number(row.memberCount), row.memberIds ?? []),
 	);
-}
-
-/** same roster - set comparison, so member order and duplicates never decide the answer. */
-function isSameRoster(a: string[], b: string[]): boolean {
-	if (a.length !== b.length) return false;
-	const left = new Set(a);
-	return b.every((id) => left.has(id));
 }
 
 export async function getGroupMembersDAL(

@@ -11,6 +11,7 @@ import {
 	syncGroupToProjectMembersAction,
 } from "@/lib/actions/group-actions";
 import type { GroupMemberDTO, GroupOutputDTO } from "@/lib/dtos/group-dto";
+import { isRosterContainedIn, isSameRoster } from "@/lib/utils/roster";
 import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 import { useMemberStore } from "@/stores/use-member-store";
 
@@ -49,17 +50,10 @@ export function useProjectGroups(projectId: string) {
 	 * the rosters differ, so syncing would change something.
 	 */
 	const groupStanding = useCallback(
-		(group: GroupOutputDTO) => {
-			const isFullyApplied =
-				group.memberIds.length > 0 &&
-				group.memberIds.every((id) => projectMemberIds.has(id));
-
-			const isStale =
-				group.memberIds.length !== projectMemberIds.size ||
-				!group.memberIds.every((id) => projectMemberIds.has(id));
-
-			return { isFullyApplied, isStale };
-		},
+		(group: GroupOutputDTO) => ({
+			isFullyApplied: isRosterContainedIn(group.memberIds, projectMemberIds),
+			isStale: !isSameRoster(group.memberIds, [...projectMemberIds]),
+		}),
 		[projectMemberIds],
 	);
 

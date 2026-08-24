@@ -43,6 +43,29 @@ describe("toGroupDTO", () => {
 				.description,
 		).toBeNull();
 	});
+
+	it("carries the member ids through", () => {
+		/** the settings UI decides from these whether to offer "Add to project" and "Sync members", so a mapper that dropped them would silently show both controls on every group. */
+		const dbTeam = { id: "g1", name: "Eng", createdAt: new Date() };
+		const dto = toGroupDTO(
+			dbTeam as unknown as Parameters<typeof toGroupDTO>[0],
+			2,
+			["u1", "u2"],
+		);
+
+		expect(dto.memberIds).toEqual(["u1", "u2"]);
+	});
+
+	it("defaults member ids to an empty array, never undefined", () => {
+		/** the default has to be an array - the consumers call .every and .length on it directly, so undefined would throw rather than render an empty group. */
+		const dbTeam = { id: "g1", name: "Eng", createdAt: new Date() };
+		const dto = toGroupDTO(
+			dbTeam as unknown as Parameters<typeof toGroupDTO>[0],
+			0,
+		);
+
+		expect(dto.memberIds).toEqual([]);
+	});
 });
 
 describe("toGroupMemberDTO", () => {

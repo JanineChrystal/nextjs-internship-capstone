@@ -15,6 +15,7 @@ import type {
 	ProfileTask,
 	ProfileUser,
 } from "@/lib/types/profile";
+import { toProfileStatus } from "@/lib/utils/profile";
 
 /**
  * profile visibility rule - you may look at anyone you share a project with,
@@ -26,15 +27,6 @@ export interface UserProfileDTO {
 	user: ProfileUser;
 	isSelf: boolean;
 	projects: ProfileProjectData[];
-}
-
-/** task status label - the profile groups the many stored statuses into the three the badge renders. */
-function toProfileStatus(row: {
-	isCompleted: boolean;
-	status: string;
-}): ProfileTask["status"] {
-	if (row.isCompleted) return "Completed";
-	return row.status === "Not Started" ? "To Do" : "In Progress";
 }
 
 function toProfileUser(row: typeof users.$inferSelect): ProfileUser {

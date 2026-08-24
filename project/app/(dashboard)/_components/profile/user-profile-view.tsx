@@ -10,22 +10,13 @@ import {
 } from "@/components/ui/breadcrumb";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { ProfileProjectData, ProfileUser } from "@/lib/types/profile";
+import { initialsOf } from "@/lib/utils/profile";
 import { UserProjectCollapsible } from "./user-profile-collapsible";
 
 interface UserProfileViewProps {
 	user: ProfileUser;
 	isSelf: boolean;
 	projects: ProfileProjectData[];
-}
-
-/** initials - two letters at most, derived from the name rather than hard-coded. */
-function initialsOf(name: string): string {
-	return name
-		.split(/\s+/)
-		.filter(Boolean)
-		.slice(0, 2)
-		.map((part) => part[0]?.toUpperCase() ?? "")
-		.join("");
 }
 
 export function UserProfileView({

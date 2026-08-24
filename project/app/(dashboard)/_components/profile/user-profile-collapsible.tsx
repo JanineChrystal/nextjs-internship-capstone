@@ -10,7 +10,8 @@ import {
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
-import type { ProfileProjectData } from "@/types/profile";
+import type { ProfileProjectData } from "@/lib/types/profile";
+import { completionPercentage } from "@/lib/utils/profile";
 import type { TaskStatus } from "@/types/task";
 
 export function UserProjectCollapsible({
@@ -20,11 +21,10 @@ export function UserProjectCollapsible({
 }) {
 	const [isOpen, setIsOpen] = useState(false);
 
-	/** zero-task guard - a shared project the person has no tasks in is now a real case, and dividing by zero would render "NaN%" and an empty progress bar. */
-	const progressPercentage =
-		project.totalTasks === 0
-			? 0
-			: Math.round((project.completedTasks / project.totalTasks) * 100);
+	const progressPercentage = completionPercentage(
+		project.completedTasks,
+		project.totalTasks,
+	);
 
 	return (
 		<Collapsible
