@@ -30,7 +30,11 @@
 		"check:notifiers": "tsx --env-file=.env.local scripts/check-notifiers.ts",
 		"check:profanity": "tsx --env-file=.env.local scripts/check-profanity.ts",
 		"db:migrate:preview": "drizzle-kit migrate --config=drizzle.preview.config.ts",
-		"db:migrate-encryption": "tsx --env-file=.env.local scripts/migrate-encryption.ts"
+		"db:migrate-encryption": "tsx --env-file=.env.local scripts/migrate-encryption.ts",
+		"db:migrate:integration": "drizzle-kit migrate --config=drizzle.integration.config.ts",
+		"db:migrate:production": "drizzle-kit migrate --config=drizzle.production.config.ts",
+		"db:studio:integration": "drizzle-kit studio --config=drizzle.integration.config.ts",
+		"db:studio:production": "drizzle-kit studio --config=drizzle.production.config.ts"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.7.0",

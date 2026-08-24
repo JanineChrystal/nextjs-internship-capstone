@@ -82,10 +82,10 @@ export function RankedBarChart({
 					barSize={16}
 				>
 					{/*
-					  * direct value labels - displays values statically next to bars
-					  * to ensure readability when color contrast against the background
-					  * might fail.
-					  */}
+					 * direct value labels - displays values statically next to bars
+					 * to ensure readability when color contrast against the background
+					 * might fail.
+					 */}
 					<LabelList
 						dataKey="value"
 						position="right"

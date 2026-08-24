@@ -18,7 +18,9 @@ export function SkeletonText({ lines = 3, className }: SkeletonTextProps) {
 		<div className={cn("flex w-full flex-col gap-2", className)}>
 			{Array.from({ length: lines }, (_, index) => (
 				<Skeleton
-					/** static list rendering - utilizes array index as key since the skeleton lines are immutable and purely decorative. */
+					// static list rendering - utilizes array index as key since the
+					// skeleton lines are immutable and purely decorative.
+					// biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no id
 					key={index}
 					className={cn("h-4", LINE_WIDTHS[index % LINE_WIDTHS.length])}
 				/>

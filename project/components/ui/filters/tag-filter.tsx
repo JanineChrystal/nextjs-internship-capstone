@@ -63,7 +63,10 @@ export function TagFilter({
 				open={open}
 				onOpenChange={(isOpen) => {
 					setOpen(isOpen);
-					if (!isOpen) setSelectedDef(null); /** view reset - clears the selected category view when the popover is closed. */
+					if (!isOpen)
+						setSelectedDef(
+							null,
+						); /** view reset - clears the selected category view when the popover is closed. */
 				}}
 			>
 				<PopoverTrigger asChild>

@@ -41,10 +41,10 @@ export function GradientSurface({
 			}}
 		>
 			{/*
-			  * simulated glassmorphic bloom - mimics a blurred backdrop by layering
-			  * two soft radial gradients over the surface. Avoids expensive CSS filters
-			  * since there is no underlying image to blur, rendering faster for the same effect.
-			  */}
+			 * simulated glassmorphic bloom - mimics a blurred backdrop by layering
+			 * two soft radial gradients over the surface. Avoids expensive CSS filters
+			 * since there is no underlying image to blur, rendering faster for the same effect.
+			 */}
 			<div
 				aria-hidden="true"
 				className="pointer-events-none absolute inset-0 -z-10 opacity-70"
