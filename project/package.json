@@ -25,8 +25,8 @@
 		"format": "biome format --write .",
 		"test": "vitest run",
 		"test:watch": "vitest watch",
-		"test:e2e": "playwright test",
-		"test:e2e:ui": "playwright test --ui",
+		"test:e2e": "cross-env E2E_TARGET=local playwright test",
+		"test:e2e:ui": "cross-env E2E_TARGET=local playwright test --ui",
 		"test:e2e:report": "playwright show-report",
 		"verify": "pnpm check && pnpm typecheck && pnpm test && pnpm build",
 		"db:generate": "drizzle-kit generate",
@@ -42,7 +42,8 @@
 		"db:migrate:integration": "drizzle-kit migrate --config=drizzle.integration.config.ts",
 		"db:migrate:production": "drizzle-kit migrate --config=drizzle.production.config.ts",
 		"db:studio:integration": "drizzle-kit studio --config=drizzle.integration.config.ts",
-		"db:studio:production": "drizzle-kit studio --config=drizzle.production.config.ts"
+		"db:studio:production": "drizzle-kit studio --config=drizzle.production.config.ts",
+		"test:e2e:deployed": "cross-env E2E_TARGET=deployed playwright test"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.7.0",
@@ -95,6 +96,7 @@
 		"@types/react-dom": "^19",
 		"@vitejs/plugin-react": "^6.0.3",
 		"autoprefixer": "^10.0.1",
+		"cross-env": "^10.1.0",
 		"dotenv": "^17.4.2",
 		"eslint-config-next": "^16.0.0",
 		"postcss": "^8.5",

@@ -4,13 +4,25 @@ import { config as loadEnv } from "dotenv";
 /** env loading - Playwright does not read .env.local the way Next does, and the sign-in credentials live there. */
 loadEnv({ path: ".env.local", quiet: true });
 
-/** target - unset runs against a local `next start`; set runs against a deployment and starts no server. */
-const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
-const isRemote = Boolean(process.env.E2E_BASE_URL);
+/**
+ * target - chosen by E2E_TARGET, not by whether E2E_BASE_URL happens to be set,
+ * so switching between local and deployed never means editing .env.local.
+ */
+const isRemote = process.env.E2E_TARGET === "deployed";
+const baseURL = isRemote
+	? (process.env.E2E_BASE_URL ?? "")
+	: "http://localhost:3000";
+
+if (isRemote && !baseURL) {
+	throw new Error("E2E_TARGET=deployed needs E2E_BASE_URL set in .env.local");
+}
+
+/** protection bypass - Vercel puts its own SSO in front of protected deployments, which an automated browser cannot pass; this header is the supported way through. */
+const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 export default defineConfig({
 	testDir: "./e2e",
-	/** single worker - the specs share one account and create real rows, so parallel runs make failures order-dependent. */
+	/** single worker - the specs share accounts and create real rows, so parallel runs make failures order-dependent. */
 	workers: 1,
 	fullyParallel: false,
 	forbidOnly: Boolean(process.env.CI),
@@ -22,6 +34,14 @@ export default defineConfig({
 
 	use: {
 		baseURL,
+		...(bypassSecret
+			? {
+					extraHTTPHeaders: {
+						"x-vercel-protection-bypass": bypassSecret,
+						"x-vercel-set-bypass-cookie": "true",
+					},
+				}
+			: {}),
 		/** failure artefacts - a passing run leaves nothing behind. */
 		trace: "retain-on-failure",
 		screenshot: "only-on-failure",
@@ -29,7 +49,7 @@ export default defineConfig({
 	},
 
 	projects: [
-		/** setup - signs in once and writes the storage state the rest reuse. */
+		/** setup - signs each configured account in and writes the storage state the rest reuse. */
 		{ name: "setup", testMatch: /auth\.setup\.ts/ },
 
 		{
@@ -37,7 +57,7 @@ export default defineConfig({
 			dependencies: ["setup"],
 			use: {
 				...devices["Desktop Chrome"],
-				storageState: "e2e/.auth/user.json",
+				storageState: "e2e/.auth/user-a.json",
 			},
 		},
 
@@ -47,7 +67,7 @@ export default defineConfig({
 			dependencies: ["setup"],
 			use: {
 				...devices["Pixel 7"],
-				storageState: "e2e/.auth/user.json",
+				storageState: "e2e/.auth/user-a.json",
 			},
 		},
 	],

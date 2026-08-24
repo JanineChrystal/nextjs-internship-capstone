@@ -1,31 +1,58 @@
-import path from "node:path";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
-import { expect, test as setup } from "@playwright/test";
+import { expect, type Page, test as setup } from "@playwright/test";
+import { ACCOUNTS, type Account, isConfigured } from "./helpers/accounts";
 
-const authFile = path.join(__dirname, ".auth/user.json");
+/** clerk test code - the fixed code a development instance accepts for any +clerk_test address, so no real inbox is involved. */
+const CLERK_TEST_CODE = "424242";
 
-/** auth setup - signs in once and saves the session, so the other specs are about their own features rather than about Clerk being slow. */
-setup("authenticate", async ({ page }) => {
-	const email = process.env.E2E_USER_EMAIL;
-	const password = process.env.E2E_USER_PASSWORD;
+/**
+ * device verification - Clerk emails a code when it sees a new device, and a
+ * fresh browser is always a new device. Only +clerk_test addresses can clear it
+ * without an inbox, so a real address fails here with an explanation.
+ */
+async function clearDeviceVerification(
+	page: Page,
+	account: Account,
+): Promise<void> {
+	const codeField = page.getByRole("textbox", {
+		name: /verification code/i,
+	});
 
-	if (!email || !password) {
+	/** short wait - the screen either appears straight away or not at all. */
+	const appeared = await codeField
+		.waitFor({ state: "visible", timeout: 5_000 })
+		.then(() => true)
+		.catch(() => false);
+
+	if (!appeared) return;
+
+	if (!account.email?.includes("+clerk_test")) {
 		throw new Error(
-			"E2E_USER_EMAIL and E2E_USER_PASSWORD must be set in .env.local",
+			`Clerk asked ${account.email} to verify a new device, which needs a code from a real inbox.\n` +
+				"Use a +clerk_test address instead - a development instance accepts 424242 for those.\n" +
+				"See .env.example for the details.",
 		);
 	}
 
-	/** testing token - marks the run as a known test so Clerk's bot detection does not block it, rather than turning the protection off. */
-	await clerkSetup();
+	await codeField.fill(CLERK_TEST_CODE);
+}
+
+/** sign in - drives the real form; the testing token marks the run as a known test rather than turning Clerk's bot protection off. */
+async function signIn(page: Page, account: Account): Promise<void> {
 	await setupClerkTestingToken({ page });
 
 	await page.goto("/sign-in");
 
-	await page.getByLabel(/email/i).fill(email);
-	await page.getByRole("button", { name: /continue/i }).click();
+	await page.getByLabel(/email/i).fill(account.email as string);
+	await page.getByRole("button", { name: "Continue", exact: true }).click();
 
-	await page.getByLabel(/password/i).fill(password);
-	await page.getByRole("button", { name: /continue/i }).click();
+	/** by placeholder - Clerk labels the field and its "Show password" toggle the same way, so a label match hits both. */
+	await page
+		.getByPlaceholder("Enter your password")
+		.fill(account.password as string);
+	await page.getByRole("button", { name: "Continue", exact: true }).click();
+
+	await clearDeviceVerification(page, account);
 
 	/** wait on content, not the URL - Clerk redirects through an interstitial, so the address bar arrives first. */
 	await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
@@ -33,5 +60,23 @@ setup("authenticate", async ({ page }) => {
 		page.getByRole("heading", { name: "Quick Actions" }),
 	).toBeVisible();
 
-	await page.context().storageState({ path: authFile });
-});
+	await page.context().storageState({ path: account.storageState });
+}
+
+for (const account of Object.values(ACCOUNTS)) {
+	setup(`authenticate ${account.key} (${account.role})`, async ({ page }) => {
+		/** A is required, B and C are not - the multi-user specs skip themselves when a login is missing, so the suite still runs with one account. */
+		if (!isConfigured(account)) {
+			if (account.key === "a") {
+				throw new Error(
+					"E2E_USER_EMAIL and E2E_USER_PASSWORD must be set in .env.local",
+				);
+			}
+			setup.skip(true, `no credentials for account ${account.key}`);
+			return;
+		}
+
+		await clerkSetup();
+		await signIn(page, account);
+	});
+}
