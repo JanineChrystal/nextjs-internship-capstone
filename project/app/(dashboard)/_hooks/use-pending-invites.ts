@@ -8,6 +8,7 @@ import {
 } from "@/lib/actions/pending-invite-actions";
 import type { PendingInviteOutputDTO } from "@/lib/dtos/pending-invite-dto";
 import { reportActionError } from "@/lib/utils/toast";
+import { useMemberStore } from "@/stores/use-member-store";
 
 /**
  * pending invites hook - loads and manages pending invitations for a specific scope.
@@ -19,6 +20,9 @@ export function usePendingInvites(
 ) {
 	const [invites, setInvites] = useState<PendingInviteOutputDTO[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+
+	/** send signal - the invite modal lives in a different tree from this list, so a revision counter in the member store is what tells it to reload; without it a new invite only appeared after a manual page refresh. */
+	const invitesVersion = useMemberStore((state) => state.invitesVersion);
 
 	const load = useCallback(async () => {
 		if (scope === "project" && !projectId) return;
@@ -53,10 +57,11 @@ export function usePendingInvites(
 		}
 	}, []);
 
-	// initialization effect - triggers the initial data load on mount.
+	// load effect - runs on mount and again whenever a batch of invites is sent.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: invitesVersion is the refetch trigger, not a value the effect reads
 	useEffect(() => {
 		load();
-	}, [load]);
+	}, [load, invitesVersion]);
 
 	return { invites, isLoading, refresh: load, revoke };
 }

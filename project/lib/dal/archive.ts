@@ -303,9 +303,21 @@ export async function applyArchiveOperationDAL(
 		 * fresh values so mutations reflect the exact execution time rather
 		 * than module load time.
 		 */
-		const values: Record<string, Date | null> = { updatedAt: new Date() };
+		const values: Record<string, Date | null | string> = {
+			updatedAt: new Date(),
+		};
 		if ("archivedAt" in stamps) {
 			values.archivedAt = stamps.archivedAt === null ? null : new Date();
+
+			/**
+			 * status mirror - projects carry archived-ness twice, as archivedAt and
+			 * as a status value, and the two are read by different screens. Writing
+			 * only one leaves a project that is archived on one page and live on
+			 * another, which is the bug this pairing exists to prevent.
+			 */
+			if (kind === "project") {
+				values.status = stamps.archivedAt === null ? "active" : "archived";
+			}
 		}
 		if ("deletedAt" in stamps) {
 			values.deletedAt = stamps.deletedAt === null ? null : new Date();

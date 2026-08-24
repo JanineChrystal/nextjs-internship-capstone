@@ -16,12 +16,32 @@ import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 
 const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {};
 
+/**
+ * invite outcome summary - one toast for a batch rather than one per recipient.
+ *
+ * Nobody is added immediately any more: an invitation waits for the person to
+ * accept it, whether or not they already have an account. The toast says "sent"
+ * rather than "added" so it does not promise a membership that does not exist
+ * yet.
+ */
+function reportInviteOutcome(sent: number): void {
+	if (sent === 0) return;
+
+	reportActionSuccess(
+		sent === 1
+			? "Invitation sent. It appears under Pending until they respond."
+			: `${sent} invitations sent. They appear under Pending until answered.`,
+	);
+}
+
 interface MemberState {
 	/** store state - primary data objects holding members and pending invites. */
 	projectMembers: Record<string, ProjectMember[]>;
 	pendingInvites: PendingInviteItem[];
 	/** bulk invite errors - surfaces failure messages to the UI instead of silently logging them. */
 	inviteError: string | null;
+	/** invite revision - bumped after a send so pending-invite lists in other trees reload without a page refresh. */
+	invitesVersion: number;
 
 	/** server actions - methods that interact with the backend API to mutate or fetch member data. */
 	fetchProjectMembers: (projectId: string) => Promise<void>;
@@ -51,6 +71,7 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 	projectMembers: INITIAL_MEMBERS,
 	pendingInvites: [],
 	inviteError: null,
+	invitesVersion: 0,
 
 	addPendingInvite: (invite) =>
 		set((state) => ({
@@ -80,6 +101,9 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 		const invites = get().pendingInvites;
 		set({ pendingInvites: [] });
 
+		/** sent tally - counted so one toast can summarise the batch. */
+		let sent = 0;
+
 		/** workspace invites - processes directory-level invites without attaching them to a specific project. */
 		if (scope === "workspace") {
 			const failures: string[] = [];
@@ -88,13 +112,16 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 				const result = await inviteToWorkspaceAction(invite.recipient);
 				if (!result.success) {
 					failures.push(`${invite.recipient}: ${result.error}`);
-				} else if (result.notice) {
-					/** accountless invite success - treats a stored invite for an unregistered user as a success rather than an error. */
-					reportActionSuccess(result.notice);
+				} else {
+					sent += 1;
 				}
 			}
 
-			set({ inviteError: failures.length > 0 ? failures.join("\n") : null });
+			set((state) => ({
+				inviteError: failures.length > 0 ? failures.join("\n") : null,
+				invitesVersion: state.invitesVersion + 1,
+			}));
+			reportInviteOutcome(sent);
 			return;
 		}
 
@@ -109,10 +136,13 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 			);
 			if (!result.success) {
 				reportActionError(`Could not invite ${invite.recipient}`, result.error);
-			} else if (result.notice) {
-				reportActionSuccess(result.notice);
+			} else {
+				sent += 1;
 			}
 		}
+
+		set((state) => ({ invitesVersion: state.invitesVersion + 1 }));
+		reportInviteOutcome(sent);
 
 		await get().fetchProjectMembers(targetId);
 	},

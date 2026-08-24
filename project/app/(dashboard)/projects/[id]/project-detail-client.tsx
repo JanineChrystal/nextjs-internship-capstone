@@ -139,6 +139,9 @@ export function ProjectDetailClient({
 	// board management guard - limits column management to users with explicit permissions to prevent displaying unauthorized controls.
 	const canManageBoards = hasPermission(role, "manage_boards");
 
+	// invite guard - owners and co-owners only; members and guests see the avatar row without the add control.
+	const canManageMembers = hasPermission(role, "manage_members");
+
 	return (
 		<div className="flex flex-col gap-6 w-full max-w-7xl mx-auto pb-8">
 			<ProjectHeader projectId={projectId} project={projectUI} />
@@ -148,6 +151,7 @@ export function ProjectDetailClient({
 				activeView={effectiveView}
 				onViewChange={setActiveView}
 				canOpenSettings={canOpenSettings}
+				canManageMembers={canManageMembers}
 				renderFilter={
 					<FilterPopover
 						fields={filterFields}

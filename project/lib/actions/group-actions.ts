@@ -10,6 +10,7 @@ import {
 	getWorkspaceGroupsDAL,
 	saveProjectMembersAsGroupDAL,
 	setGroupMembersDAL,
+	syncGroupToProjectMembersDAL,
 } from "@/lib/dal/groups";
 import type { GroupMemberDTO, GroupOutputDTO } from "@/lib/dtos/group-dto";
 import { toUserFacingError } from "@/lib/utils/action-error";
@@ -138,6 +139,31 @@ export async function setGroupMembersAction(
 		return { success: true };
 	} catch (error) {
 		console.error("setGroupMembersAction error:", error);
+		return {
+			success: false,
+			error: toGroupError(error),
+		};
+	}
+}
+
+export async function syncGroupToProjectMembersAction(
+	groupId: string,
+	projectId: string,
+): Promise<{ success: boolean; memberCount?: number; error?: string }> {
+	try {
+		const user = await getCurrentUser();
+		if (!user)
+			return { success: false, error: await getSessionFailureReason() };
+
+		const { memberCount } = await syncGroupToProjectMembersDAL(
+			groupId,
+			projectId,
+		);
+
+		revalidatePath(`/projects/${projectId}`);
+		return { success: true, memberCount };
+	} catch (error) {
+		console.error("syncGroupToProjectMembersAction error:", error);
 		return {
 			success: false,
 			error: toGroupError(error),

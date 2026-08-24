@@ -352,7 +352,12 @@ export async function bulkArchiveProjectsInDB(
 	try {
 		await db
 			.update(projects)
-			.set({ status: "archived", updatedAt: new Date() })
+			.set({
+				status: "archived",
+				/** archive stamp - the archive page filters on archivedAt, not status, so both have to be written together or the project archives into nowhere. */
+				archivedAt: new Date(),
+				updatedAt: new Date(),
+			})
 			.where(and(inArray(projects.id, projectIds), isNull(projects.deletedAt)));
 	} catch (error) {
 		throw new Error("Failed to bulk archive projects in database", {

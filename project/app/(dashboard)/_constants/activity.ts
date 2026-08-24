@@ -1,4 +1,12 @@
 /**
+ * unread poll interval - how often the sidebar re-counts unread notifications
+ * while the reader sits on one page. Sixty seconds is a deliberate compromise:
+ * the app has no realtime channel, and a shorter interval buys little for a
+ * badge nobody is watching second by second.
+ */
+export const UNREAD_POLL_INTERVAL_MS = 60_000;
+
+/**
  * A short label per event type, shown as a badge beside each history row.
  *
  * The `details` column already carries the readable sentence, so this exists

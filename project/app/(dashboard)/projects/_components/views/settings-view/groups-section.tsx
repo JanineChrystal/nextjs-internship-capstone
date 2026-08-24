@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	ChevronDown,
 	ChevronRight,
+	RefreshCw,
 	Save,
 	Trash2,
 	UserPlus,
@@ -35,9 +36,11 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 		isLoading,
 		expandedGroupId,
 		groupMembers,
+		groupStanding,
 		toggleGroup,
 		saveAsGroup,
 		applyGroup,
+		syncGroup,
 		removeGroup,
 	} = useProjectGroups(projectId);
 
@@ -135,6 +138,7 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 				<ul className="flex flex-col gap-2">
 					{groups.map((group) => {
 						const isExpanded = expandedGroupId === group.id;
+						const { isFullyApplied, isStale } = groupStanding(group);
 
 						return (
 							<li
@@ -169,16 +173,33 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 
 									{canManage && (
 										<>
-											<Button
-												type="button"
-												variant="outline"
-												size="sm"
-												onClick={() => applyGroup(group.id)}
-												className="h-8 gap-2"
-											>
-												<UserPlus className="h-4 w-4" />
-												Add to project
-											</Button>
+											{/* nothing-to-add guard - hidden when every person in the group is already on this project, which is always true in the project the group was saved from. It reappears here the moment the rosters diverge, and on any other project. */}
+											{!isFullyApplied && (
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													onClick={() => applyGroup(group.id)}
+													className="h-8 gap-2"
+												>
+													<UserPlus className="h-4 w-4" />
+													Add to project
+												</Button>
+											)}
+											{/* sync control - the offered alternative to saving a near-identical second group; only shown when it would actually change the roster. */}
+											{isStale && (
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon-sm"
+													onClick={() => syncGroup(group.id)}
+													title="Update this group to match the project's current members"
+													aria-label={`Sync ${group.name} to this project's members`}
+													className="text-secondary hover:text-primary"
+												>
+													<RefreshCw className="h-4 w-4" />
+												</Button>
+											)}
 											<Button
 												type="button"
 												variant="ghost"

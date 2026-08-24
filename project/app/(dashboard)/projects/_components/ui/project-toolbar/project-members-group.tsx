@@ -12,7 +12,8 @@ import type { ProjectMember } from "@/types/member";
 interface ProjectMembersGroupProps {
 	visibleMembers: ProjectMember[];
 	remainingCount: number;
-	onAddMember: () => void;
+	/** invite handler - omitted for roles without manage_members, which renders the row read-only. */
+	onAddMember?: () => void;
 }
 
 export function ProjectMembersGroup({
@@ -50,15 +51,18 @@ export function ProjectMembersGroup({
 					)}
 				</div>
 			</TooltipProvider>
-			<Button
-				type="button"
-				variant="outline"
-				size="icon"
-				onClick={onAddMember}
-				className="w-9 h-9 rounded-full border border-dashed border-outline flex items-center justify-center text-secondary hover:text-on-surface hover:bg-surface-variant transition-colors hover:border-outline-variant"
-			>
-				<UserPlus size={18} />
-			</Button>
+			{onAddMember && (
+				<Button
+					type="button"
+					variant="outline"
+					size="icon"
+					onClick={onAddMember}
+					aria-label="Add member to project"
+					className="w-9 h-9 rounded-full border border-dashed border-outline flex items-center justify-center text-secondary hover:text-on-surface hover:bg-surface-variant transition-colors hover:border-outline-variant"
+				>
+					<UserPlus size={18} />
+				</Button>
+			)}
 		</div>
 	);
 }

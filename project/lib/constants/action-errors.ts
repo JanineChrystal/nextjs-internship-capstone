@@ -3,7 +3,12 @@
  * messages that the DAL can surface for group actions, preventing
  * database schema details from leaking to the client.
  */
+/** duplicate roster message - shared by the DAL that throws it and the allow-list that lets it through, so the two cannot drift apart into a generic error. */
+export const DUPLICATE_GROUP_ROSTER_ERROR =
+	"These exact members are already saved as a group. Use Sync members on that group to update it instead.";
+
 export const GROUP_USER_FACING_ERRORS = [
+	DUPLICATE_GROUP_ROSTER_ERROR,
 	"A group with that name already exists",
 	"Group not found",
 	"Project not found",
