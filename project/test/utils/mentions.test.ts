@@ -5,7 +5,7 @@ import {
 	readMentionQuery,
 	tokenizeMentions,
 	toMentionHandle,
-} from "./mentions";
+} from "@/lib/utils/mentions";
 
 const MEMBERS: Record<string, { userId: string; label: string }> = {
 	janine: { userId: "u1", label: "Janine Chrystal" },

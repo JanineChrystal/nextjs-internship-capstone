@@ -9,7 +9,7 @@ import {
 	escapeHtml,
 	fitTelegramBody,
 	toTopicLabel,
-} from "./format";
+} from "@/lib/notifiers/format";
 
 /**
  * These test the one part of the notification pipeline that is pure logic and

@@ -6,7 +6,7 @@ import {
 	toAverageDays,
 	toPercentage,
 	toVelocityPerWeek,
-} from "./analytics";
+} from "@/lib/utils/analytics";
 
 const DAY = MILLISECONDS_PER_DAY;
 
