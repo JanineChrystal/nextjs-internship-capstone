@@ -58,7 +58,8 @@ export function TaskCard({ task }: TaskCardProps) {
 			style={style}
 			{...attributes}
 			{...listeners}
-			className={`bg-surface border p-4 rounded-lg flex flex-col gap-3 transition-all cursor-grab active:cursor-grabbing shadow-sm group ${
+			// touch-none - without it the browser scrolls on touch and the card's drag listeners never fire; the TouchSensor's hold delay is what keeps an ordinary tap working.
+			className={`bg-surface border p-4 rounded-lg flex flex-col gap-3 transition-all cursor-grab active:cursor-grabbing touch-none shadow-sm group ${
 				isDragging
 					? "opacity-50 ring-2 ring-primary z-50 border-transparent"
 					: "border-outline-variant hover:border-primary/50"
@@ -93,7 +94,7 @@ export function TaskCard({ task }: TaskCardProps) {
 					openTaskModal(task.id);
 				}}
 				onPointerDown={(e) => e.stopPropagation()}
-				className="text-left font-body-sm text-body-sm text-foreground leading-tight font-medium hover:text-primary transition-colors focus:outline-none focus-visible:underline"
+				className="text-left text-body-sm text-foreground leading-tight font-medium hover:text-primary transition-colors focus:outline-none focus-visible:underline"
 			>
 				{task.name}
 			</button>
@@ -119,7 +120,7 @@ export function TaskCard({ task }: TaskCardProps) {
 					{task.assignees?.map((assignee) => (
 						<div
 							key={assignee.name}
-							className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-label-sm text-[10px] border border-surface"
+							className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[10px] border border-surface"
 						>
 							{assignee.name.substring(0, 2).toUpperCase()}
 						</div>

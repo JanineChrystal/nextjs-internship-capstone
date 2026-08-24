@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FilterPopover } from "@/components/ui/filters/filter-popover";
 import { hasPermission } from "@/lib/config/permissions";
 import type { ProjectOutputDTO } from "@/lib/dtos/project-dto";
@@ -14,6 +14,7 @@ import { useProjectStore } from "@/stores/use-project-store";
 import { useTaskStore } from "@/stores/use-task-store";
 import { ProjectHeader } from "../_components/ui/project-header/project-header";
 import { ProjectToolbar } from "../_components/ui/project-toolbar";
+import { ProjectViewSkeleton } from "../_components/ui/project-view-skeleton";
 import { useProjectPage } from "../_hooks/use-project-page";
 
 const TaskModal = dynamic(
@@ -81,6 +82,12 @@ export function ProjectDetailClient({
 	const setTasks = useTaskStore((state) => state.setTasks);
 	const setColumns = useBoardStore((state) => state.setColumns);
 	const isInitialized = useRef(false);
+	/**
+	 * hydration flag - state, not just the ref, because the views below have to
+	 * re-render once the stores are filled. The ref alone tracked the work but
+	 * could not tell React that anything had changed.
+	 */
+	const [isHydrated, setIsHydrated] = useState(false);
 
 	useEffect(() => {
 		if (!isInitialized.current) {
@@ -104,6 +111,7 @@ export function ProjectDetailClient({
 
 			isInitialized.current = true;
 		}
+		setIsHydrated(true);
 	}, [project, projectUI, tasks, boards, setTasks, setColumns]);
 
 	/**
@@ -163,19 +171,24 @@ export function ProjectDetailClient({
 			/>
 
 			<div className="w-full mt-4">
-				{effectiveView === "board" && (
+				{!isHydrated && <ProjectViewSkeleton view={effectiveView} />}
+				{isHydrated && effectiveView === "board" && (
 					<KanbanBoard
 						projectId={projectId}
 						externalFilters={filters}
 						canManageBoards={canManageBoards}
 					/>
 				)}
-				{effectiveView === "grid" && (
+				{isHydrated && effectiveView === "grid" && (
 					<GridView projectId={projectId} externalFilters={filters} />
 				)}
-				{effectiveView === "calendar" && <CalendarView projectId={projectId} />}
-				{effectiveView === "charts" && <ChartsView projectId={projectId} />}
-				{effectiveView === "settings" && (
+				{isHydrated && effectiveView === "calendar" && (
+					<CalendarView projectId={projectId} />
+				)}
+				{isHydrated && effectiveView === "charts" && (
+					<ChartsView projectId={projectId} />
+				)}
+				{isHydrated && effectiveView === "settings" && (
 					<SettingsView projectId={projectId} role={role} />
 				)}
 			</div>

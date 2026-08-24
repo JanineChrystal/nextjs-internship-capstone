@@ -27,6 +27,7 @@
 
 	--color-on-surface: var(--on-surface);
 	--color-on-surface-variant: var(--on-surface-variant);
+	--color-surface-variant: var(--surface-variant);
 
 	--color-outline: var(--outline);
 	--color-outline-variant: var(--outline-variant);
@@ -35,14 +36,23 @@
 	--color-primary: var(--primary);
 	--color-primary-foreground: var(--on-primary);
 	--color-primary-container: var(--primary-container);
+	--color-on-primary-container: var(--on-primary-container);
 
 	--color-secondary: var(--secondary);
 	--color-secondary-foreground: var(--on-secondary);
 	--color-secondary-container: var(--secondary-container);
+	--color-on-secondary-container: var(--on-secondary-container);
+
+	--color-tertiary-container: var(--tertiary-container);
+	--color-on-tertiary-container: var(--on-tertiary-container);
 
 	--color-destructive: var(--error);
 	--color-destructive-foreground: var(--on-error);
 	--color-error: var(--error);
+	/* `text-error-foreground` is used in the moderation panels; without this it
+	   resolved to nothing and the label inherited whatever sat behind it. */
+	--color-error-foreground: var(--on-error);
+	--color-on-error: var(--on-error);
 	--color-error-container: var(--error-container);
 	--color-on-error-container: var(--on-error-container);
 
@@ -129,6 +139,31 @@
 	--spacing-stack-lg: 32px;
 
 	/* Typography */
+
+	/* The label/body scale the components have been asking for all along.
+	   `text-label-sm` and friends appear in a dozen files but no token ever
+	   defined them, so every one of those elements silently fell back to the
+	   inherited size - which is why the type looked flat and why nothing scaled
+	   between a phone and a desktop.
+
+	   Sized with clamp() rather than fixed rem so they interpolate with the
+	   viewport instead of stepping at breakpoints. Each carries its own
+	   line-height and weight, which makes the `font-label-*` classes that used to
+	   sit beside them unnecessary. */
+	--text-label-sm: clamp(0.6875rem, 0.66rem + 0.14vw, 0.75rem);
+	--text-label-sm--line-height: 1.4;
+	--text-label-sm--font-weight: 500;
+
+	--text-label-md: clamp(0.75rem, 0.72rem + 0.16vw, 0.875rem);
+	--text-label-md--line-height: 1.4;
+	--text-label-md--font-weight: 500;
+
+	--text-body-sm: clamp(0.8125rem, 0.79rem + 0.14vw, 0.875rem);
+	--text-body-sm--line-height: 1.55;
+
+	--text-body-md: clamp(0.875rem, 0.85rem + 0.16vw, 1rem);
+	--text-body-md--line-height: 1.6;
+
 	--font-sans: "Inter", sans-serif;
 	--font-heading: "Geist", sans-serif;
 	/* Resolves to the Geist Mono face loaded in app/layout.tsx. The fallbacks
@@ -160,6 +195,17 @@
 
 		--on-surface: #1a1c1c;
 		--on-surface-variant: #434652;
+
+		/* The neutral fill behind hover states and inert chips. It was used as
+		   `bg-surface-variant` in twenty files without ever being defined, so
+		   every one of those rules produced no background at all - hover states
+		   that simply did nothing. */
+		--surface-variant: #e6e8ee;
+
+		/* Tertiary is used only by the deadline card, but it was referenced
+		   without existing, which left that card's badge unstyled. */
+		--tertiary-container: #dbe7d9;
+		--on-tertiary-container: #33482f;
 
 		--outline: #737783;
 		--outline-variant: #c3c6d4;
@@ -295,6 +341,14 @@
 
 		--on-surface: #e2e2e2;
 		--on-surface-variant: #c3c6d4;
+
+		/* Lighter than the page rather than darker: a hover state has to read as
+		   a lift on a dark ground, which is the opposite of what it does in light
+		   mode. Inverting the light value here would make hovers invisible. */
+		--surface-variant: #2f3131;
+
+		--tertiary-container: #33482f;
+		--on-tertiary-container: #dbe7d9;
 
 		--outline: #546067;
 		--outline-variant: #434652;

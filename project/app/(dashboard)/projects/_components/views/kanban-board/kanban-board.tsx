@@ -3,7 +3,8 @@
 import {
 	closestCorners,
 	DndContext,
-	PointerSensor,
+	MouseSensor,
+	TouchSensor,
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
@@ -48,11 +49,21 @@ export function KanbanBoard({
 		handleDragEnd,
 	} = useKanbanBoard(projectId, externalFilters);
 
+	/**
+	 * sensors - a mouse sensor and a touch sensor rather than one pointer sensor.
+	 *
+	 * A pointer sensor treats a finger like a mouse, so the distance constraint
+	 * fires on the same gesture the browser uses to scroll: on a phone the board
+	 * scrolled and the drag never started. The touch sensor waits instead - hold
+	 * briefly and it becomes a drag, swipe and it stays a scroll. The tolerance
+	 * allows a few pixels of finger movement during that hold, which is the
+	 * difference between "press and hold" working and only working if you are
+	 * perfectly still.
+	 */
 	const sensors = useSensors(
-		useSensor(PointerSensor, {
-			activationConstraint: {
-				distance: 5,
-			},
+		useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+		useSensor(TouchSensor, {
+			activationConstraint: { delay: 200, tolerance: 8 },
 		}),
 	);
 
@@ -70,7 +81,14 @@ export function KanbanBoard({
 				onDragOver={handleDragOver}
 				onDragEnd={handleDragEnd}
 			>
-				<div className="flex flex-col md:flex-row gap-gutter overflow-y-auto md:overflow-x-auto pb-4 items-center md:items-start w-full min-h-[calc(100vh-250px)] hide-scrollbar">
+				{/*
+				 * horizontal at every width - the columns used to stack vertically below
+				 * md, which put them in a different order from the horizontal sorting
+				 * strategy this SortableContext uses, so dropping resolved against
+				 * positions that were not on screen. One row that scrolls sideways keeps
+				 * the layout and the strategy describing the same thing.
+				 */}
+				<div className="flex flex-row gap-gutter overflow-x-auto pb-4 items-start w-full min-h-[calc(100vh-250px)] hide-scrollbar snap-x snap-mandatory md:snap-none">
 					<SortableContext
 						items={sortedColumns.map((col) => col.id)}
 						strategy={horizontalListSortingStrategy}
@@ -89,11 +107,11 @@ export function KanbanBoard({
 
 					{/* add column button - allows authorized users to create new board columns. */}
 					{canManageBoards && (
-						<div className="shrink-0 w-80 flex flex-col h-full">
+						<div className="shrink-0 w-[85vw] sm:w-80 flex flex-col h-full">
 							<Button
 								variant="outline"
 								onClick={() => addColumn(`New Column ${columns.length + 1}`)}
-								className="w-full py-4 flex items-center justify-center gap-2 text-foreground hover:bg-surface-variant rounded-xl transition-colors font-label-md text-label-md border-2 border-dashed border-outline-variant bg-transparent"
+								className="w-full py-4 flex items-center justify-center gap-2 text-foreground hover:bg-surface-variant rounded-xl transition-colors text-label-md border-2 border-dashed border-outline-variant bg-transparent"
 							>
 								<Plus className="w-5 h-5" /> Add Board
 							</Button>

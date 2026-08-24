@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/buttons/button";
 import { Input } from "@/components/ui/input";
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import { SectionTitle } from "@/components/ui/sections";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	type SaveGroupFormValues,
 	SaveGroupSchema,
@@ -128,7 +129,22 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 			)}
 
 			{isLoading ? (
-				<p className="text-sm text-secondary">Loading groups...</p>
+				<ul className="flex flex-col gap-2">
+					{Array.from({ length: 3 }, (_, index) => (
+						<li
+							// biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no id
+							key={index}
+							className="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-3"
+						>
+							<Skeleton className="size-7 rounded" />
+							<div className="flex flex-1 flex-col gap-1.5">
+								<Skeleton className="h-4 w-40" />
+								<Skeleton className="h-3 w-20" />
+							</div>
+							<Skeleton className="h-8 w-28 rounded-md" />
+						</li>
+					))}
+				</ul>
 			) : groups.length === 0 ? (
 				<p className="text-sm text-secondary">
 					No groups yet. Save this project's members as a group to reuse them on

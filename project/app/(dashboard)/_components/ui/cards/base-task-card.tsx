@@ -12,10 +12,10 @@ import type { TaskItem, TaskPriority } from "@/types/task";
 
 export interface BaseTaskCardProps {
 	task: Partial<TaskItem> & { title: string };
-	headerAction?: React.ReactNode; // Right side of top row (e.g. Edit icon, Project badge)
-	topHeaderLeft?: React.ReactNode; // Custom left side of top row (e.g. Due date text)
-	showAvatar?: boolean; // Whether to render assignee avatar in footer
-	dateFormat?: string; // Format string for date (default: "MMM d")
+	headerAction?: React.ReactNode;
+	topHeaderLeft?: React.ReactNode;
+	showAvatar?: boolean;
+	dateFormat?: string;
 	onClick?: () => void;
 	onDoubleClick?: () => void;
 	className?: string;
@@ -82,7 +82,7 @@ export function BaseTaskCard({
 			)}
 
 			{/* title text */}
-			<p className="font-body-sm text-body-sm text-foreground leading-tight font-medium group-hover:text-primary transition-colors">
+			<p className="text-body-sm text-foreground leading-tight font-medium group-hover:text-primary transition-colors">
 				{task.title}
 			</p>
 
@@ -108,7 +108,7 @@ export function BaseTaskCard({
 				<div className="flex items-center justify-between mt-2 pt-3 border-t border-outline-variant/50">
 					{showAvatar && (
 						<div className="flex -space-x-2">
-							<div className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-label-sm text-[10px] border border-surface">
+							<div className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[10px] border border-surface">
 								AJ
 							</div>
 						</div>

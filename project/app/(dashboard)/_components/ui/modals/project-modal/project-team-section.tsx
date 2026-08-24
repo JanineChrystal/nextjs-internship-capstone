@@ -32,7 +32,7 @@ export function ProjectTeamSection({ projectId }: ProjectTeamSectionProps) {
 
 	return (
 		<div className="space-y-2">
-			<span className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider">
+			<span className="block text-label-sm text-muted-foreground uppercase tracking-wider">
 				Team Members
 			</span>
 

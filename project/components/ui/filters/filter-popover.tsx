@@ -68,9 +68,7 @@ export function FilterPopover({
 				{activeFieldId === null ? (
 					<>
 						<div className="flex items-center justify-between mb-1 border-outline-variant pb-2">
-							<h4 className="font-label-md text-on-surface font-semibold">
-								Filters
-							</h4>
+							<h4 className="text-on-surface font-semibold">Filters</h4>
 							{activeCount > 0 && (
 								<Button
 									variant="ghost"
@@ -116,7 +114,7 @@ export function FilterPopover({
 							>
 								<ChevronLeft size={16} />
 							</button>
-							<h4 className="font-label-md text-on-surface font-semibold">
+							<h4 className="text-on-surface font-semibold">
 								{activeField?.label}
 							</h4>
 						</div>

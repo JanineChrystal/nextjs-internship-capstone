@@ -45,7 +45,7 @@ export function ProjectMembersGroup({
 						);
 					})}
 					{remainingCount > 0 && (
-						<div className="w-9 h-9 rounded-full border-2 border-surface bg-surface-variant flex items-center justify-center font-label-sm text-label-sm text-secondary z-0 shrink-0">
+						<div className="w-9 h-9 rounded-full border-2 border-surface bg-surface-variant flex items-center justify-center text-label-sm text-secondary z-0 shrink-0">
 							+{remainingCount}
 						</div>
 					)}

@@ -2,7 +2,14 @@
 
 import { format, getDay, parse, startOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import {
+	Children,
+	cloneElement,
+	type ReactElement,
+	useCallback,
+	useMemo,
+	useState,
+} from "react";
 import type { ToolbarProps, View } from "react-big-calendar";
 import { Calendar, dateFnsLocalizer, Navigate } from "react-big-calendar";
 import {
@@ -16,6 +23,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useHasCoarsePointer } from "@/hooks/use-coarse-pointer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { CalendarEvent } from "@/lib/types/calendar";
 
@@ -214,6 +222,35 @@ export function BigCalendar({
 	const [view, setView] = useState<View>(defaultView);
 	const [date, setDate] = useState<Date>(new Date());
 	const isMobile = useIsMobile();
+	const isCoarsePointer = useHasCoarsePointer();
+
+	/**
+	 * touch date filtering - makes the whole day cell tappable on a touch device.
+	 *
+	 * On a mouse, clicking a day's background fires `onSelectSlot` and filters the
+	 * side panel. On touch, react-big-calendar routes slot selection through a
+	 * 250ms long press, so an ordinary tap did nothing at all - and the date
+	 * number, the only wired control, is a ~20px target inside a small cell.
+	 *
+	 * `dateCellWrapper` wraps `.rbc-day-bg`, the full-size background of one day,
+	 * so this hands touch a target the size of the cell. It is attached only for a
+	 * coarse pointer: with a mouse this would fire alongside `onSelectSlot` and
+	 * toggle the filter twice, applying and clearing it in one click.
+	 */
+	const CustomDateCellWrapper = useCallback(
+		({ children, value }: { children: React.ReactNode; value: Date }) => {
+			const cell = Children.only(children) as ReactElement<{
+				onClick?: () => void;
+			}>;
+
+			if (!isCoarsePointer) return cell;
+
+			return cloneElement(cell, {
+				onClick: () => onDateCellClick?.(value),
+			});
+		},
+		[isCoarsePointer, onDateCellClick],
+	);
 
 	// custom month date header - provides interactive date cells for the month grid.
 	const CustomMonthDateHeader = useCallback(
@@ -245,7 +282,8 @@ export function BigCalendar({
 							e.stopPropagation();
 							onDateCellClick?.(headerDate);
 						}}
-						className="rounded px-1 text-xs font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
+						// min-w-6 - the number was a ~20px target inside an already small cell, which is under any reasonable minimum for a finger. The cell background is now tappable too (see CustomDateCellWrapper); this just stops the number itself being the hard part.
+						className="min-w-6 rounded px-1 py-0.5 text-xs font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
 					>
 						{label}
 					</button>
@@ -261,11 +299,12 @@ export function BigCalendar({
 		() => ({
 			toolbar: CustomToolbar,
 			event: view === "month" ? CustomEvent : CustomDetailedEvent,
+			dateCellWrapper: CustomDateCellWrapper,
 			month: {
 				dateHeader: CustomMonthDateHeader,
 			},
 		}),
-		[CustomMonthDateHeader, view],
+		[CustomMonthDateHeader, CustomDateCellWrapper, view],
 	);
 
 	const eventPropGetter = useCallback(

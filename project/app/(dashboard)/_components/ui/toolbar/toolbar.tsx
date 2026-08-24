@@ -23,8 +23,9 @@ export function Toolbar({
 		>
 			{leftSection}
 
+			{/* right group - spreads across the row on a phone, where it sits on its own line, and hugs the right edge once the toolbar becomes one row. */}
 			{(rightSection || children) && (
-				<div className="flex flex-wrap items-center gap-3 shrink-0">
+				<div className="flex flex-wrap items-center justify-between gap-3 md:justify-end md:shrink-0">
 					{rightSection}
 					{children}
 				</div>
