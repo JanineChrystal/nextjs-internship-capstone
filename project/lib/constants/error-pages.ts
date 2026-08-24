@@ -5,23 +5,10 @@ import type {
 } from "@/lib/types/error-page";
 
 /**
- * A five-row block font, one entry per digit.
- *
- * ## Why the numeral is drawn rather than typed
- *
- * A status code set in the body typeface is a number on a page. Printed as
- * block glyphs it reads as machine output - which is the whole idea: the screen
- * is a diagnosis, not an apology. It also survives at any size without an image
- * or an icon font, so there is no asset to load on a route that is, by
- * definition, already going wrong.
- *
- * All ten digits are here even though only 0, 1, 3, 4 and 5 are reachable from
- * `ErrorPageCode` today. A font with holes in it is a trap for whoever adds the
- * next code.
- *
- * Five rows is a deliberate ceiling. Taller glyphs look better on a desktop hero
- * and then force a horizontal scroll on a phone, and an error page that cannot
- * be read on the device that hit the error is worse than a plain heading.
+ * ascii numerals font - defines a zero-dependency, five-row block
+ * font for error codes to convey a diagnostic, machine-output
+ * aesthetic that works responsively without requiring external
+ * assets.
  */
 export const ASCII_NUMERALS: Record<string, readonly string[]> = {
 	"0": ["█████", "█   █", "█   █", "█   █", "█████"],
@@ -36,16 +23,16 @@ export const ASCII_NUMERALS: Record<string, readonly string[]> = {
 	"9": ["█████", "█   █", "█████", "    █", "█████"],
 };
 
-/** Rows in every glyph. Used to build the numeral line by line. */
+/**
+ * numeral rows count - specifies the fixed height in rows for
+ * rendering the ascii numerals.
+ */
 export const NUMERAL_ROWS = 5;
 
 /**
- * The severity each code is drawn at.
- *
- * Note that 404 is `neutral`. Colouring a mistyped address in the error colour
- * tells the reader something is broken when nothing is, and it spends the alarm
- * signal on the most common and least serious case - so when 500 uses the same
- * red it no longer means anything.
+ * error severity mapping - maps http status codes to visual
+ * severities, intentionally keeping 404 neutral to reserve error
+ * colors for genuine system faults.
  */
 export const ERROR_SEVERITY: Record<ErrorPageCode, ErrorSeverity> = {
 	"401": "action",
@@ -54,7 +41,10 @@ export const ERROR_SEVERITY: Record<ErrorPageCode, ErrorSeverity> = {
 	"500": "fault",
 };
 
-/** The short machine name printed beside the code, e.g. `404 NOT_FOUND`. */
+/**
+ * error status labels - maps http status codes to their
+ * machine-readable string names for display.
+ */
 export const ERROR_STATUS_LABEL: Record<ErrorPageCode, string> = {
 	"401": "UNAUTHORIZED",
 	"403": "FORBIDDEN",
@@ -63,10 +53,9 @@ export const ERROR_STATUS_LABEL: Record<ErrorPageCode, string> = {
 };
 
 /**
- * Where a signed-in reader can go from a dead end.
- *
- * Ordered by how likely each is to be what they wanted, not alphabetically. The
- * first line is the one someone will take without reading the rest.
+ * dashboard recovery routes - defines prioritized navigation links for
+ * signed-in users who encounter an error, helping them recover to the
+ * most likely desired destinations.
  */
 export const DASHBOARD_RECOVERY_ROUTES: readonly RecoveryRoute[] = [
 	{ href: "/dashboard", label: "/dashboard", hint: "your workspace overview" },
@@ -75,11 +64,9 @@ export const DASHBOARD_RECOVERY_ROUTES: readonly RecoveryRoute[] = [
 ];
 
 /**
- * Where a signed-out reader can go.
- *
- * Deliberately not the dashboard set. Offering `/projects` to someone who is not
- * signed in sends them through a redirect back to sign-in, which reads as a
- * second failure rather than a recovery.
+ * public recovery routes - provides safe navigation links for
+ * signed-out users, deliberately omitting protected routes to prevent
+ * frustrating redirect loops upon recovery.
  */
 export const PUBLIC_RECOVERY_ROUTES: readonly RecoveryRoute[] = [
 	{ href: "/", label: "/", hint: "back to the landing page" },

@@ -9,28 +9,19 @@ import { db } from "@/lib/db";
 import { categories, projects, tasks } from "@/lib/db/schema";
 import type { CategoryType } from "@/lib/types/category";
 
-// Slate-400. Matches what Manage Categories shows for a category nobody has
-// given a colour yet.
+// default category color - slate-400 fallback matching the UI for uncolored categories.
 const DEFAULT_CATEGORY_COLOR = "#94a3b8";
 
 /**
- * Writes to the category table, and the cascades they trigger.
- *
- * Split from categories.ts, which read palettes and rewrote two other tables in
- * the same file. Renaming a category is not a category operation alone: because
- * tasks and projects reference categories by *name*, a rename has to sweep
- * Tasks.category and Projects.category too. That cascade is the risky part of
- * this domain and deserves to be read on its own.
- *
- * Every public function here resolves a workspace first, either from the
- * caller's session or from the project being edited, so no id from a client is
- * ever trusted verbatim.
+ * category mutations - manages category writes and their necessary
+ * cascades across tasks and projects. All operations strictly resolve
+ * workspaces from session/project context rather than trusting client IDs.
  */
 
 /**
- * Renames a category across the project's workspace, cascading to the rows that
- * reference it by name. Mirrors updateWorkspaceCategoryDAL but authorised by
- * project role.
+ * update project category - renames a category within the project's
+ * workspace and cascades the change to all referencing rows, authorized
+ * via project roles.
  */
 export async function updateProjectCategoryDAL(
 	projectId: string,
@@ -50,8 +41,9 @@ export async function updateProjectCategoryDAL(
 }
 
 /**
- * Deletes a category from the project's workspace, falling the affected rows
- * back to "Uncategorized". Authorised by project role.
+ * delete project category - removes a category from the project's
+ * workspace and gracefully falls back affected rows to 'Uncategorized',
+ * authorized via project roles.
  */
 export async function deleteProjectCategoryDAL(
 	projectId: string,
@@ -63,11 +55,9 @@ export async function deleteProjectCategoryDAL(
 }
 
 /**
- * The upsert itself, once a workspace has been resolved and authorised.
- *
- * Shared by the workspace-scoped and project-scoped entry points, which differ
- * only in how they answer "which workspace?" - the same split the rename and
- * delete paths already use.
+ * upsert category core - executes the upsert operation after authorization
+ * and workspace resolution, shared by both workspace and project scoped
+ * entry points.
  */
 async function upsertCategoryInWorkspace(
 	resolvedWorkspaceId: string,
@@ -98,7 +88,7 @@ async function upsertCategoryInWorkspace(
 	return newCategory;
 }
 
-// Upsert Category (Auto-add)
+// auto add workspace category - upserts a category into the caller's active workspace.
 export async function upsertWorkspaceCategoryDAL(
 	workspaceId: string,
 	name: string,
@@ -113,17 +103,10 @@ export async function upsertWorkspaceCategoryDAL(
 }
 
 /**
- * Registers a category against the workspace that owns a given project.
- *
- * Separate from upsertWorkspaceCategoryDAL because the two answer "which
- * workspace?" differently. That one resolves the *caller's* workspace, which is
- * right when creating a project but wrong for anything scoped to an existing
- * one: a member styling a task in a shared project would file the category in
- * their own workspace, where the project owner never sees it.
- *
- * Authorised by project role rather than workspace membership, so a co-owner
- * whose directory entry was later removed can still edit the project they were
- * given access to.
+ * upsert project category - registers a category to the project's
+ * parent workspace rather than the caller's personal workspace, ensuring
+ * shared visibility. Authorized by project role to handle edge cases like
+ * removed workspace members who retain project ownership.
  */
 export async function upsertProjectCategoryDAL(
 	projectId: string,
@@ -135,7 +118,7 @@ export async function upsertProjectCategoryDAL(
 	return upsertCategoryInWorkspace(workspaceId, name, type, color);
 }
 
-// Update Category (Cascading)
+// update workspace category - renames a category in the active workspace and triggers cascades.
 export async function updateWorkspaceCategoryDAL(
 	workspaceId: string,
 	oldName: string,
@@ -158,9 +141,9 @@ export async function updateWorkspaceCategoryDAL(
 }
 
 /**
- * The rename itself, once a workspace has been resolved and authorised. Shared
- * by the workspace-scoped and project-scoped entry points so the cascade is
- * written once.
+ * update category core - executes the rename operation and cascades the
+ * name change to all referencing tasks and projects within the resolved
+ * workspace.
  */
 async function updateCategoryInWorkspace(
 	resolvedWorkspaceId: string,
@@ -170,7 +153,7 @@ async function updateCategoryInWorkspace(
 	type: CategoryType,
 ) {
 	return await db.transaction(async (tx) => {
-		// Update the category record
+		// update base category - updates the core category record before cascading.
 		const [updatedCategory] = await tx
 			.update(categories)
 			.set({
@@ -191,7 +174,7 @@ async function updateCategoryInWorkspace(
 			throw new Error("Category not found");
 		}
 
-		// Update associated projects or tasks
+		// cascade update references - sweeps the new name across all matching projects or tasks in the workspace.
 		if (type === "project") {
 			await tx
 				.update(projects)
@@ -206,7 +189,7 @@ async function updateCategoryInWorkspace(
 					),
 				);
 		} else if (type === "task") {
-			// Find all tasks in this workspace where category matches
+			// resolve workspace projects - gathers all project IDs within the workspace to scope the task update.
 			const workspaceProjects = await tx.query.projects.findMany({
 				where: eq(projects.workspaceId, resolvedWorkspaceId),
 				columns: { id: true },
@@ -234,7 +217,7 @@ async function updateCategoryInWorkspace(
 	});
 }
 
-// Delete Category (Graceful Fallback)
+// delete workspace category - removes a category from the active workspace with graceful fallback.
 export async function deleteWorkspaceCategoryDAL(
 	workspaceId: string,
 	categoryName: string,
@@ -249,8 +232,9 @@ export async function deleteWorkspaceCategoryDAL(
 }
 
 /**
- * The delete-and-fall-back itself, once a workspace has been resolved and
- * authorised. Shared by both entry points.
+ * delete category core - executes the deletion and gracefully falls back
+ * affected tasks and projects to 'Uncategorized' within the resolved
+ * workspace.
  */
 async function deleteCategoryInWorkspace(
 	resolvedWorkspaceId: string,
@@ -258,7 +242,7 @@ async function deleteCategoryInWorkspace(
 	type: CategoryType,
 ) {
 	return await db.transaction(async (tx) => {
-		// Update associated projects or tasks to "Uncategorized"
+		// fallback affected references - resets matching projects or tasks to Uncategorized before deletion.
 		if (type === "project") {
 			await tx
 				.update(projects)
@@ -296,7 +280,7 @@ async function deleteCategoryInWorkspace(
 			}
 		}
 
-		// Delete the category record
+		// delete base category - removes the core category record after references are secured.
 		await tx
 			.delete(categories)
 			.where(

@@ -3,16 +3,9 @@ import type { LegalDocument } from "@/lib/constants/legal";
 import { LEGAL_DISCLAIMER } from "@/lib/constants/legal";
 
 /**
- * Renders either legal document.
- *
- * One component for both, so the two pages cannot drift in typography or
- * heading level - which matters more than it sounds, because a privacy policy
- * and a set of terms that look subtly different read as though one of them was
- * pasted in from somewhere else.
- *
- * Measure is capped near 68 characters through `max-w-2xl`. These are the
- * longest continuous prose in the product, and full-width paragraphs are the
- * fastest way to make a page nobody finishes.
+ * legal document view - a shared layout for all legal pages, ensuring visual
+ * consistency so policies don't appear disjointed. Caps text measure
+ * around 68 characters (`max-w-2xl`) to maintain readability for long prose.
  */
 export function LegalDocumentView({ document }: { document: LegalDocument }) {
 	return (

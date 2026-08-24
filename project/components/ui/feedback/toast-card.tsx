@@ -11,12 +11,9 @@ import type { FeedbackTone } from "@/lib/types/feedback";
 import { cn } from "@/lib/utils";
 
 /**
- * One row per tone: the icon, and the three tokens that dress it.
- *
- * Written out in full rather than composed from a string template because
- * Tailwind scans source text for class names - `bg-${tone}-container` produces
- * no CSS at all, and the bug shows up as an invisible toast rather than a build
- * error.
+ * tone styles - maps feedback tones to explicit Tailwind utility classes.
+ * Classes are fully written out to ensure Tailwind's static analyzer detects
+ * and includes them in the build.
  */
 const TONE_STYLES: Record<
 	FeedbackTone,
@@ -48,7 +45,7 @@ const TONE_STYLES: Record<
 	},
 };
 
-/** Announced politely for success and info, assertively for warning and error. */
+/** tone role - defines ARIA roles per tone: 'status' for polite announcements, 'alert' for assertive ones. */
 const TONE_ROLE: Record<FeedbackTone, "status" | "alert"> = {
 	success: "status",
 	info: "status",
@@ -59,30 +56,16 @@ const TONE_ROLE: Record<FeedbackTone, "status" | "alert"> = {
 interface ToastCardProps {
 	tone: FeedbackTone;
 	message: string;
-	/** Optional second line - usually the reason a thing failed. */
+	/** detailed description - an optional secondary message, typically used to explain the reason for failure. */
 	description?: string;
 	onDismiss: () => void;
 }
 
 /**
- * The visual for every toast in the app.
- *
- * ## Why this is a component and not sonner's `richColors`
- *
- * Sonner's built-in styling is one look with no say over it, and it renders
- * from its own palette rather than the app's tokens - so it would stay the same
- * four colours when the Phase 7 palette picker lands, and would drift from
- * everything around it. Rendering the card ourselves through `toast.custom`
- * means the toast is made of the same tokens as the rest of the app.
- *
- * ## Why the text is not the accent colour
- *
- * The reference design draws the label in the same mid-tone as the border,
- * which measures around 3:1 on its own tint and fails WCAG AA for body text.
- * The border and icon keep that accent - they are large shapes, and 3:1 is the
- * correct bar for a non-text element - while the label uses the darker
- * `on-*-container` step. Side by side the difference reads as intentional
- * weight, not as a different design.
+ * toast card - custom UI for Sonner toasts, ensuring they use app-specific
+ * design tokens for seamless theme integration. Adjusts text contrast
+ * strictly to `on-*-container` colors to guarantee WCAG AA compliance,
+ * diverging from potentially low-contrast default designs.
  */
 export function ToastCard({
 	tone,
@@ -97,8 +80,7 @@ export function ToastCard({
 			role={TONE_ROLE[tone]}
 			className={cn(
 				"pointer-events-auto flex w-full items-start gap-3 rounded-2xl border-2 p-4 shadow-lg",
-				// The reference has a soft coloured halo. `currentColor` at low alpha
-				// takes it from the tone rather than hard-coding four shadow colours.
+				/** dynamic shadow - applies a soft, colored halo inherited via currentColor instead of hardcoding multiple shadow variants. */
 				"shadow-current/10",
 				frame,
 			)}

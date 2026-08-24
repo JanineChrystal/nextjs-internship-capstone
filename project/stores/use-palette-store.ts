@@ -51,14 +51,11 @@ export const usePaletteStore = create<PaletteState>((set) => ({
 
 		set({ paletteId });
 
-		// Wrapped because storage is not always available - a private window, or a
-		// browser configured to block site data, throws on write. Losing the
-		// preference on the next reload is a far better outcome than an uncaught
-		// error taking down the picker that was being used.
+		/** safe storage write - catches errors from blocked site data or private windows to prevent the color picker from crashing. */
 		try {
 			window.localStorage.setItem(PALETTE_STORAGE_KEY, paletteId);
 		} catch {
-			// Ignored on purpose: see above.
+			/** graceful failure - deliberately ignores write errors to avoid UI crashes. */
 		}
 	},
 
@@ -71,9 +68,7 @@ export const usePaletteStore = create<PaletteState>((set) => ({
 			stored = null;
 		}
 
-		// A stored id is validated rather than trusted. It survives a deploy that
-		// renamed or removed a palette, and it is user-writable in DevTools, so
-		// applying it unchecked would leave the app with no accent colour at all.
+		/** invalid palette guard - validates stored palette IDs against known ones to prevent devtools changes or old deploys from removing all styles. */
 		set({
 			paletteId:
 				stored && isKnownPaletteId(stored) ? stored : DEFAULT_PALETTE_ID,

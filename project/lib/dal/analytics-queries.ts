@@ -6,17 +6,13 @@ import { MILLISECONDS_PER_DAY } from "@/lib/utils/analytics";
 import { deriveTaskStatus } from "@/lib/utils/task-status";
 
 /**
- * The row loaders and helpers shared by the workspace-wide analytics
- * (lib/dal/analytics.ts) and the per-project analytics
- * (lib/dal/project-analytics.ts).
- *
- * Extracted when analytics.ts crossed the 400-line limit. The split is along a
- * real seam rather than an arbitrary one: these functions answer "what rows are
- * there", while the two files that import them answer "what do those rows mean
- * for this particular screen". Two reasons to change, two files.
+ * analytics query helpers - centralizes data loading functions shared
+ * by both workspace and project analytics to separate data retrieval
+ * ("what rows exist") from domain interpretation ("what the rows
+ * mean").
  */
 
-/** The row shape every metric is folded from. Selected once, reused many times. */
+/** scoped task row - defines the minimal data projection required to compute all task metrics in a single pass. */
 export interface ScopedTaskRow {
 	id: string;
 	projectId: string;
@@ -55,8 +51,11 @@ export async function loadScopedTasks(
 		.where(
 			and(
 				inArray(tasks.projectId, projectIds),
-				// Archived work is deliberately set aside, so counting it would drag
-				// every completion rate down for tasks nobody intends to finish.
+				/**
+				 * exclude archived tasks - ignores archived work in analytical
+				 * counts so abandoned tasks do not artificially deflate completion
+				 * metrics.
+				 */
 				isNull(tasks.archivedAt),
 				isNull(tasks.deletedAt),
 			),
@@ -64,15 +63,10 @@ export async function loadScopedTasks(
 }
 
 /**
- * When each task was completed, read from the activity spine Phase 1 installed.
- *
- * The Tasks table has no completedAt column, and updatedAt is the wrong stand-in
- * because it moves every time anyone edits a note or renames the task - a task
- * finished in March but retitled today would report a cycle time of zero days.
- * The TASK_COMPLETED activity row, by contrast, is written once and never moved.
- *
- * The earliest such row wins: a task that is un-completed and completed again
- * should keep its original cycle time rather than restarting the clock.
+ * load completion times - resolves true task completion dates by
+ * querying immutable activity logs rather than volatile updatedAt
+ * columns. It takes the earliest completion record to handle toggled
+ * task states correctly.
  */
 export async function loadCompletionTimes(
 	projectIds: string[],
@@ -102,7 +96,7 @@ export async function loadCompletionTimes(
 	return earliest;
 }
 
-/** The start of the local day this trailing window opens on. */
+/** window start - calculates the start of the local day a given trailing window opens on. */
 export function windowStart(days: number): Date {
 	const start = new Date(Date.now() - (days - 1) * MILLISECONDS_PER_DAY);
 	start.setHours(0, 0, 0, 0);
@@ -110,9 +104,9 @@ export function windowStart(days: number): Date {
 }
 
 /**
- * When a completed task actually finished, falling back to updatedAt for tasks
- * completed before the activity spine existed. Without the fallback every
- * pre-Phase-1 task would silently drop out of the cycle-time average.
+ * resolve completed at - determines task completion times with a
+ * fallback to updatedAt to ensure legacy tasks (pre-activity log)
+ * remain included in cycle time averages.
  */
 export function resolveCompletedAt(
 	task: ScopedTaskRow,
@@ -121,7 +115,7 @@ export function resolveCompletedAt(
 	return completionTimes.get(task.id) ?? task.updatedAt;
 }
 
-/** The status a chart shows, which is the status the board shows. */
+/** display status - derives the correct status for charts, mirroring the board's dynamic status logic. */
 export function toDisplayStatus(task: ScopedTaskRow): string {
 	return deriveTaskStatus({
 		isCompleted: task.isCompleted,
@@ -132,10 +126,9 @@ export function toDisplayStatus(task: ScopedTaskRow): string {
 }
 
 /**
- * Total and completed task counts per project, in one pass.
- *
- * Filtering the task array once per project instead would be an
- * O(projects x tasks) scan for numbers a single pass already has.
+ * count tasks by project - computes total and completed task counts
+ * for all projects in a single O(N) pass to avoid expensive nested
+ * iterations.
  */
 export function countTasksByProject(
 	taskRows: ScopedTaskRow[],

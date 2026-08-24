@@ -1,12 +1,9 @@
 import type { SearchResult } from "@/lib/types/search";
 
 /**
- * Mapping database rows into search hits.
- *
- * Each row type gets its own mapper rather than one generic function, because
- * what counts as the subtitle differs per kind and is a product decision, not a
- * mechanical one: a task is best identified by the project it is in, a project
- * by its category, and a person by their email.
+ * search mapping - maps database rows into search hits using specialized
+ * mappers per entity kind, ensuring product-specific subtitle rules (e.g.
+ * category vs. project name) are properly applied.
  */
 
 export function toProjectSearchResult(row: {
@@ -24,12 +21,8 @@ export function toProjectSearchResult(row: {
 }
 
 /**
- * A task has no page of its own, so it links to its project.
- *
- * `?task={id}` is carried so the project page can open that task's modal on
- * arrival - without it, finding a task by search would drop you on a board and
- * leave you to spot it yourself, which is most of the work you just asked the
- * search to do.
+ * to task search result - maps a task row into a search hit, utilizing query
+ * parameters to open the task modal directly upon routing to the project page.
  */
 export function toTaskSearchResult(row: {
 	id: string;

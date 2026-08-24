@@ -78,7 +78,10 @@ export async function createTaskAction(
 	inputData: CreateTaskInput,
 ): Promise<{ success: boolean; data?: TaskOutputDTO; error?: string }> {
 	try {
-		// Auth & Permission check
+		/**
+		 * verify task creation permission - checks if the user has
+		 * authorization to create a task in the project.
+		 */
 		const hasPermission = await verifyProjectPermissionDAL(
 			projectId,
 			"create_task",
@@ -87,11 +90,16 @@ export async function createTaskAction(
 			return { success: false, error: await getSessionFailureReason() };
 		}
 
-		// Category is optional for the user - fall back to "Uncategorized"
-		// rather than storing an empty string.
+		/**
+		 * default category fallback - uses Uncategorized if no category is
+		 * provided to avoid empty strings.
+		 */
 		const categoryValue = inputData.category?.trim() || "Uncategorized";
 
-		// Parse payload
+		/**
+		 * parse payload - prepares the incoming task data for database
+		 * insertion.
+		 */
 		const rawData = {
 			projectId,
 			boardId,
@@ -106,7 +114,10 @@ export async function createTaskAction(
 			dueDate: inputData.dueDate ? new Date(inputData.dueDate) : undefined,
 		};
 
-		// Zod Validation (Using the DB schema directly for raw backend inserts)
+		/**
+		 * zod validation - validates the raw payload directly against the
+		 * database schema.
+		 */
 		const validationResult = insertTaskDbSchema.safeParse(rawData);
 		if (!validationResult.success) {
 			return { success: false, error: "Invalid form data" };
@@ -114,17 +125,21 @@ export async function createTaskAction(
 
 		const validatedData = validationResult.data;
 
-		// Register the category in the shared Categories table so it becomes a
-		// reusable, styled option. Scoped to the project's workspace, not the
-		// editor's, so a member styling a task in a shared project does not file
-		// the category away in their own workspace where the owner never sees it.
+		/**
+		 * register task category - upserts the category into the project
+		 * workspace to ensure it is visible to the project owner and
+		 * reusable.
+		 */
 		await upsertProjectCategoryDAL(projectId, categoryValue, "task");
 
-		// DAL Call
+		/** database insertion - inserts the validated task via the DAL. */
 		const newTask = await createTaskInDB(validatedData);
 
-		// History entry. Awaited so the row exists before the response returns,
-		// but recordActivity never throws - a failed log must not fail the create.
+		/**
+		 * safe history logging - awaits the activity creation to ensure the
+		 * row exists, relying on the logger's error suppression to protect
+		 * task creation.
+		 */
 		const user = await getCurrentUser();
 		if (user) {
 			await recordActivity({
@@ -137,10 +152,13 @@ export async function createTaskAction(
 			});
 		}
 
-		// Cache Revalidation
+		/**
+		 * cache revalidation - triggers a cache revalidation for the
+		 * updated project path.
+		 */
 		revalidatePath(`/projects/${projectId}`);
 
-		// Return DTO Payload
+		/** return dto payload - returns the newly created task data. */
 		return { success: true, data: newTask };
 	} catch (error) {
 		console.error("createTaskAction error:", error);
@@ -183,8 +201,10 @@ export async function updateTaskAction(
 			notes: validationResult.data.notes,
 			boardId: validationResult.data.boardId,
 			previousBoardId: validationResult.data.previousBoardId,
-			// Authoritative completion flag - previously validated then dropped,
-			// which left completion state unsaved on single-task toggles.
+			/**
+			 * authoritative completion flag - persists the explicit isCompleted
+			 * state to fix missing saves during single-task toggles.
+			 */
 			isCompleted: validationResult.data.isCompleted,
 			statusOverriddenAt: validationResult.data.statusOverriddenAt
 				? new Date(validationResult.data.statusOverriddenAt)
@@ -205,11 +225,16 @@ export async function updateTaskAction(
 
 		const user = await getCurrentUser();
 		if (user) {
-			// Resolved once and shared by both possible entries below.
+			/**
+			 * shared workspace resolution - resolves workspace ID once for use
+			 * across multiple subsequent activity entries.
+			 */
 			const workspaceId = await resolveProjectWorkspaceIdDAL(projectId);
 
-			// A save that changed nothing tracked produces no row at all, which is
-			// why changeSummary is allowed to be null rather than an empty string.
+			/**
+			 * conditional activity logging - skips activity logging if
+			 * changeSummary is null, indicating no tracked changes occurred.
+			 */
 			if (changeSummary) {
 				await recordActivity({
 					workspaceId,
@@ -221,13 +246,16 @@ export async function updateTaskAction(
 				});
 			}
 
-			// Completion is its own event rather than another "changed status"
-			// line, because Phase 4 counts completions and a free-text sentence is
-			// not something you can aggregate.
+			/**
+			 * explicit completion tracking - logs task completion as a discrete
+			 * event to support accurate aggregations in Phase 4.
+			 */
 			if (validationResult.data.isCompleted === true) {
-				// The people who were working on it are the ones this concerns.
-				// recordActivity drops the actor, so completing your own solo task
-				// notifies nobody.
+				/**
+				 * focused completion notification - alerts task assignees of the
+				 * completion, naturally excluding solo workers via recordActivity
+				 * filtering.
+				 */
 				const assigneesByTask = await getTaskAssigneesByTaskIds([taskId]);
 				const assignees = assigneesByTask.get(taskId) ?? [];
 
@@ -396,15 +424,10 @@ export async function reorderTasksAction(
 }
 
 /**
- * Emails the assignees a completed task concerns.
- *
- * Separated from the action because it runs in `after()` - the response has
- * already gone, so this reads what it needs itself rather than holding a
- * closure over the request. Never throws: the task is already complete, and a
- * mail failure must not surface as a failed save.
- *
- * The preference was already decided by recordActivity; the ids arriving here
- * are only the people who may be emailed.
+ * send task completed emails - asynchronously sends completion
+ * emails to assignees via after(), independently querying necessary
+ * data and suppressing errors to protect the initial save
+ * operation.
  */
 async function sendTaskCompletedEmails(params: {
 	recipientIds: string[];
@@ -431,7 +454,7 @@ async function sendTaskCompletedEmails(params: {
 			await sendNotification({
 				to: recipient.email,
 				subject: `${params.completedBy} completed ${params.taskName}`,
-				// Already decided upstream - these ids are the ones that passed.
+				/** should send - already decided upstream - these ids are the ones that passed. */
 				shouldSend: true,
 				template: TaskCompletedEmail({
 					completedBy: params.completedBy,

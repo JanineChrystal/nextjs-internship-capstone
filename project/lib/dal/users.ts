@@ -10,12 +10,11 @@ import type { DbUser, NewDbUser, SessionUser } from "@/lib/types/user";
 export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
 	try {
 		return await db.transaction(async (tx) => {
-			// Users has TWO unique columns - clerkId and email - so an insert can
-			// collide on either, and onConflictDoUpdate can only name one of them.
-			// The email collision is the case that matters: deleting a Clerk account
-			// and signing up again with the same address issues a NEW clerkId while
-			// the old row still holds that email, so a clerkId-only upsert throws a
-			// unique violation and the person can never get back in.
+			/**
+			 * email collision priority - prioritizes email over clerkId for
+			 * uniqueness resolution, ensuring users who delete and recreate
+			 * Clerk accounts with the same email can still access their data.
+			 */
 			const [existingByEmail] = await tx
 				.select()
 				.from(users)
@@ -24,9 +23,11 @@ export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
 			let user: DbUser;
 
 			if (existingByEmail && existingByEmail.clerkId !== data.clerkId) {
-				// Same person, new Clerk identity. The row is re-pointed rather than
-				// replaced: projects, memberships and comments all reference Users.id,
-				// so creating a second row would orphan everything they had.
+				/**
+				 * repoint identity - updates the existing row with the new Clerk ID
+				 * rather than replacing it, preventing the orphaning of existing
+				 * foreign key references.
+				 */
 				const [reclaimed] = await tx
 					.update(users)
 					.set({
@@ -34,8 +35,7 @@ export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
 						firstName: data.firstName,
 						lastName: data.lastName,
 						imageUrl: data.imageUrl,
-						// Clears a soft delete, so a user.deleted webhook followed by a
-						// fresh signup restores the account instead of leaving it hidden.
+						/** resurrect account - clears the soft delete flag to seamlessly restore accounts upon a fresh signup. */
 						deletedAt: null,
 						updatedAt: new Date(),
 					})
@@ -68,8 +68,7 @@ export async function upsertUserInDB(data: NewDbUser): Promise<UserOutputDTO> {
 				user = result[0];
 			}
 
-			// Hook A: Workspace Auto-Creation
-			// Ensure the user has at least one workspace
+			/** auto-create workspace - ensures every new user is provisioned with at least one default workspace. */
 			const existingWorkspaces = await tx
 				.select()
 				.from(workspaces)
@@ -111,9 +110,9 @@ export async function deleteUserFromDB(
 		const updatedUsers = await db
 			.update(users)
 			.set({ deletedAt: new Date() })
-			// ensure the user matches the clerk id and is not already deleted
+			/** filter active by clerk id - ensures only active users matching the specified clerk ID are soft-deleted. */
 			.where(and(eq(users.clerkId, clerkId), isNull(users.deletedAt)))
-			// return the updated row to verify it worked
+			/** return updated row - verifies the soft deletion succeeded by returning the affected row. */
 			.returning();
 
 		if (updatedUsers.length === 0) {
@@ -133,15 +132,9 @@ export async function deleteUserFromDB(
 }
 
 /**
- * The user id behind an email address, or null when nobody has that address.
- *
- * Used when an activity entry needs to name the person an action was about but
- * the caller only has their email - inviting by address, for instance. Returns
- * null rather than throwing because "no account yet" is an ordinary outcome
- * here, not an error: a pending invite is exactly that case.
- *
- * Normalises the address the same way invites do, so a lookup cannot miss on
- * capitalisation alone.
+ * find user ID by email - retrieves a user ID via a normalized email
+ * lookup, returning null instead of throwing to naturally accommodate
+ * unregistered invitees.
  */
 export async function findUserIdByEmailDAL(
 	email: string,
@@ -160,38 +153,21 @@ export async function findUserIdByEmailDAL(
 }
 
 /**
- * Creates this session's Users row directly from Clerk, without a webhook.
- *
- * The Clerk webhook is normally what creates a user, but it is delivered over
- * the public internet and can simply not arrive - a tunnel that is down in
- * development, or a deployment sitting behind an auth wall that answers 401
- * before the request reaches the app. When that happens the person signs in
- * successfully at Clerk and then has no row here, which used to leave them
- * permanently stuck on the "Account not ready yet" page with no way forward:
- * nothing in the app besides the webhook ever created that row, so refreshing
- * could not help.
- *
- * This closes that hole. The session itself already proves who they are, and
- * currentUser() reads their profile straight from Clerk, so a missing row can
- * be filled in on the spot. Webhook delivery becomes a speed optimisation
- * rather than a hard dependency.
- *
- * Safe to call repeatedly: upsertUserInDB is a conflict-safe upsert keyed on
- * clerkId, and it only creates a workspace when the user has none.
+ * sync clerk user - creates or updates a user row synchronously from
+ * the Clerk session, eliminating the hard dependency on public webhooks
+ * and reliably unblocking users who sign in when webhooks fail.
  */
 export async function syncClerkUserToDbDAL(): Promise<SessionUser | null> {
 	const clerkUser = await currentUser();
 	if (!clerkUser) return null;
 
-	// Prefer the address Clerk marks primary; fall back to the first one so a
-	// user with an unusual address setup is still recoverable.
+	/** select primary email - prefers the designated primary email, falling back to the first available for resilience. */
 	const email =
 		clerkUser.emailAddresses.find(
 			(address) => address.id === clerkUser.primaryEmailAddressId,
 		)?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress;
 
-	// No address means nothing to key invites or membership on, so this is not
-	// a recoverable state - the caller should still refuse the request.
+	/** require email - aborts sync if no email exists, as core app functions depend on an email address. */
 	if (!email) return null;
 
 	const synced = await upsertUserInDB({

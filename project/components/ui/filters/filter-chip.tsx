@@ -19,7 +19,7 @@ export function FilterChip({
 	className,
 	...props
 }: FilterChipProps) {
-	// Removal tags
+	/** removal chip - renders a removable tag variant with a close button when an onRemove handler is provided. */
 	if (onRemove) {
 		return (
 			<div
@@ -45,7 +45,7 @@ export function FilterChip({
 		);
 	}
 
-	// Standard Toggle
+	/** standard toggle - renders a clickable pill that toggles its active state when clicked. */
 	return (
 		<button
 			type="button"

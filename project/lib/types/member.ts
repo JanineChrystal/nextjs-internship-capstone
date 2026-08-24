@@ -14,20 +14,15 @@ export type DbWorkspaceMember = typeof workspaceMembers.$inferSelect;
 export type NewDbWorkspaceMember = typeof workspaceMembers.$inferInsert;
 
 /**
- * The single definition of a project role.
- *
- * Derived from the Zod enum rather than hand-written, so the runtime validator
- * and the compile-time type can never disagree. `lib/config/permissions.ts` used
- * to declare its own identical union and `lib/dal/projects.ts` inlined a third
- * copy - adding a role would have updated one and silently left the others
- * behind.
+ * role access - authoritative definition of a project role derived directly
+ * from the Zod schema, ensuring runtime validation and compile-time types
+ * remain perfectly synchronized.
  */
 export type RoleAccess = z.infer<typeof RoleAccessEnum>;
 
 /**
- * Every action the permission table can grant. Lives here rather than beside
- * ROLE_PERMISSIONS because it is a domain vocabulary, and config files should
- * hold configuration values, not type declarations.
+ * permission - exhaustively lists every action the permissions table can
+ * grant, representing the core domain vocabulary for access control.
  */
 export type Permission =
 	| "manage_workspace"

@@ -6,15 +6,9 @@ import type { SearchResults } from "@/lib/types/search";
 import { SearchQuerySchema } from "@/lib/validations/search-schema";
 
 /**
- * The global search endpoint.
- *
- * Returns empty results rather than an error when the term is too short or too
- * long. The palette calls this on every settled keystroke, and a validation
- * error for "a" would mean showing the user a red message for the entirely
- * normal act of having typed one character so far.
- *
- * Genuine failures - no session, a database problem - do return an error,
- * because those are worth telling someone about.
+ * global search action - handles search queries by gracefully
+ * returning empty results for invalid inputs (like single
+ * characters) to prevent jarring UI errors while typing.
  */
 export async function globalSearchAction(
 	term: string,

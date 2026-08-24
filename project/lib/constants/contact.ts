@@ -1,14 +1,9 @@
 import type { ContactTopic } from "@/lib/validations/contact-schema";
 
 /**
- * The human label for each contact topic.
- *
- * This lives in lib/constants rather than beside the landing page because three
- * different things now need it: the form's dropdown, the subject line of the
- * notification email, and the Telegram alert. Two of those run on the server and
- * cannot reasonably import out of `app/(public)/_constants`, and if they each
- * kept their own copy the email would eventually say "demo" while the form said
- * "Request a walkthrough".
+ * contact topic labels - centralizes the human-readable labels for
+ * contact topics to ensure consistency across the frontend form,
+ * email subject lines, and server-side notifications.
  */
 export const CONTACT_TOPIC_LABELS: Record<ContactTopic, string> = {
 	general: "General question",
@@ -18,19 +13,15 @@ export const CONTACT_TOPIC_LABELS: Record<ContactTopic, string> = {
 };
 
 /**
- * How long a delivery attempt may take before it is abandoned.
- *
- * Deliberately short. The message is already saved by the time these run, so a
- * slow provider must never be allowed to hold a serverless invocation open -
- * that costs money and, on a platform with an execution ceiling, eventually gets
- * the function killed mid-flight with no record of why.
+ * notifier timeout ms - enforces a strict execution time limit on
+ * notification deliveries to prevent slow providers from exhausting
+ * serverless function limits or increasing costs.
  */
 export const NOTIFIER_TIMEOUT_MS = 8000;
 
 /**
- * Telegram rejects any message over 4096 characters outright. The form already
- * caps a message at 2000, so this only ever bites if the header grows - but a
- * silent rejection of the alert is exactly the failure nobody notices, so the
- * body is truncated rather than trusted to fit.
+ * telegram max length - sets a hard character limit slightly below
+ * telegram's threshold to ensure message delivery and prevent silent
+ * rejections caused by oversized headers.
  */
 export const TELEGRAM_MAX_LENGTH = 4000;

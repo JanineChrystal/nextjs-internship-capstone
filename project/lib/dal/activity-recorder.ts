@@ -7,29 +7,22 @@ import type { NotificationSettingKey } from "@/lib/types/notification-settings";
 import { encrypt } from "@/lib/utils/encryption";
 
 /**
- * Who should be told about an event, and what they should read.
- *
- * A list rather than a single recipient because one event can concern several
- * people at once - a comment on a task with three assignees notifies all three
- * from a single call.
+ * activity recipient config - models an individual target for an
+ * activity event notification, enabling multi-recipient broadcasting
+ * from a single action.
  */
 export interface ActivityRecipient {
 	recipientId: string;
 	message: string;
 	/**
-	 * Which settings switch governs the email for this recipient.
-	 *
-	 * Omit it to let the action type decide, which is right for events where the
-	 * type says everything - an invite is an invite. Set it explicitly where one
-	 * action type covers several meanings: COMMENT_ADDED is both "someone
-	 * commented on your task" and "you were mentioned", and only the second has a
-	 * switch. Pass `null` to mean no switch governs this, which is not the same
-	 * as omitting it: null suppresses the email rather than deriving one.
+	 * email preference override - specifies the notification setting
+	 * key to use, allowing explicit overrides (or null to suppress) for
+	 * ambiguous action types like comments vs. mentions.
 	 */
 	emailPreference?: NotificationSettingKey | null;
 }
 
-/** One recipient who was notified, and whether they should also be emailed. */
+/** recorded notification result - summarizes the notification outcome for a recipient, indicating if an email should also be dispatched. */
 export interface RecordedNotification {
 	recipientId: string;
 	shouldSendEmail: boolean;
@@ -47,28 +40,10 @@ export interface RecordActivityParams {
 }
 
 /**
- * Writes one activity row, plus one notification per person the event concerns.
- *
- * This is the single place the whole app records "something happened". Two
- * rules live here rather than at the eleven call sites, so no caller has to
- * remember either one:
- *
- *   1. The activity row is always written. It is the project's audit trail and
- *      does not depend on whether anyone gets notified.
- *   2. The actor never notifies themselves. Telling someone about a thing they
- *      just did is noise, and enforcing it centrally means a new call site
- *      cannot forget the rule.
- *
- * NEVER THROWS. Callers await it - so the rows exist before the response is
- * sent - but a failure here is swallowed rather than propagated, because
- * assigning a task and *logging* that you assigned a task are not equally
- * important. If the activity table is briefly unreachable the user's actual
- * mutation must still succeed; a failed audit write is not a reason to tell
- * someone "could not assign task". That is the trade-off: a lost history row is
- * accepted so a real action never fails for a bookkeeping reason.
- *
- * The alternative - a retry queue with a worker and a dead-letter table - is
- * real infrastructure for a problem that has not happened yet.
+ * record activity - centralizes the creation of audit logs and
+ * notifications, enforcing rules like excluding self-notifications.
+ * It safely swallows errors to ensure that failed bookkeeping never
+ * aborts the user's primary mutation.
  */
 export async function recordActivity(
 	params: RecordActivityParams,
@@ -78,31 +53,30 @@ export async function recordActivity(
 			workspaceId: params.workspaceId,
 			actorId: params.actorId,
 			actionType: params.actionType,
-			// Encrypted: a log line quotes what changed, e.g. the old and new task
-			// name, so the feed carries real content rather than just an event type.
+			/**
+			 * encrypted details - encrypts the specific changes (like old
+			 * and new names) to preserve privacy while keeping the audit
+			 * feed informative.
+			 */
 			details: encrypt(params.details),
 			projectId: params.projectId ?? null,
 			taskId: params.taskId ?? null,
 			targetUserId: params.targetUserId ?? null,
 		});
 
-		// The actor-vs-recipient rule, applied once for every event type.
+		/** self notification exclusion - filters out the actor from the recipient list to prevent redundant self-notifications. */
 		const recipients = (params.notify ?? []).filter(
 			(recipient) => recipient.recipientId !== params.actorId,
 		);
 
 		if (recipients.length === 0) return [];
 
-		// One call per recipient rather than a single bulk insert, because
-		// createNotificationDAL is where "does this person want an email about
-		// this?" is answered - and that answer is per person, since it reads their
-		// own settings row.
-		//
-		// The cost is N inserts plus N settings reads instead of one insert. Real
-		// recipient counts here are one to five, so it is negligible, and it buys
-		// the thing that was missing: exactly one implementation of the preference
-		// rule. The bulk insert was faster and bypassed that rule entirely, which
-		// is how a second copy of it ended up in the email sender.
+		/**
+		 * individual recipient processing - iterates over recipients
+		 * individually rather than bulk inserting to correctly resolve
+		 * per-user notification preferences without duplicating the rules
+		 * elsewhere.
+		 */
 		return await Promise.all(
 			recipients.map(async (recipient) => {
 				const { shouldSendEmail } = await createNotificationDAL(
@@ -113,8 +87,11 @@ export async function recordActivity(
 						projectId: params.projectId ?? null,
 						taskId: params.taskId ?? null,
 						actionType: params.actionType,
-						// Encrypted for the same reason as details: a mention
-						// notification quotes the comment that triggered it.
+						/**
+						 * encrypted message - encrypts the notification message
+						 * to protect quoted user content like comments or
+						 * mentions.
+						 */
 						message: encrypt(recipient.message) ?? recipient.message,
 					},
 					recipient.emailPreference,
@@ -124,15 +101,17 @@ export async function recordActivity(
 			}),
 		);
 	} catch (error) {
-		// Logged, not rethrown - see the contract above.
+		/** safe failure logging - logs the failure for debugging without interrupting the primary operation. */
 		console.error("recordActivity failed (mutation itself was unaffected):", {
 			actionType: params.actionType,
 			projectId: params.projectId,
 			error,
 		});
-		// An empty list, not a throw: callers read this to decide whether to send
-		// email, and a failed audit write must not turn into a failed mutation.
-		// Nobody is emailed about an event that was never recorded.
+		/**
+		 * empty fallback return - returns an empty array on failure so
+		 * dependent email dispatches correctly skip without failing the main
+		 * mutation.
+		 */
 		return [];
 	}
 }

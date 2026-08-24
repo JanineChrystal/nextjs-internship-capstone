@@ -10,12 +10,9 @@ import { cn } from "@/lib/utils";
 import { TerminalRoute } from "./terminal-routes";
 
 /**
- * Severity decides one colour. Everything else on the screen stays neutral.
- *
- * `neutral` is `on-surface-variant` rather than `outline` because the numeral is
- * the largest thing on the page, and `outline` is tuned for hairlines - at
- * #546067 on the dark surface it drops to about 3:1, which is fine for a border
- * and far too faint for the element the eye lands on first.
+ * severity tone - defines text colors based on error severity. Uses
+ * `on-surface-variant` for neutral tones to maintain adequate contrast for
+ * large elements, avoiding the lower-contrast `outline` color.
  */
 const SEVERITY_TONE = {
 	neutral: "text-on-surface-variant",
@@ -24,11 +21,9 @@ const SEVERITY_TONE = {
 } as const;
 
 /**
- * Lays the code out as block glyphs, one printed row at a time.
- *
- * Built row-major rather than glyph-major because the digits sit side by side:
- * row 0 of every digit has to be emitted before row 1 of the first one, or the
- * numerals stack vertically instead of reading as a number.
+ * build numeral - translates an error code into ASCII block art row by row,
+ * processing digit by digit for each line to ensure the numerals render side
+ * by side horizontally.
  */
 function buildNumeral(code: string): string[] {
 	return Array.from({ length: NUMERAL_ROWS }, (_, row) =>
@@ -41,42 +36,28 @@ function buildNumeral(code: string): string[] {
 
 interface ErrorTerminalProps {
 	code: ErrorPageCode;
-	/** The one-line diagnosis, e.g. "Route not found". Becomes the page's h1. */
+	/** one-line diagnosis - a concise summary of the error, rendered as the main page heading. */
 	title: string;
-	/** Why it happened and what the reader can do, in plain language. */
+	/** plain language description - explains the error cause and possible next steps in user-friendly terms. */
 	description: string;
-	/** The routes offered as a way out. */
+	/** recovery routes - a list of navigation options to help the user escape the error state. */
 	routes: readonly RecoveryRoute[];
 	/**
-	 * Next's `error.digest` - the only handle on a server stack, which is
-	 * stripped from the client in production. Printed so a report can quote it.
+	 * error digest - displays the server error digest hash so users can quote
+	 * it in bug reports, as full stack traces are stripped in production.
 	 */
 	reference?: string;
-	/** Extra recovery lines that run a handler rather than navigate. */
+	/** action handlers - supplementary recovery elements that trigger functions instead of navigating. */
 	actions?: React.ReactNode;
-	/** Applied to the centring wrapper, so a page can choose its own height. */
+	/** wrapper classes - custom styling applied to the centering container for flexible height control. */
 	className?: string;
 }
 
 /**
- * The shared error screen: 401, 403, 404 and 500 all render through this.
- *
- * ## Why one component instead of four pages
- *
- * The four codes previously lived as three hand-written pages plus nothing at
- * all for 404, and they had already drifted - two used colour tokens that no
- * longer exist, one centred at `60vh` and another at `24` units of padding, and
- * only one offered more than a single way out. Every future change to the error
- * experience would have had to be made four times and would have been made
- * three.
- *
- * ## Why it is not a client component
- *
- * There is no state and no handler here, and the caret blinks in CSS. That lets
- * `not-found.tsx`, `unauthorized.tsx` and `forbidden.tsx` stay server-rendered
- * and ship zero JavaScript. The error boundaries, which are client files by
- * necessity, pass their retry in through `actions` - so the one case that needs
- * interactivity pays for it, and the three that do not, do not.
+ * error terminal - a unified, server-renderable terminal-themed error screen
+ * that centralizes layout for 401, 403, 404, and 500 errors. Avoids client
+ * components by managing animations in CSS and accepting interactive
+ * recovery actions solely through props.
  */
 export function ErrorTerminal({
 	code,
@@ -97,9 +78,7 @@ export function ErrorTerminal({
 			)}
 		>
 			<div className="w-full max-w-2xl overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest font-mono shadow-sm">
-				{/* Title bar. The dots are decoration and are hidden from assistive
-				    technology; the path beside them is the only thing that carries
-				    meaning, so it is the only thing announced. */}
+				{/* accessible title bar - hides the decorative window controls from screen readers, leaving only the meaningful path text. */}
 				<div className="flex items-center gap-2 border-b border-outline-variant bg-surface-container px-3 py-2">
 					<span aria-hidden="true" className="flex gap-1.5">
 						<span className="size-2.5 rounded-full bg-outline-variant" />
@@ -120,14 +99,8 @@ export function ErrorTerminal({
 						{code}
 					</p>
 
-					{/* The art is decorative: a screen reader announcing sixty block
-					    characters is noise, and the heading below already carries the
-					    same information as words. */}
-					{/* Sized in `text-*` steps rather than a fixed width because the
-					    glyph is text: three digits is 17 characters, so at `text-lg` the
-					    numeral is about 184px and still clears a 320px phone once the
-					    page and card padding are taken out. `leading-[0.85]` closes the
-					    gap between rows so the blocks read as one solid figure. */}
+					{/* decorative block art - hides the ASCII art from screen readers as the numerical value is available elsewhere. */}
+					{/* text-based sizing - scales the ASCII art via font size for fluid responsiveness and tightens leading for a solid appearance. */}
 					<pre
 						aria-hidden="true"
 						className={cn(

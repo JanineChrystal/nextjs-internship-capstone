@@ -47,14 +47,9 @@ export async function getTaskAssigneesByTaskIds(
 }
 
 /**
- * Replaces a task's assignee list and reports who was newly added.
- *
- * The returned ids are what let the caller notify only the people who just
- * gained the task. This function replaces the whole list on every save, so
- * without the diff a caller could only notify *all* current assignees - which
- * would re-notify the same people every time anything about the assignment
- * changed. The old list is read here because this is the only place that sees
- * both states; asking the action layer to diff would mean querying twice.
+ * set task assignees - replaces a task's assignee roster and calculates
+ * the diff of newly added members, allowing callers to accurately notify
+ * only new assignees without querying twice.
  */
 export async function setTaskAssigneesInDB(
 	taskId: string,

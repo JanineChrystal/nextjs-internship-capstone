@@ -36,9 +36,7 @@ export const useLandingUiStore = create<LandingUiState>((set) => ({
 	isContactOpen: false,
 	isAppearanceOpen: false,
 
-	// Opening one closes the other. Two stacked overlays would trap focus in
-	// whichever mounted last and leave the other unreachable behind it, and there
-	// is no reason to read the palettes and write a message at the same time.
+	/** exclusive open - opening one drawer automatically closes the other to prevent focus trapping between stacked overlays. */
 	openContact: () => set({ isContactOpen: true, isAppearanceOpen: false }),
 	openAppearance: () => set({ isAppearanceOpen: true, isContactOpen: false }),
 

@@ -1,7 +1,10 @@
 import { TRASH_RETENTION_DAYS } from "@/lib/constants/archive";
 import type { ConfirmAction, ConfirmCopyInput } from "@/lib/types/feedback";
 
-/** The verb as it appears in the question and on the confirm button. */
+/**
+ * action verb mapping - maps actions to their display verbs for use
+ * in confirmation questions and buttons.
+ */
 const ACTION_VERB: Record<ConfirmAction, string> = {
 	create: "create",
 	edit: "save changes to",
@@ -10,7 +13,10 @@ const ACTION_VERB: Record<ConfirmAction, string> = {
 	complete: "complete",
 };
 
-/** The confirm button's label. Repeats the verb, never says "OK". */
+/**
+ * action label mapping - maps actions to explicit button labels,
+ * avoiding ambiguous "OK" terminology.
+ */
 const ACTION_LABEL: Record<ConfirmAction, string> = {
 	create: "Create",
 	edit: "Save changes",
@@ -20,29 +26,10 @@ const ACTION_LABEL: Record<ConfirmAction, string> = {
 };
 
 /**
- * Consequences the reader should be told without every call site remembering.
- *
- * Only where one genuinely exists. A create confirmation that warns "this
- * cannot be undone" is both false and alarming, and a product that cries wolf
- * on every dialog trains people to click through the one that mattered.
- *
- * ## Why delete does not say "this cannot be undone"
- *
- * Because in this app it can. Both `deleteProjectsInDB` and the task deletes
- * set `deletedAt` rather than removing the row, and the archive page lists
- * those rows as trash with a restore action for `TRASH_RETENTION_DAYS`. Telling
- * someone the deletion is permanent is simply untrue, and the cost is not only
- * inaccuracy: a reader who believes it will hesitate over something reversible,
- * and will trust the warning less when they later discover the item was
- * recoverable all along.
- *
- * The retention window is interpolated rather than typed as "30", so this
- * sentence cannot drift away from the constant the purge actually runs on.
- *
- * The archive page's own "Delete permanently" action is the genuinely
- * irreversible one, and it carries its own copy in
- * `app/(dashboard)/archive/_constants/archive.ts` rather than coming through
- * here.
+ * action consequences mapping - defines accurate, context-aware
+ * consequence warnings for actions (like delete and archive) to
+ * avoid alarm fatigue and clearly communicate recoverability where
+ * applicable.
  */
 const ACTION_CONSEQUENCE: Partial<
 	Record<ConfirmAction, (isBulk: boolean) => string>
@@ -58,20 +45,9 @@ const ACTION_CONSEQUENCE: Partial<
 };
 
 /**
- * Builds the wording for a confirmation dialog, single or bulk.
- *
- * ## Why the copy is generated rather than typed at each call site
- *
- * The same question was being written by hand in fourteen places, and they had
- * already diverged: one asked about "3 selected project(s)" - parenthesised
- * plural and all - another said "this project", and the consequence sentence
- * appeared on some deletes and not others. Generating it means the bulk case is
- * automatically correct everywhere, and improving the wording is one edit.
- *
- * Pluralisation is passed in rather than derived. English plurals are not a
- * rule you can compute - "category" and "person" both break the obvious one -
- * and silently rendering "3 categorys" in front of a review panel is a worse
- * outcome than one extra prop.
+ * build confirm copy - dynamically generates consistent,
+ * grammatically correct wording for single and bulk confirmation
+ * dialogs, centralizing copy to prevent divergence across call sites.
  */
 export function buildConfirmCopy({
 	action,

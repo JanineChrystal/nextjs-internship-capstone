@@ -23,15 +23,9 @@ interface TrendAreaChartProps {
 }
 
 /**
- * Change over time, for a single series.
- *
- * An area rather than a bar chart because the reader's question is "is this
- * going up or down", not "how does Tuesday compare to Thursday" - a continuous
- * shape answers the first far faster than fourteen separate bars.
- *
- * One series, so there is no legend: the card title already names what is being
- * plotted, and a legend box for a single entry is noise. Colour here carries no
- * meaning at all, which is why it simply takes slot 1 rather than choosing.
+ * trend area chart - visualizes change over time for a single series, utilizing
+ * a continuous area to rapidly communicate overall direction. Omits a legend
+ * and defaults to slot 1 color as the series is already established by context.
  */
 export function TrendAreaChart({
 	data,
@@ -52,17 +46,14 @@ export function TrendAreaChart({
 				margin={{ top: 8, right: 8, bottom: 0, left: -20 }}
 			>
 				<defs>
-					{/* The fill fades out downward so the line stays the loudest part of
-					    the mark - a solid block of colour would out-shout the trend it
-					    is meant to support. */}
+					{/* fading fill - applies a downward gradient so the trendline itself remains the most prominent visual element. */}
 					<linearGradient id="trend-area-fill" x1="0" y1="0" x2="0" y2="1">
 						<stop offset="0%" stopColor={PRIMARY_SERIES} stopOpacity={0.28} />
 						<stop offset="100%" stopColor={PRIMARY_SERIES} stopOpacity={0.02} />
 					</linearGradient>
 				</defs>
 
-				{/* Horizontal rules only. Vertical ones add no information here - the
-				    x-axis is already labelled - and they compete with the data. */}
+				{/* horizontal gridlines - limits grids to horizontal to avoid cluttering the already-labeled time axis. */}
 				<CartesianGrid vertical={false} stroke={CHART_GRID} strokeWidth={1} />
 
 				<XAxis
@@ -70,8 +61,7 @@ export function TrendAreaChart({
 					tickLine={false}
 					axisLine={{ stroke: CHART_AXIS }}
 					tickMargin={8}
-					// Every other tick, so a fortnight of labels never collides on a
-					// narrow screen.
+					/** space x-axis labels - forces gaps between tick labels to prevent crowding on small viewports. */
 					interval="preserveStartEnd"
 					minTickGap={24}
 				/>
@@ -80,7 +70,7 @@ export function TrendAreaChart({
 					axisLine={false}
 					tickMargin={4}
 					width={44}
-					// Task counts are whole things; a "2.5 tasks" gridline is a lie.
+					/** force integer ticks - prevents fractional Y-axis labels for indivisible items. */
 					allowDecimals={false}
 				/>
 
@@ -96,8 +86,7 @@ export function TrendAreaChart({
 					stroke={PRIMARY_SERIES}
 					strokeWidth={2}
 					fill="url(#trend-area-fill)"
-					// Markers appear on hover only: a dot on all fourteen points turns
-					// the line into a dotted mess, but the reader still needs a target.
+					/** interactive markers - hides data dots by default to maintain line clarity, showing them only on hover. */
 					dot={false}
 					activeDot={{ r: 4, strokeWidth: 2 }}
 				/>

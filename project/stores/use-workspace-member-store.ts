@@ -21,17 +21,14 @@ export const useWorkspaceMemberStore = create<WorkspaceMemberState>(
 		members: [],
 		error: null,
 
-		// Hydrated from the server component's initial fetch.
+		/** hydration action - populates the initial member list from the server component's fetch. */
 		setMembers: (members) => set({ members }),
 
 		setError: (error) => set({ error }),
 
 		clearError: () => set({ error: null }),
 
-		// Re-pulls the directory after a mutation the store did not perform
-		// itself, such as an invite sent from the add-member modal. The page's
-		// initial hydration is ref-guarded, so new server data would otherwise
-		// never reach the client.
+		/** external mutation refresh - re-fetches the directory after actions outside this store (like sending invites) to ensure client data stays fresh. */
 		refreshMembers: async () => {
 			const result = await getWorkspaceDirectoryAction();
 			if (result.success && result.data) {
@@ -42,7 +39,7 @@ export const useWorkspaceMemberStore = create<WorkspaceMemberState>(
 		removeMembers: async (userIds) => {
 			if (userIds.size === 0) return false;
 
-			// Snapshot before mutating so a failed server call can be undone.
+			/** optimistic state - snapshots the member list before mutation to allow rollback if the server call fails. */
 			const previousMembers = get().members;
 
 			set({

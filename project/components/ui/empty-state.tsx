@@ -7,32 +7,22 @@ interface EmptyStateProps {
 	icon?: LucideIcon;
 	title: string;
 	description?: string;
-	/** A call to action. Rendered inside the panel, below the description. */
+	/** action element - an optional call to action rendered below the description. */
 	action?: React.ReactNode;
 	/**
-	 * Draws the plain dashed panel instead of the gradient one.
-	 *
-	 * For an empty state that is not the point of its screen - an empty column
-	 * on a board beside five full ones, a filtered list that matched nothing.
-	 * Those are incidental, and a gradient panel would make the emptiest part of
-	 * the page the loudest.
+	 * subdued styling - renders a plain dashed panel instead of a gradient,
+	 * intended for incidental empty states where the lack of content shouldn't
+	 * dominate the screen.
 	 */
 	subdued?: boolean;
 	className?: string;
 }
 
 /**
- * The "nothing here yet" panel.
- *
- * It carries the gradient by default because an empty state is the one moment a
- * screen has nothing else to say - there is no content competing with it, and it
- * is usually asking for an action. That is exactly the case the reference sheet
- * designed its glassmorphic card for, and it is the surface where a gradient
- * costs nothing and earns the most.
- *
- * `subdued` exists so this stays true. The moment an empty state is a small part
- * of a fuller screen, the gradient is wrong, and having the escape hatch here
- * means the answer is a prop rather than a second component that drifts.
+ * empty state panel - provides a visually prominent, gradient-backed "nothing
+ * here" panel designed to guide the user towards an initial action. Supports
+ * a 'subdued' mode for incidental empty states to prevent them from
+ * visually overwhelming adjacent content.
  */
 export function EmptyState({
 	icon: Icon,

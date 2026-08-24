@@ -67,8 +67,7 @@ function SidebarProvider({
 	const isMobile = useIsMobile();
 	const [openMobile, setOpenMobile] = React.useState(false);
 
-	// This is the internal state of the sidebar.
-	// We use openProp and setOpenProp for control from outside the component.
+	/** internal state - manages the sidebar's open/close status while allowing external control via props. */
 	const [_open, _setOpen] = React.useState(defaultOpen);
 	const open = openProp ?? _open;
 	const setOpen = React.useCallback(
@@ -80,19 +79,19 @@ function SidebarProvider({
 				_setOpen(openState);
 			}
 
-			// This sets the cookie to keep the sidebar state.
+			/** state persistence - sets a cookie to maintain the sidebar's open/close state across page reloads. */
 			// biome-ignore lint: standard shadcn pattern for sidebar state persistence
 			document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
 		},
 		[setOpenProp, open],
 	);
 
-	// Helper to toggle the sidebar.
+	/** toggle handler - switches the sidebar state based on whether the device is mobile or desktop. */
 	const toggleSidebar = React.useCallback(() => {
 		return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
 	}, [isMobile, setOpen]);
 
-	// Adds a keyboard shortcut to toggle the sidebar.
+	/** keyboard shortcut - registers a global listener for CMD/CTRL + B to quickly toggle the sidebar visibility. */
 	React.useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (
@@ -108,8 +107,7 @@ function SidebarProvider({
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [toggleSidebar]);
 
-	// We add a state so that we can do data-state="expanded" or "collapsed".
-	// This makes it easier to style the sidebar with Tailwind classes.
+	/** ui state attribute - standardizes the open state into expanded/collapsed strings for easier tailwind styling via data attributes. */
 	const state = open ? "expanded" : "collapsed";
 
 	const contextValue = React.useMemo<SidebarContextProps>(
@@ -213,7 +211,7 @@ function Sidebar({
 			data-side={side}
 			data-slot="sidebar"
 		>
-			{/* This is what handles the sidebar gap on desktop */}
+			{/* desktop sidebar gap - reserves horizontal space for the sidebar to push main content aside instead of overlapping it. */}
 			<div
 				data-slot="sidebar-gap"
 				className={cn(
@@ -230,7 +228,7 @@ function Sidebar({
 				data-side={side}
 				className={cn(
 					"fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-(--sidebar-width) data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-(--sidebar-width) md:flex",
-					// Adjust the padding for floating and inset variants.
+					/** variant spacing - adjusts the padding and width calculation when using floating or inset sidebar styles. */
 					variant === "floating" || variant === "inset"
 						? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
 						: "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
@@ -587,7 +585,7 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
 	showIcon?: boolean;
 }) {
-	// Random width between 50 to 90%.
+	/** random width - generates a random percentage between 50-90% to make skeleton loading lines look more natural. */
 	const [width] = React.useState(() => {
 		return `${Math.floor(Math.random() * 40) + 50}%`;
 	});

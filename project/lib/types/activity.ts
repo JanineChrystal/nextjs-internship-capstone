@@ -20,11 +20,9 @@ export type DbNotification = typeof notifications.$inferSelect;
 export type NewDbNotification = typeof notifications.$inferInsert;
 
 /**
- * One page of the notifications list.
- *
- * `hasMore` rather than a total count, matching how comments paginate: the query
- * asks for one row beyond the page and reports whether it came back, which
- * answers "is there a next page" without a second COUNT over the whole table.
+ * notifications page result - represents one paginated slice of notifications
+ * using `hasMore` rather than a total count to determine next-page presence
+ * without requiring an expensive secondary COUNT query over the entire table.
  */
 export interface NotificationsPageResult {
 	notifications: NotificationFeedItemDTO[];

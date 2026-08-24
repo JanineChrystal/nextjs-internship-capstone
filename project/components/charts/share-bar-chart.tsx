@@ -24,17 +24,10 @@ interface ShareBarChartProps {
 }
 
 /**
- * Part-to-whole: how one total splits across a handful of named parts.
- *
- * A single stacked bar rather than a pie or donut. The comparison a reader makes
- * here is between segment lengths, and length along one shared line is the
- * easiest visual comparison there is; comparing the angles of pie slices is
- * measurably the hardest. A stacked bar also degrades gracefully - it still
- * works when one slice is 2% of the total, where a pie leaves a sliver with
- * nowhere to put its label.
- *
- * The legend below is not decoration: with the segments too small to hold text,
- * it is where the numbers actually live, so identity never rests on colour alone.
+ * share bar chart - visualizes part-to-whole relationships as a single
+ * stacked horizontal bar for superior visual comparison over pie charts,
+ * gracefully handling tiny segments and relying on an integrated legend
+ * for precise values.
  */
 export function ShareBarChart({
 	data,
@@ -43,8 +36,7 @@ export function ShareBarChart({
 }: ShareBarChartProps) {
 	const total = data.reduce((sum, slice) => sum + slice.value, 0);
 
-	// Recharts stacks one <Bar> per key, so the list of slices has to be pivoted
-	// into a single row whose keys are the slice names.
+	/** pivot data for stacking - transforms the slice array into a single row object for Recharts' stacking model. */
 	const row: Record<string, number | string> = { name: "total" };
 	for (const slice of data) row[slice.label] = slice.value;
 
@@ -86,10 +78,7 @@ export function ShareBarChart({
 							dataKey={slice.label}
 							stackId="share"
 							fill={seriesColor(index, CATEGORICAL_SERIES)}
-							// A 2px stroke in the surface colour is what separates one
-							// segment from the next. Without it, two neighbouring segments
-							// of similar lightness merge into one longer segment - the most
-							// common way a stacked bar quietly misleads.
+							/** segment separation - applies a surface-colored stroke to prevent similarly colored segments from merging visually. */
 							stroke={CHART_SURFACE}
 							strokeWidth={2}
 							radius={4}
@@ -108,9 +97,7 @@ export function ShareBarChart({
 							}}
 							aria-hidden="true"
 						/>
-						{/* The label and both figures are plain text in the normal ink
-						    colour - never tinted to match the swatch. Coloured text at
-						    12px is the fastest way to fail contrast. */}
+						{/* high contrast text - forces labels and figures to normal ink color to avoid the contrast failures of tinted text. */}
 						<span className="text-xs text-secondary">
 							<span className="text-on-surface font-medium">{slice.label}</span>{" "}
 							<span className="tabular-nums">

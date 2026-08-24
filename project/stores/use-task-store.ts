@@ -61,8 +61,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 			createDate: options?.date || null,
 			createProjectId: options?.projectId || null,
 		}),
-	// Cleared on close so a project chosen once from the dashboard cannot leak
-	// into the next task opened from an actual project page.
+	/** context teardown - clears modal context on close so a dashboard-selected project doesn't leak into subsequent modals opened elsewhere. */
 	closeTaskModal: () =>
 		set({
 			isTaskModalOpen: false,
@@ -93,7 +92,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 			const taskToDuplicate = state.tasks.find((t) => t.id === id);
 			if (!taskToDuplicate) return state;
 
-			// Logic to append (1), (2) etc.
+			/** duplication sequence - logic to append sequential numbers like (1), (2) to duplicated task names. */
 			const baseName = taskToDuplicate.name.replace(/\s\(\d+\)$/, "");
 			const similarTasks = state.tasks.filter((t) =>
 				t.name.startsWith(baseName),
@@ -106,7 +105,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 
 			for (const t of similarTasks) {
 				if (t.name === baseName) {
-					// Base exists, so at least 1 is needed
+					/** base collision - the original name exists without a suffix, so the next duplicate must be at least index 1. */
 					if (nextIndex < 1) nextIndex = 1;
 				} else {
 					const match = t.name.match(regex);
@@ -128,7 +127,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 			};
 			newTaskId = duplicatedTask.id;
 
-			// Insert duplicate right after original
+			/** adjacency insertion - inserts the duplicated task immediately following its original in the list. */
 			const index = state.tasks.findIndex((t) => t.id === id);
 			const newTasks = [...state.tasks];
 			newTasks.splice(index + 1, 0, duplicatedTask);
@@ -147,8 +146,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 
 	bulkCompleteTasks: (ids) =>
 		set((state) => {
-			// Move into the designated completion column if the project has one;
-			// otherwise tasks stay put and are simply flagged complete.
+			/** completion routing - moves tasks to the designated completion column if one exists, otherwise just flags them in place. */
 			const completionColumn = useBoardStore
 				.getState()
 				.columns.find((col) => col.isCompletionBoard);
@@ -203,8 +201,7 @@ export const useTaskStore = create<TaskState>((set) => ({
 			};
 		}),
 
-	// Only the board changes: status is its own field and must not be
-	// overwritten by a column name when a card is dragged.
+	/** column assignment - updates only the board assignment on drag since status is tracked independently and shouldn't be overwritten. */
 	moveTaskToColumn: (taskId, targetBoardTitle) =>
 		set((state) => ({
 			tasks: state.tasks.map((task) =>

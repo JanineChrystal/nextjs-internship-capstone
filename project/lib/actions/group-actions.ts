@@ -15,8 +15,11 @@ import type { GroupMemberDTO, GroupOutputDTO } from "@/lib/dtos/group-dto";
 import { toUserFacingError } from "@/lib/utils/action-error";
 import { GroupNameSchema } from "@/lib/validations/group-schema";
 
-// "Unauthorized" is accurate but tells a user nothing, so this one message is
-// rewritten to name the permission that is actually missing.
+/**
+ * rewrite unauthorized error - translates generic unauthorized
+ * errors into specific permission warnings for better user
+ * feedback.
+ */
 const toGroupError = (error: unknown) =>
 	toUserFacingError(error, GROUP_USER_FACING_ERRORS, {
 		Unauthorized: "You do not have permission to manage groups on this project",

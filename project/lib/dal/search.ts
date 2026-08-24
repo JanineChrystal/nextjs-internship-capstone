@@ -13,47 +13,16 @@ import {
 import type { SearchResults } from "@/lib/types/search";
 
 /**
- * Global search across projects, tasks and people.
- *
- * ## Why ILIKE and not Postgres full-text search
- *
- * Full-text search is the textbook answer: it ranks results, uses a GIN index,
- * and understands that "running" and "ran" are the same word. It is not the
- * right answer here, for three reasons.
- *
- * It matches whole words from their start, so typing "kanb" would find nothing
- * until "kanban" is complete - which is exactly the behaviour a
- * search-as-you-type box must not have. Its stemming is language-specific, and
- * this app's content is a mix of English and Filipino, so English stemming would
- * be wrong about half of it. And it needs a generated column plus an index,
- * which is a migration for a dataset currently in the hundreds of rows.
- *
- * `ILIKE '%term%'` matches anywhere in the string, needs no migration, and is
- * honest about what it is: substring matching, not relevance ranking. The cost
- * is a sequential scan - fine at this size, and fixable without changing this
- * function by adding a pg_trgm GIN index when it stops being fine. That is the
- * trade-off, and it is worth being able to state.
- *
- * ## Scoping
- *
- * Everything resolves through getAllUserProjectsDAL(), the same route analytics
- * and the archive use. A shared project lives in its owner's workspace, so
- * scoping by workspace id would let an invited member search their own projects
- * and find nothing.
+ * global search - searches across projects, tasks, and people using ILIKE
+ * for immediate substring matching without language-specific stemming.
+ * Scoped precisely to the user's accessible projects rather than workspace
+ * to ensure shared items are discoverable.
  */
 
 /**
- * Escapes the characters that mean something inside a LIKE pattern.
- *
- * Without this, searching for "50%" matches every row - `%` is the wildcard, so
- * the pattern becomes "%50%%" and the trailing wildcard swallows everything.
- * `_` is the single-character wildcard and has the same problem, and the escape
- * character itself has to be escaped first or it would escape the escapes we are
- * about to add.
- *
- * This is not an injection defence - the value is still passed as a bound
- * parameter, never concatenated into SQL. It is a correctness fix: without it,
- * perfectly ordinary search terms silently return the wrong rows.
+ * to like pattern - escapes special LIKE characters (%, _, \) to ensure
+ * literal substring matching, preventing wildcards from silently swallowing
+ * or mangling search terms.
  */
 function toLikePattern(term: string): string {
 	const escaped = term
@@ -65,10 +34,8 @@ function toLikePattern(term: string): string {
 }
 
 /**
- * `ILIKE` with an explicit ESCAPE clause.
- *
- * Drizzle's `ilike` helper does not emit an ESCAPE clause, so the backslashes
- * added above would be treated as literal characters rather than escapes.
+ * matches helper - constructs an ILIKE condition with an explicit ESCAPE
+ * clause since Drizzle's built-in ilike omits it.
  */
 function matches(column: unknown, pattern: string) {
 	return sql`${column} ILIKE ${pattern} ESCAPE '\\'`;
@@ -92,9 +59,7 @@ export async function globalSearchDAL(term: string): Promise<SearchResults> {
 		const projectIds = accessible.map((project) => project.id);
 		const pattern = toLikePattern(term);
 
-		// One extra row per group, so "there is more" is known without a second
-		// COUNT over the same predicate - the same limit + 1 trick the comments
-		// and notifications queries already use.
+		/** limit plus one - fetches one extra row to cheaply determine if more results exist without a COUNT query. */
 		const limit = SEARCH_GROUP_LIMIT + 1;
 
 		const [projectRows, taskRows, peopleRows] = await Promise.all([
@@ -118,9 +83,7 @@ export async function globalSearchDAL(term: string): Promise<SearchResults> {
 				.orderBy(desc(projects.updatedAt))
 				.limit(limit),
 
-			// Archived and trashed tasks are excluded for the same reason they are
-			// everywhere else: they have been taken out of play, and surfacing one
-			// here would offer a result that the board it links to will not show.
+			/** filter inactive tasks - excludes archived and trashed tasks so search results do not lead to empty boards. */
 			db
 				.select({
 					id: tasks.id,
@@ -141,9 +104,7 @@ export async function globalSearchDAL(term: string): Promise<SearchResults> {
 				.orderBy(desc(tasks.updatedAt))
 				.limit(limit),
 
-			// People you actually share a project with. Searching every user in the
-			// database would turn the box into a directory of strangers, and would
-			// leak that an address has an account here.
+			/** scope people search - restricts people search to shared project members to prevent leaking the global user directory. */
 			db
 				.selectDistinct({
 					id: users.id,
@@ -158,7 +119,7 @@ export async function globalSearchDAL(term: string): Promise<SearchResults> {
 						inArray(projectMembers.projectId, projectIds),
 						isNull(projectMembers.deletedAt),
 						isNull(users.deletedAt),
-						// You already know who you are.
+						/** exclude self - removes the searching user from the people results. */
 						ne(users.id, user.id),
 						or(
 							matches(users.firstName, pattern),

@@ -21,8 +21,7 @@ export type UpdateTeamInput = z.infer<typeof UpdateTeamSchema>;
 
 // UI TYPES
 /**
- * The three views on the team directory page. Kept here rather than in
- * team-toolbar.tsx because the constants file and the selection hook both need
- * it, and neither should have to reach into a component to get it.
+ * team view type - defines the allowed views on the team directory page,
+ * placed centrally to prevent reverse dependency imports from the toolbar.
  */
 export type TeamViewType = "Grid" | "Board" | "Pending";

@@ -1,14 +1,7 @@
 /**
- * One row in the Archive or Trash list.
- *
- * Projects and tasks are deliberately flattened into a single shape rather than
- * kept as two lists. The reader's question on this page is "what did I put
- * aside, and when" - not "show me projects, then tasks" - and one shape means
- * one table, one set of action buttons, and no chance of the two drifting into
- * behaving differently.
- *
- * `kind` is what the actions dispatch on, so the row itself carries everything
- * needed to act on it.
+ * archived item dto - flattens projects and tasks into a single row shape
+ * for the Archive or Trash lists, unifying actions and table rendering to
+ * prevent behavioral drift between entities.
  */
 export type ArchivedItemKind = "project" | "task";
 

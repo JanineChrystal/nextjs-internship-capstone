@@ -2,13 +2,8 @@ import type { LucideIcon } from "lucide-react";
 import type { SettingsNavId } from "@/lib/types/settings";
 
 /**
- * One entry under a collapsible nav item.
- *
- * `settingsSectionId` is what turns a sub-item from a link into a scroll
- * target. When present, the sub-item stays on the current page and asks the
- * settings store to scroll instead of navigating - which is the only way a
- * one-page settings screen can have a working sub-menu without inventing routes
- * that would each have to render the whole page again.
+ * nav sub item - represents a nested navigation entry, using `settingsSectionId`
+ * to drive in-page scroll targets rather than routes for one-page screens.
  */
 export interface NavSubItem {
 	name: string;
@@ -34,12 +29,8 @@ export interface NavItem {
 }
 
 /**
- * A labelled run of nav entries.
- *
- * The sidebar was a single flat list of seven items, which is past the point
- * where a reader scans and into where they read every line. Grouping gives the
- * eye somewhere to land, and the label is what makes the grouping mean
- * something rather than looking like arbitrary gaps.
+ * nav group - clusters navigation items under a descriptive label, preventing
+ * visual fatigue in long sidebars and giving grouping structural meaning.
  */
 export interface NavGroup {
 	label: string;
@@ -47,12 +38,8 @@ export interface NavGroup {
 }
 
 /**
- * One tab in a ViewTabs strip. Generic over the view union so a toolbar cannot
- * be handed a tab value the page does not know how to render.
- *
- * Shared by the project, team and calendar toolbars, so it belongs here rather
- * than inside view-tabs.tsx - a _constants file importing a type out of a
- * component is a dependency pointing the wrong way.
+ * tab option - defines a generic tab entry for ViewTabs, decoupled from specific
+ * component constants to prevent reverse dependency imports in toolbars.
  */
 export interface TabOption<T extends string = string> {
 	label: string;

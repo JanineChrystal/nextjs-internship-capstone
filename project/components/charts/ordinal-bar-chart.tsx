@@ -23,16 +23,10 @@ interface OrdinalBarChartProps {
 }
 
 /**
- * A distribution across an ordered scale - task priority, low through urgent.
- *
- * The colour here is a single-hue ramp rather than the categorical palette,
- * because priority is not a set of unrelated labels: it has a direction. Four
- * unrelated hues would say "these are four different things"; four steps of one
- * hue say "these are the same thing, more of it".
- *
- * The ramp is redundant with the x-axis on purpose - it encodes information the
- * axis already carries - so no legend is needed and nothing is lost if the
- * reader cannot separate two adjacent steps.
+ * ordinal bar chart - displays distribution across an ordered scale (e.g.,
+ * priority) using a single-hue ramp rather than categorical colors to
+ * visually communicate magnitude and direction. Omits a legend as the color
+ * scale is intentionally redundant with the x-axis.
  */
 export function OrdinalBarChart({
 	data,

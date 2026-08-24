@@ -13,10 +13,8 @@ export type NotificationSettingsPatch = z.infer<
 >;
 
 /**
- * The identifier the settings UI uses for one toggle.
- *
- * Derived from the patch type rather than written out again, so a column that is
- * added to the schema but forgotten in the UI config is a compile error rather
- * than a switch that silently never appears.
+ * notification setting key - strongly typed identifier for a setting toggle,
+ * derived directly from the Zod patch schema to ensure compile-time
+ * synchronization between UI toggles and database columns.
  */
 export type NotificationSettingKey = keyof NotificationSettingsPatch;

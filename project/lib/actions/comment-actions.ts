@@ -95,18 +95,11 @@ export async function createCommentAction(
 			}
 		}
 
-		// Moderation runs BEFORE the insert, and covers every detector at once.
-		//
-		// An earlier version checked only the in-process word list here and left
-		// the API call for after(). That was faster, but it gave English and
-		// Filipino profanity two visibly different behaviours: one warned the
-		// author immediately, the other flagged the comment silently some seconds
-		// later. Same offence, same system, two different experiences.
-		//
-		// Waiting for both costs about 400ms against a warm API and is capped by
-		// PROFANITY_API_TIMEOUT_MS. A detector that fails or times out is recorded
-		// in failedDetectors and the comment is re-examined by the retry, so the
-		// price of the cap is a late verdict rather than a missed one.
+		/**
+		 * synchronous moderation - runs all profanity detectors before
+		 * insert to ensure consistent user experience across languages,
+		 * falling back to retries if limits are hit.
+		 */
 		const verdict = await detectProfanity(validationResult.data.body);
 
 		const comment = await createCommentInDB(
@@ -117,22 +110,20 @@ export async function createCommentAction(
 			validationResult.data.parentId,
 		);
 
-		// The verdict is already in hand, so it lands on the row before the
-		// response goes out: the moderation queue is accurate the moment anyone
-		// looks, and the composer can tell the author in the same breath.
+		/**
+		 * immediate verdict application - applies the moderation decision
+		 * immediately to keep the queue accurate and inform the author
+		 * instantly.
+		 */
 		if (verdict.isFlagged) {
 			await applyModerationVerdictDAL(comment.id, true, verdict.reason);
 		}
 
-		// Only an UNFLAGGED comment is worth rechecking. A failed detector on a
-		// comment that is already flagged could at most widen the reason from
-		// "English profanity" to "English and Filipino profanity" - it cannot
-		// change the outcome, and the comment is already sitting in the queue.
-		//
-		// Marking those pending as well produced a genuinely confusing screen:
-		// the same two comments appeared in the flagged table AND under "could
-		// not be checked", which reads as a contradiction. Pending now means what
-		// it says - nobody reached a verdict on this one.
+		/**
+		 * pending state criteria - only marks unflagged comments for retry
+		 * to avoid contradictory UI states where a comment is both flagged
+		 * and pending check.
+		 */
 		if (
 			!verdict.isFlagged &&
 			verdict.failedDetectors &&
@@ -141,9 +132,10 @@ export async function createCommentAction(
 			await markCommentForProfanityRetryDAL(comment.id);
 		}
 
-		// The people working on the task are the ones who need to know it was
-		// commented on. recordActivity drops the author if they are among them, so
-		// commenting on your own task notifies nobody.
+		/**
+		 * assignee notification - notifies task assignees about new
+		 * comments, excluding the author from the notification list.
+		 */
 		const assigneesByTask = await getTaskAssigneesByTaskIds([taskId]);
 		const assignees = assigneesByTask.get(taskId) ?? [];
 
@@ -157,17 +149,20 @@ export async function createCommentAction(
 			notify: assignees.map((assignee) => ({
 				recipientId: assignee.userId,
 				message: "New comment on a task assigned to you",
-				// No switch governs this one. It is deliberately not the mentions
-				// preference: someone who turned mentions off has said nothing about
-				// wanting mail every time a colleague comments on a shared task.
+				/**
+				 * unfiltered task notification - sends emails for task comments
+				 * without checking mention preferences, as they are distinct
+				 * notification categories.
+				 */
 				emailPreference: null,
 			})),
 		});
 
-		// Mentions are resolved from the BODY, server-side, never from a list of
-		// ids the client sent - otherwise a caller could post an innocuous comment
-		// and notify anyone they liked. Only project members resolve; anything
-		// else is dropped.
+		/**
+		 * server-side mention resolution - extracts mentions from the
+		 * comment body on the server to prevent spoofing and restricts
+		 * resolution to project members.
+		 */
 		const mentioned = await resolveMentionsDAL(
 			validationResult.data.body,
 			projectId,
@@ -186,8 +181,10 @@ export async function createCommentAction(
 				details: "Mentioned someone in a comment",
 				projectId,
 				taskId,
-				// recordActivity drops the actor, so mentioning yourself notifies
-				// nobody.
+				/**
+				 * self-mention filtering - relies on recordActivity to drop the
+				 * actor from notifications when mentioning themselves.
+				 */
 				notify: mentioned.map((mention) => ({
 					recipientId: mention.userId,
 					message: "You were mentioned in a comment",
@@ -195,7 +192,10 @@ export async function createCommentAction(
 				})),
 			});
 
-			// Who may be emailed, decided once by the DAL that read their settings.
+			/**
+			 * consolidated email preferences - pre-filters recipients based on
+			 * their email settings resolved by the DAL.
+			 */
 			const mayEmail = new Set(
 				recorded
 					.filter((entry) => entry.shouldSendEmail)

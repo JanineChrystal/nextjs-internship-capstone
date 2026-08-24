@@ -9,16 +9,9 @@ import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import type { ArchivedItemKind } from "@/lib/dtos/archive-dto";
 
 /**
- * The five archive operations, as one action.
- *
- * The permission decision lives in the DAL, which resolves a task's project
- * itself rather than trusting anything sent from the browser. This layer only
- * turns a thrown error into the { success, error } shape the client hooks
- * already expect.
- *
- * Both /archive and /projects are revalidated because every one of these
- * operations moves an item between the two - archiving something from the
- * projects page has to remove it there as well as add it here.
+ * archive actions - handles all archive operations through a single
+ * action, delegating permissions to the DAL and revalidating
+ * necessary paths.
  */
 export async function applyArchiveOperationAction(
 	kind: ArchivedItemKind,

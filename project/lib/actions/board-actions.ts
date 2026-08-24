@@ -176,15 +176,8 @@ export async function deleteBoardAction(
 }
 
 /**
- * A project's board columns, for a caller that is not on the project page.
- *
- * The project page loads its own boards on the server and pushes them into the
- * board store, so nothing needed to read them from the browser until now. The
- * dashboard's "Create Task" shortcut does: it has to know which columns exist
- * before the task modal can decide where a new task goes.
- *
- * Gated on view_project rather than left open, because the column names are
- * project content - they describe how a team works.
+ * get project boards - fetches a project's board columns for
+ * components outside the project page, requiring view permissions.
  */
 export async function getProjectBoardsAction(projectId: string): Promise<{
 	success: boolean;

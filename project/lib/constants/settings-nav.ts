@@ -1,20 +1,10 @@
 import type { SettingsNavId, SettingsSectionDomId } from "@/lib/types/settings";
 
 /**
- * The four entries in the Settings sub-menu, and which part of the page each
- * one points at.
- *
- * This lives in lib/constants rather than beside the settings page because
- * three unrelated places need it: the sidebar renders it, the settings page
- * anchors its sections to it, and the shared store resolves scroll positions
- * with it. A constant that three modules read cannot live inside one of them.
- *
- * Note that Account and Security share a `domId`. They are two entries in our
- * menu but one component on the page: Clerk's `<UserProfile>` renders both its
- * Profile and its Security screens itself and cannot be mounted twice, so the
- * two entries scroll to the same card and differ only in which of Clerk's own
- * screens they ask for. `clerkHash` is what does the asking - `routing="hash"`
- * means Clerk reads its current screen straight off the URL fragment.
+ * settings navigation entries - centralizes the configuration for the
+ * settings sub-menu, mapping logical entries to DOM targets and Clerk
+ * URL fragments to align the sidebar, scroll spy, and the Clerk UI
+ * component.
  */
 export interface SettingsNavEntry {
 	id: SettingsNavId;
@@ -53,7 +43,7 @@ export const SETTINGS_NAV: SettingsNavEntry[] = [
 	},
 ];
 
-/** The DOM sections the scroll-spy actually observes - three, not four. */
+/** settings section dom ids - enumerates the distinct DOM IDs actively observed by the scroll spy. */
 export const SETTINGS_SECTION_DOM_IDS: SettingsSectionDomId[] = [
 	"settings-account",
 	"settings-notifications",
@@ -67,11 +57,9 @@ export function toNavEntry(id: SettingsNavId): SettingsNavEntry {
 }
 
 /**
- * The first menu entry belonging to a section.
- *
- * "First" matters because of the Account/Security pair: when the user scrolls
- * that card into view without having clicked anything, Account is the honest
- * answer - Clerk opens on its Profile screen by default.
+ * to default nav id - resolves a DOM section to its primary menu entry
+ * ID, defaulting to Account for shared sections since that matches
+ * Clerk's default view.
  */
 export function toDefaultNavId(domId: SettingsSectionDomId): SettingsNavId {
 	const entry = SETTINGS_NAV.find((item) => item.domId === domId);

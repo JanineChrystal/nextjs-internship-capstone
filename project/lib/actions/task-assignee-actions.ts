@@ -51,8 +51,11 @@ export async function setTaskAssigneesAction(
 			userIds,
 		);
 
-		// Only people who were NOT already assigned are notified, so editing any
-		// other part of a task never re-pings its existing assignees.
+		/**
+		 * isolated assignee notification - sends assignment notifications
+		 * only to newly added members to prevent spamming existing
+		 * assignees during other edits.
+		 */
 		const user = await getCurrentUser();
 		if (user && addedUserIds.length > 0) {
 			await recordActivity({

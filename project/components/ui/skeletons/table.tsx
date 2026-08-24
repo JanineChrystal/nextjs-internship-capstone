@@ -6,24 +6,21 @@ import type { SkeletonCountKey } from "@/lib/types/skeleton";
 import { cn } from "@/lib/utils";
 
 interface SkeletonTableProps {
-	/** An exact row count when the caller knows one. Wins over `rememberAs`. */
+	/** known row count - explicitly sets the number of rows, bypassing the remembered skeleton count hook. */
 	rows?: number;
-	/** Which surface's remembered count to use when `rows` is not given. */
+	/** cache key - identifies which stored row count to retrieve for smooth transitions. */
 	rememberAs?: SkeletonCountKey;
-	/** Columns after the flexible first one. */
+	/** trailing columns - sets the number of fixed-width columns appearing after the primary flexible column. */
 	columns?: number;
-	/** Draws a heavier header row above the body. */
+	/** header toggle - renders a visually distinct top row representing table headers. */
 	withHeader?: boolean;
 	className?: string;
 }
 
 /**
- * A grid or table placeholder.
- *
- * The first column flexes and the rest are fixed, which is what almost every
- * table in this app does: a name that takes the space left over, then status,
- * assignee and date columns of roughly known width. A row of equal columns
- * would be simpler and would not resemble the thing it stands in for.
+ * table skeleton - simulates a standard table layout with a flexible primary
+ * column and fixed trailing columns, aligning with the actual proportions
+ * of most in-app tables to prevent jarring reflows.
  */
 export function SkeletonTable({
 	rows,
@@ -57,8 +54,7 @@ export function SkeletonTable({
 							key={columnIndex}
 							className={cn(
 								"h-4 shrink-0",
-								// Varied so the columns read as different fields rather than as
-								// one block of grey ruled into stripes.
+								/** staggered column widths - alternates placeholder lengths to visually distinguish separate fields. */
 								columnIndex % 2 === 0 ? "w-24" : "w-20",
 							)}
 						/>

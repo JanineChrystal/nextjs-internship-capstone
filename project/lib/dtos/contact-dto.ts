@@ -2,13 +2,9 @@ import type { DbContactMessage } from "@/lib/types/contact";
 import { decrypt } from "@/lib/utils/encryption";
 
 /**
- * A contact message as anything outside the DAL is allowed to see it.
- *
- * `deletedAt` and `respondedAt` are dropped: they are triage bookkeeping, and
- * the only consumer today is the action that just wrote the row. Mapping through
- * a DTO even when the shapes are close is what stops a column added later -
- * an internal note, a spam score - from reaching a client component simply
- * because nobody remembered to strip it.
+ * contact message dto - defines a contact message stripped of internal
+ * triage bookkeeping (like deletedAt) to prevent leaking future schema
+ * additions to client components.
  */
 export interface ContactMessageDTO {
 	id: string;

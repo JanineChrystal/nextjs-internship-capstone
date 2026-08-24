@@ -12,11 +12,9 @@ import type { PendingProfanityComment } from "@/lib/types/comment";
 import { decrypt } from "@/lib/utils/encryption";
 
 /**
- * Comments awaiting review on a project.
- *
- * Gated on manage_members - the same permission that governs the rest of
- * project settings. A member seeing every flagged comment would defeat the
- * point of a review queue.
+ * get flagged comments - retrieves all comments awaiting moderation
+ * review for a project, strictly gated by the manage_members permission
+ * to preserve queue privacy.
  */
 export async function getFlaggedCommentsDAL(
 	projectId: string,
@@ -45,8 +43,7 @@ export async function getFlaggedCommentsDAL(
 			and(
 				eq(tasks.projectId, projectId),
 				eq(comments.isFlagged, true),
-				// Already-reviewed comments drop out of the queue; the moderation
-				// stamp is what marks them handled.
+				/** filter reviewed - excludes already-moderated comments from the queue using the moderatedAt stamp. */
 				isNull(comments.moderatedAt),
 				isNull(comments.deletedAt),
 				isNull(tasks.deletedAt),
@@ -58,11 +55,9 @@ export async function getFlaggedCommentsDAL(
 }
 
 /**
- * Clears a flag or deletes the comment, recording who decided.
- *
- * "dismiss" keeps the comment and marks it reviewed; "delete" soft-deletes it.
- * Both write moderatedById and moderatedAt, so there is an audit trail of who
- * cleared what - a moderation queue with no record of the moderator is not one.
+ * resolve flagged comment - executes a moderation decision (dismiss or
+ * delete), ensuring an audit trail is maintained by recording the
+ * moderator's identity and timestamp.
  */
 export async function resolveFlaggedCommentDAL(
 	commentId: string,
@@ -75,9 +70,10 @@ export async function resolveFlaggedCommentDAL(
 	const allowed = await verifyProjectPermissionDAL(projectId, "manage_members");
 	if (!allowed) throw new Error("Unauthorized");
 
-	// The comment's own project is resolved from the database rather than
-	// trusted, so naming a project you moderate cannot act on a comment in one
-	// you do not.
+	/**
+	 * secure project resolution - verifies the comment's parent project
+	 * directly from the DB to prevent cross-project moderation spoofing.
+	 */
 	const [row] = await db
 		.select({ projectId: tasks.projectId })
 		.from(comments)
@@ -96,13 +92,13 @@ export async function resolveFlaggedCommentDAL(
 				moderatedById: user.id,
 				moderatedAt: now,
 				updatedAt: now,
-				// A person has ruled on this comment, so the machine queue is done with
-				// it. Leaving this true is what let a later retry silently re-flag a
-				// dismissal - invisibly, since the review queue filters on moderatedAt
-				// and would never show it again.
+				/**
+				 * clear profanity check - explicitly clears the pending check flag
+				 * upon human review to prevent automated retries from silently
+				 * re-flagging a dismissed comment.
+				 */
 				pendingProfanityCheck: false,
-				// Dismissing clears the flag as well as stamping it, so the comment
-				// reads as ordinary everywhere else.
+				/** clear flag on dismiss - ensures dismissed comments read as ordinary by unsetting the flag state. */
 				...(decision === "dismiss"
 					? { isFlagged: false, flagReason: null }
 					: { deletedAt: now }),
@@ -113,7 +109,7 @@ export async function resolveFlaggedCommentDAL(
 	}
 }
 
-/** Records a moderation verdict on a freshly posted comment. */
+/** apply moderation verdict - records the initial moderation result on a newly created comment. */
 export async function applyModerationVerdictDAL(
 	commentId: string,
 	isFlagged: boolean,
@@ -158,11 +154,9 @@ export async function countCommentsPendingProfanityCheckDAL(
 }
 
 /**
- * One batch of comments still waiting on a profanity verdict.
- *
- * Returns the author and task alongside the body because the retry has to be
- * able to tell someone: a verdict that lands minutes after the fact cannot be
- * delivered by the composer dialog, so it is delivered by notification instead.
+ * get comments pending profanity check - retrieves a batch of comments
+ * awaiting asynchronous moderation verdicts, including author details
+ * so delayed results can be delivered via notification.
  */
 export async function getCommentsPendingProfanityCheckDAL(
 	projectId: string,
@@ -186,20 +180,17 @@ export async function getCommentsPendingProfanityCheckDAL(
 		.where(pendingProfanityCheckWhere(projectId))
 		.limit(limit);
 
-	// Decrypted here, not by the caller. Bodies are stored encrypted, and the
-	// retry existed to run a profanity check over them - over ciphertext, which
-	// never matches anything, so every recheck came back clean.
+	/**
+	 * inline decryption - decrypts comment bodies immediately so the async
+	 * profanity checker evaluates actual content rather than clean ciphertext.
+	 */
 	return rows.map((row) => ({ ...row, body: decrypt(row.body) ?? row.body }));
 }
 
 /**
- * The one definition of "still waiting on a verdict", shared by the count and
- * the batch so a comment can never appear in one and not the other.
- *
- * The moderatedAt condition is the important one: without it, dismissing a
- * flagged comment left pendingProfanityCheck set, and the next retry re-flagged
- * it - invisibly, because the review queue filters on moderatedAt and would no
- * longer show it.
+ * pending profanity check where - centralizes the query condition for
+ * pending checks, ensuring consistency between counts and batches while
+ * critically excluding already-moderated comments.
  */
 function pendingProfanityCheckWhere(projectId: string) {
 	return and(

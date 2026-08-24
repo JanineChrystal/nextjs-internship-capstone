@@ -1,24 +1,21 @@
 /**
- * The four things the app ever needs to tell somebody after an action.
- *
- * Deliberately four and not more. Every extra tone is another decision at every
- * call site and another thing for the reader to learn, and these four already
- * cover the full space: it worked, it needs your attention, it failed, here is
- * a fact. A fifth tone would overlap one of them.
+ * feedback tone - strict union of the four permitted communication tones,
+ * keeping the design space constrained and avoiding redundant or overlapping
+ * messaging styles across the application.
  */
 export type FeedbackTone = "success" | "warning" | "error" | "info";
 
 /**
- * The tones a confirmation dialog can take.
- *
- * `danger` is separate from `error` on purpose - they look similar and mean
- * opposite things in time. `error` reports something that already went wrong;
- * `danger` warns about something the reader is about to do and can still call
- * off. Sharing one name would make the confirm button's colour meaningless.
+ * confirm tone - sets the visual tone of a confirmation dialog, keeping
+ * 'danger' separate from 'error' to accurately reflect a pre-emptive warning
+ * rather than a post-failure report.
  */
 export type ConfirmTone = "danger" | "warning" | "info" | "default";
 
-/** What a confirmation is asking permission for. Drives the generated copy. */
+/**
+ * confirm action - defines the triggering action for a confirmation dialog,
+ * driving the generated copy.
+ */
 export type ConfirmAction =
 	| "create"
 	| "edit"
@@ -27,11 +24,9 @@ export type ConfirmAction =
 	| "complete";
 
 /**
- * Inputs for the shared confirmation copy builder.
- *
- * `count` is what makes one dialog serve both the single and bulk cases: the
- * builder switches between "this project" and "3 projects" rather than every
- * call site hand-writing a sentence and pluralising it slightly differently.
+ * confirm copy input - configuration for the shared confirmation copy builder,
+ * enabling dynamic pluralization and contextual consequence warnings without
+ * requiring hand-written sentences at every call site.
  */
 export interface ConfirmCopyInput {
 	action: ConfirmAction;

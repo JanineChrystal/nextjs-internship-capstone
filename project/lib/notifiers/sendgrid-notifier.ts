@@ -37,7 +37,7 @@ export class SendGridNotifier implements ContactNotifier {
 		return process.env.CONTACT_EMAIL_FROM;
 	}
 
-	/** Comma-separated in the environment, so more than one person can be told. */
+	/** multiple recipients - comma-separated in the environment, so more than one person can be told. */
 	private get recipients(): string[] {
 		return (process.env.CONTACT_EMAIL_TO ?? "")
 			.split(",")

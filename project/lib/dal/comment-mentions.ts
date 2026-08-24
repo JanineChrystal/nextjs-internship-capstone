@@ -12,16 +12,9 @@ export interface ResolvedMention {
 }
 
 /**
- * Turns the handles typed in a comment into real project members.
- *
- * Resolved against the project's own members, never against all users: only
- * someone who can already see the task may be mentioned on it, and anything
- * that matches nobody is dropped rather than erroring - "@here" and "@lunch"
- * are things people type without meaning a person.
- *
- * Handles are never trusted from the client. The body is re-parsed here, so a
- * caller cannot post a harmless comment while sending a list of user ids to
- * notify.
+ * resolve mentions - converts raw comment handles into project member
+ * identities, silently dropping unrecognized handles and strictly
+ * re-parsing server-side to prevent client spoofing.
  */
 export async function resolveMentionsDAL(
 	body: string,
@@ -42,9 +35,9 @@ export async function resolveMentionsDAL(
 }
 
 /**
- * Records who was mentioned. `onConflictDoNothing` against the unique
- * (commentId, mentionedUserId) pair, so editing a comment cannot duplicate a
- * mention row.
+ * create comment mentions - records parsed mentions to the database,
+ * using conflict resolution to prevent duplicate entries when comments
+ * are edited.
  */
 export async function createCommentMentionsDAL(
 	commentId: string,
@@ -58,7 +51,7 @@ export async function createCommentMentionsDAL(
 		.onConflictDoNothing();
 }
 
-/** Display names for the handles in a set of comments, for rendering. */
+/** get mentioned members - retrieves resolved display names for handles present in comments for UI rendering. */
 export async function getMentionedMembersDAL(
 	projectId: string,
 ): Promise<Map<string, { userId: string; label: string }>> {
@@ -71,7 +64,7 @@ export async function getMentionedMembersDAL(
 	);
 }
 
-/** The user ids mentioned across a set of comments, for the comment DTO. */
+/** get mentions for comments - aggregates all mentioned user IDs across a provided set of comment IDs. */
 export async function getMentionsForCommentsDAL(
 	commentIds: string[],
 ): Promise<Map<string, string[]>> {

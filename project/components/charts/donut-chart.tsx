@@ -13,29 +13,20 @@ import type { ChartSeries } from "@/lib/types/chart";
 import { cn } from "@/lib/utils";
 
 interface DonutChartProps {
-	/** Keyed by series key, so a slice always wears its series' colour. */
+	/** slice values - keyed by series key to ensure slices always map to their assigned series color. */
 	values: Record<string, number>;
 	series: ChartSeries[];
-	/** The figure printed in the hole. */
+	/** center figure - the primary headline value displayed in the center of the ring. */
 	centerValue: number | string;
 	centerLabel: string;
 	className?: string;
 }
 
 /**
- * A ring, with a headline figure in the middle.
- *
- * Worth being straight about the trade-off, because it is the one chart here
- * that is not the textbook choice: comparing the ANGLES of arcs is the hardest
- * visual comparison there is, and a stacked bar would let a reader compare
- * lengths along one line instead. What the ring buys is the hole - it is the
- * only form that puts a single large number and its breakdown in the same
- * object, which is exactly the reading this panel is for ("how many are left,
- * and what state is everything in").
- *
- * The mitigation for the weak comparison is the legend below and the table
- * inside ChartCard: the precise counts are always available as text, so nobody
- * has to estimate an angle to get a number.
+ * donut chart - renders a ring with a central headline figure, prioritizing
+ * the unified display of a total and its breakdown over the easier visual
+ * comparison of lengths (like a bar chart). Mitigates the difficulty of
+ * angle comparison by always providing explicit textual counts.
  */
 export function DonutChart({
 	values,
@@ -51,8 +42,7 @@ export function DonutChart({
 			color: entry.color,
 			value: values[entry.key] ?? 0,
 		}))
-		// An empty status is dropped rather than drawn as a zero-width arc, which
-		// would still occupy a legend row and a tooltip target for nothing.
+		/** drop empty statuses - filters out zero-value slices to avoid cluttering the legend and tooltip targets. */
 		.filter((slice) => slice.value > 0);
 
 	const config = Object.fromEntries(
@@ -85,8 +75,7 @@ export function DonutChart({
 						nameKey="label"
 						innerRadius="62%"
 						outerRadius="86%"
-						// Segments are separated by a gap rather than only by hue, so two
-						// adjacent arcs can never read as one longer arc.
+						/** visual separation - introduces a gap between segments so adjacent arcs are clearly distinct. */
 						paddingAngle={slices.length > 1 ? 2 : 0}
 						stroke={CHART_SURFACE}
 						strokeWidth={2}

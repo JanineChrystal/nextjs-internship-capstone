@@ -17,13 +17,13 @@ import { reportActionError, reportActionSuccess } from "@/lib/utils/toast";
 const INITIAL_MEMBERS: Record<string, ProjectMember[]> = {};
 
 interface MemberState {
-	// State
+	/** store state - primary data objects holding members and pending invites. */
 	projectMembers: Record<string, ProjectMember[]>;
 	pendingInvites: PendingInviteItem[];
-	// Surfaced after a bulk invite so failures are visible rather than logged.
+	/** bulk invite errors - surfaces failure messages to the UI instead of silently logging them. */
 	inviteError: string | null;
 
-	// Real, server-backed actions
+	/** server actions - methods that interact with the backend API to mutate or fetch member data. */
 	fetchProjectMembers: (projectId: string) => Promise<void>;
 	sendBulkInvites: (
 		scope: "project" | "workspace",
@@ -41,7 +41,7 @@ interface MemberState {
 	) => Promise<void>;
 	removeMember: (projectId: string, userId: string) => Promise<void>;
 
-	// Modal Actions
+	/** modal actions - methods that manage local UI state for the invite modal before confirming with the server. */
 	addPendingInvite: (invite: PendingInviteItem) => void;
 	removePendingInvite: (recipient: string) => void;
 	clearPendingInvites: () => void;
@@ -80,10 +80,7 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 		const invites = get().pendingInvites;
 		set({ pendingInvites: [] });
 
-		// Workspace-scoped invites add people to the directory only, with no
-		// project attached. This branch previously cleared the staged list and
-		// returned without ever calling the server, so the team page's "Add
-		// Member" silently did nothing.
+		/** workspace invites - processes directory-level invites without attaching them to a specific project. */
 		if (scope === "workspace") {
 			const failures: string[] = [];
 
@@ -92,8 +89,7 @@ export const useMemberStore = create<MemberState>((set, get) => ({
 				if (!result.success) {
 					failures.push(`${invite.recipient}: ${result.error}`);
 				} else if (result.notice) {
-					// Storing an invite for someone without an account is a success,
-					// so it is reported as one rather than pushed onto failures.
+					/** accountless invite success - treats a stored invite for an unregistered user as a success rather than an error. */
 					reportActionSuccess(result.notice);
 				}
 			}

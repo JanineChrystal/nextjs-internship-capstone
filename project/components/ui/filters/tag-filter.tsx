@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { FilterChip } from "./filter-chip";
 
-// Reusing your interfaces
+// data interfaces - definitions reused across filter components to standardize filter data structures.
 export interface FilterOption {
 	value: string;
 	label: string;
@@ -58,12 +58,12 @@ export function TagFilter({
 
 	return (
 		<div className="flex flex-wrap items-center gap-2">
-			{/* 1. The Add Filter Popover */}
+			{/* add filter popover - displays the dropdown interface for selecting new filter categories and options. */}
 			<Popover
 				open={open}
 				onOpenChange={(isOpen) => {
 					setOpen(isOpen);
-					if (!isOpen) setSelectedDef(null); // Reset view on close
+					if (!isOpen) setSelectedDef(null); /** view reset - clears the selected category view when the popover is closed. */
 				}}
 			>
 				<PopoverTrigger asChild>
@@ -80,7 +80,7 @@ export function TagFilter({
 					className="w-64 p-3 bg-popover text-popover-foreground border-border rounded-xl"
 					align="start"
 				>
-					{/* View 1: Select Category */}
+					{/* category selection view - renders the initial list of available filter categories to choose from. */}
 					{!selectedDef && (
 						<div className="flex flex-col gap-1">
 							<p className="text-xs font-semibold text-card-foreground/60 uppercase mb-2">
@@ -100,7 +100,7 @@ export function TagFilter({
 						</div>
 					)}
 
-					{/* View 2: Select Option inside Category */}
+					{/* option selection view - renders the list of selectable options for the currently chosen filter category. */}
 					{selectedDef && (
 						<div className="flex flex-col gap-1">
 							<div className="flex items-center gap-2 mb-2 pb-2 border-b border-border">
@@ -132,7 +132,7 @@ export function TagFilter({
 				</PopoverContent>
 			</Popover>
 
-			{/* 2. Render Active Tag Filters */}
+			{/* active filters list - iterates over and renders chips for all currently applied filters. */}
 			{activeFilters.map((filter) => (
 				<FilterChip
 					key={filter.key}
@@ -142,7 +142,7 @@ export function TagFilter({
 				/>
 			))}
 
-			{/* 3. Reset Button */}
+			{/* reset control - provides a quick action to clear all active filters at once. */}
 			{activeFilters.length > 0 && (
 				<Button
 					variant="ghost"

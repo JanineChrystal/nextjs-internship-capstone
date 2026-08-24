@@ -6,17 +6,10 @@ import type { SkeletonCountKey } from "@/lib/types/skeleton";
 import { cn } from "@/lib/utils";
 
 /**
- * One card-shaped placeholder.
- *
- * Built from `Skeleton` blocks inside a plain bordered box rather than from
- * `BaseCard`. `BaseCard` carries a hover lift and a shadow, which on something
- * that is not interactive and is about to be replaced reads as the page
- * reacting to a pointer that has nothing to press.
- *
- * The internal proportions match the real project card - a status row, a title,
- * two description lines, two tags, then a footer with a progress bar - because
- * a skeleton whose shape does not match what replaces it produces a visible
- * reflow at exactly the moment the reader starts reading.
+ * card skeleton - a static placeholder mirroring a project card's exact structure
+ * (header, title, tags, progress footer) to avoid layout reflows on load.
+ * Intentionally avoids interactive components like `BaseCard` to prevent
+ * confusing hover states on loading elements.
  */
 export function SkeletonCard({ className }: { className?: string }) {
 	return (
@@ -55,22 +48,20 @@ export function SkeletonCard({ className }: { className?: string }) {
 
 interface SkeletonCardGridProps {
 	/**
-	 * An exact count, when the caller knows one - a list being refetched while
-	 * the previous one is still in a store, for instance. Wins over `rememberAs`.
+	 * known grid count - forces an exact number of cards, taking precedence
+	 * over the cached amount when the current count is explicitly known.
 	 */
 	count?: number;
-	/** Which surface's remembered count to use when `count` is not given. */
+	/** cache key - identifies which stored count to use for smooth, jitter-free transitions. */
 	rememberAs?: SkeletonCountKey;
-	/** Grid template. Defaults to the three-column layout the project list uses. */
+	/** grid styling - defines the grid layout classes, falling back to a standard three-column view. */
 	className?: string;
 }
 
 /**
- * A grid of card placeholders, as many as the surface last held.
- *
- * See `useSkeletonCount` for why the number is remembered rather than computed:
- * a skeleton renders before the data exists, so the count can only come from
- * the last time this browser saw the real thing.
+ * card grid skeleton - renders a grid of card placeholders based on the
+ * historically remembered count to prevent the grid from collapsing and expanding
+ * between page navigations.
  */
 export function SkeletonCardGrid({
 	count,

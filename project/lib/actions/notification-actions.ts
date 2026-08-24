@@ -12,11 +12,9 @@ import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import type { NotificationsPageResult } from "@/lib/types/activity";
 
 /**
- * Marks one notification as read.
- *
- * The DAL scopes the update to the signed-in recipient, so passing someone
- * else's notification id updates nothing rather than succeeding quietly - the
- * ownership check lives with the query, not here.
+ * mark notification as read - updates a single notification,
+ * relying on the DAL to enforce ownership and prevent unauthorized
+ * modifications.
  */
 export async function markNotificationAsReadAction(
 	notificationId: string,
@@ -55,10 +53,9 @@ export async function markAllNotificationsAsReadAction(): Promise<{
 }
 
 /**
- * The next page of notifications, for the load-more button.
- *
- * The first page comes from the server component, so this only ever runs for
- * page two onward - there is no fetch on mount.
+ * get user notifications - fetches subsequent pages of
+ * notifications for infinite scrolling, as the initial load is
+ * handled by the server component.
  */
 export async function getUserNotificationsAction(
 	limit: number,
@@ -99,14 +96,9 @@ export async function deleteNotificationAction(
 }
 
 /**
- * The unread count behind the sidebar badge.
- *
- * Returns a bare number rather than the usual `{ success, error }` envelope.
- * Every other action here reports failure so the UI can roll back an optimistic
- * update, but there is nothing to roll back: the DAL already swallows its own
- * errors and answers 0, and a badge that cannot be counted should be absent, not
- * an error state. Handing callers a discriminated union would make them write a
- * failure branch that can never run.
+ * get unread notification count - retrieves the unread count
+ * directly as a number since failures are handled by the DAL and a
+ * missing count requires no UI rollback.
  */
 export async function getUnreadNotificationCountAction(): Promise<number> {
 	return countUnreadNotificationsDAL();

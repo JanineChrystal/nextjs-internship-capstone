@@ -34,9 +34,11 @@ export async function getFlaggedCommentsAction(projectId: string): Promise<{
 		if (!user)
 			return { success: false, error: await getSessionFailureReason() };
 
-		// Both reads in one round trip. The queue and the pending count are two
-		// halves of the same answer - how much moderation work is outstanding -
-		// and fetching them separately would let the badge and the button disagree.
+		/**
+		 * batched query execution - fetches both flagged comments and
+		 * pending count concurrently to maintain state consistency across
+		 * UI elements.
+		 */
 		const [data, pendingCount] = await Promise.all([
 			getFlaggedCommentsDAL(projectId),
 			countCommentsPendingProfanityCheckDAL(projectId),
@@ -81,24 +83,7 @@ export async function resolveFlaggedCommentAction(
 }
 
 /**
- * Re-examines comments whose original profanity check never completed.
- *
- * ## Why this is batched rather than a loop over everything
- *
- * The previous version awaited every pending comment in sequence inside the
- * request. Two things went wrong with that. A cold API answers in about 4.5
- * seconds, so a handful of comments ran past the serverless function's budget
- * and the request died half-finished. And the endpoint allows 30 requests per
- * minute per IP while each check costs two of them, so a long run started
- * collecting 429s - which fail open and leave those comments still pending, so
- * the next press hit the same wall at the same place and the queue never
- * drained.
- *
- * A fixed batch fixes both: PROFANITY_RETRY_BATCH_SIZE stays under the rate
- * limit with headroom for people posting comments meanwhile, and running the
- * batch together bounds the request at roughly one check rather than the sum of
- * all of them. What is left over is reported back, so pressing again is a
- * deliberate act with a visible number attached instead of a guess.
+ * profanity check retry batching - re-examines a fixed batch of pending comments concurrently to stay within rate limits and avoid serverless timeouts.
  */
 export async function retryPendingProfanityChecksAction(
 	projectId: string,
@@ -117,14 +102,18 @@ export async function retryPendingProfanityChecksAction(
 			return { success: true, processed: 0, remaining: 0, flagged: 0 };
 		}
 
-		// Together, not one after another. Every check is an independent HTTP call,
-		// so the batch costs about as long as its slowest member.
+		/**
+		 * concurrent evaluation - executes independent profanity checks in
+		 * parallel to minimize total latency.
+		 */
 		const outcomes = await Promise.all(
 			batch.map(async (comment) => {
 				const verdict = await detectProfanity(comment.body);
 
-				// Still unreachable: leave it pending rather than recording a verdict
-				// nobody actually reached.
+				/**
+				 * preservation of pending state - retains pending status for checks
+				 * that fail again rather than assuming a false negative.
+				 */
 				if (verdict.failedDetectors && verdict.failedDetectors.length > 0) {
 					return { comment, settled: false, isFlagged: false, reason: null };
 				}
@@ -148,14 +137,11 @@ export async function retryPendingProfanityChecksAction(
 		const settled = outcomes.filter((outcome) => outcome.settled);
 		const newlyFlagged = settled.filter((outcome) => outcome.isFlagged);
 
-		// This is the case the composer dialog cannot cover. When both detectors
-		// answer in time the author is told on the spot; a verdict that arrives on
-		// a retry finds them long gone, so it is delivered as a notification.
-		//
-		// Deferred to after(), like every other sender. Awaiting it here would add
-		// up to ten activity writes and ten email calls to a request that the
-		// batching above exists to keep short - undoing that work to deliver mail
-		// the moderator is not waiting for.
+		/**
+		 * deferred author notification - uses after() to notify authors of
+		 * newly flagged comments asynchronously, keeping the moderation
+		 * action fast.
+		 */
 		if (newlyFlagged.length > 0) {
 			const toNotify = newlyFlagged.map((outcome) => ({
 				comment: outcome.comment,
@@ -186,11 +172,9 @@ export async function retryPendingProfanityChecksAction(
 }
 
 /**
- * Tells the authors of comments a retry has just flagged.
- *
- * Never throws. A notification that fails must not undo a verdict that has
- * already been written, and the moderator pressing the button is not the person
- * who needs to hear about a mail failure.
+ * notify flagged authors - asynchronously alerts authors of newly
+ * flagged comments, swallowing errors to prevent undoing the
+ * moderation verdict.
  */
 async function notifyFlaggedAuthors(
 	projectId: string,

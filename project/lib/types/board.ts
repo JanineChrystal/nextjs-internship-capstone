@@ -11,9 +11,9 @@ export type NewDbBoard = typeof boards.$inferInsert;
 export type BoardColumn = z.infer<typeof BoardColumnSchema>;
 
 /**
- * One entry in a board column's dropdown menu. Kept with the other board types
- * rather than in the kanban constants file, which should hold the menu itself
- * and not the shape of a menu item.
+ * column action config - defines the shape of a board column dropdown menu
+ * item, placed with board types to decouple item structure from the kanban
+ * constants file that holds the menu configuration itself.
  */
 export interface ColumnActionConfig {
 	id: "rename" | "delete" | "set-completion";

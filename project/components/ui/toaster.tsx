@@ -5,21 +5,10 @@ import { Toaster as SonnerToaster } from "sonner";
 import { useTheme } from "@/components/theme-provider";
 
 /**
- * App-wide toast surface.
- *
- * Exists as a wrapper rather than mounting sonner's Toaster directly so it can
- * follow the app's own theme context - the theme lives in a local provider that
- * writes a class onto <html>, which sonner cannot read on its own.
- *
- * `richColors` and `closeButton` are deliberately gone. Both style sonner's
- * BUILT-IN toasts, and every toast in this app now renders through
- * `ToastCard` via `toast.custom` (see lib/utils/toast.tsx), which brings its
- * own tokens, icons and close button. Leaving them set would do nothing except
- * suggest the built-in path is still in use.
- *
- * `unstyled` strips sonner's own card so the container contributes only
- * positioning and stacking; without it the custom card renders inside sonner's
- * white box and inherits a border it did not ask for.
+ * toaster wrapper - provides the app-wide Sonner toast container, syncing
+ * its theme explicitly with the app's context. Runs entirely 'unstyled'
+ * because all in-app toasts use the custom `ToastCard` component, ignoring
+ * Sonner's built-in styles completely.
  */
 export function Toaster() {
 	const { theme } = useTheme();
@@ -29,11 +18,11 @@ export function Toaster() {
 			theme={theme}
 			position="bottom-right"
 			toastOptions={{ unstyled: true, classNames: { toast: "w-full" } }}
-			// `--width` is sonner's own variable for the toast column, so setting it
-			// keeps the library's positioning maths correct - assigning `width`
-			// directly would move the card without telling sonner it had moved.
-			// Wider than the 356px default because failure toasts carry a reason
-			// line, which wraps to four cramped lines at the default.
+			/**
+			 * custom column width - overrides Sonner's `--width` variable to safely
+			 * widen toasts without breaking its positioning math, ensuring detailed
+			 * failure messages don't awkwardly wrap.
+			 */
 			style={
 				{ "--width": "min(24rem, calc(100vw - 2rem))" } as React.CSSProperties
 			}

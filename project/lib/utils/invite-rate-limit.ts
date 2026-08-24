@@ -29,6 +29,6 @@ export async function isWithinInviteRateLimit(
 	}
 }
 
-/** Shown when the window is exhausted. Says what to do, not what went wrong. */
+/** invite rate limit message - shown when the window is exhausted. Says what to do, not what went wrong. */
 export const INVITE_RATE_LIMIT_MESSAGE =
 	"You have sent a lot of invitations just now. Wait a minute and try again.";

@@ -9,9 +9,11 @@ export async function getProjectBoardsDAL(projectId: string) {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	// Access resolved centrally, so direct and team members see the board columns
-	// too. Throws rather than returning [] so a refusal is never mistaken for an
-	// empty board.
+	/**
+	 * central access resolution - authorizes board reads via project roles
+	 * rather than ownership, throwing on denial to prevent confusing a
+	 * permission error with an empty board.
+	 */
 	const role = await getEffectiveProjectRoleDAL(projectId);
 	if (!role) throw new Error("Unauthorized");
 
@@ -45,7 +47,7 @@ export async function createBoardDAL(projectId: string, name: string) {
 			.where(and(eq(projects.id, projectId), isNull(projects.deletedAt)));
 		if (!project) throw new Error("Project not found");
 
-		// Get highest position
+		/** get highest position - resolves the maximum position value to append the new board to the end. */
 		const existingBoards = await getProjectBoardsDAL(projectId);
 		const maxPosition =
 			existingBoards.length > 0
@@ -99,7 +101,7 @@ export async function deleteBoardDAL(boardId: string, projectId: string) {
 
 	try {
 		await db.transaction(async (tx) => {
-			// Soft-delete the board's tasks first ("moved to trash").
+			/** cascade trash tasks - soft-deletes all tasks within the board before trashing the board itself. */
 			await tx
 				.update(tasks)
 				.set({ deletedAt: new Date(), updatedAt: new Date() })
@@ -128,10 +130,9 @@ export async function deleteBoardDAL(boardId: string, projectId: string) {
 }
 
 /**
- * Designates a board as the project's completion column.
- *
- * Exactly one board per project may hold the flag, so any previous holder is
- * cleared in the same transaction.
+ * set completion board - designates a specific board as the completion
+ * column, explicitly clearing the flag from any previous holder within
+ * a single transaction to maintain the single-board constraint.
  */
 export async function setCompletionBoardDAL(
 	boardId: string,
@@ -200,8 +201,11 @@ export async function reorderBoardsDAL(projectId: string, boardIds: string[]) {
 	if (!user) throw new Error("Unauthorized");
 
 	try {
-		// Drizzle doesn't support bulk update with different values easily in a single query for Postgres without raw SQL case statements,
-		// so we update them in a transaction.
+		/**
+		 * bulk reorder transaction - executes sequential positional updates
+		 * within a transaction to circumvent Drizzle's lack of native bulk
+		 * updates with varying values.
+		 */
 		await db.transaction(async (tx) => {
 			for (let i = 0; i < boardIds.length; i++) {
 				await tx

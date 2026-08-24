@@ -7,16 +7,9 @@ import type { NotificationSettingsDTO } from "@/lib/dtos/notification-settings-d
 import { updateNotificationSettingsSchema } from "@/lib/validations/notification-settings-schema";
 
 /**
- * Saves one or more changed email preferences.
- *
- * There is no matching read action: the settings page is server-rendered and
- * calls the DAL directly, so fetching through an action would add a round-trip
- * for data the server already had. Only the write needs an action, because the
- * toggles are client-side.
- *
- * The patch is validated with `.strict()`, so a key this page has no business
- * writing cannot be smuggled into the UPDATE even though the DAL spreads the
- * object it is given.
+ * update notification settings - handles client-side toggles for
+ * email preferences, enforcing strict validation to prevent
+ * unauthorized key updates.
  */
 export async function updateNotificationSettingsAction(
 	patch: unknown,

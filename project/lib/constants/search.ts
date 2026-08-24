@@ -1,29 +1,23 @@
 /**
- * How long typing must pause before a search runs.
- *
- * 250ms is roughly the gap between words for a fast typist, so "kanban board"
- * costs two queries rather than twelve. Much lower and the saving disappears;
- * much higher and the box feels like it is not listening.
+ * search debounce ms - establishes a 250ms delay for search inputs,
+ * balancing query efficiency against UI responsiveness to prevent
+ * excessive database calls.
  */
 export const SEARCH_DEBOUNCE_MS = 250;
 
 /**
- * Below this, searching is not attempted.
- *
- * A single character matches an enormous share of any real dataset, so the
- * result list is both useless and expensive. Two is the point where the answer
- * starts meaning something.
+ * search min length - restricts search execution to queries of at
+ * least 2 characters to prevent expensive and useless single-character
+ * database lookups.
  */
 export const SEARCH_MIN_LENGTH = 2;
 
-/** Guards against a pathological query being sent at all. */
+/** search max length - enforces a hard character limit to guard against pathologically large search queries. */
 export const SEARCH_MAX_LENGTH = 100;
 
 /**
- * How many hits each group returns.
- *
- * Capped per group rather than overall, so a project matching fifty tasks cannot
- * push every person and project off the list. The reader is choosing between
- * kinds of thing first and instances second.
+ * search group limit - caps the number of results returned per group
+ * category to ensure a diverse set of results across all entity types
+ * rather than a list dominated by a single category.
  */
 export const SEARCH_GROUP_LIMIT = 5;

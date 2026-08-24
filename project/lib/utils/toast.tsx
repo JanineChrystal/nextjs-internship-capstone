@@ -20,7 +20,7 @@ const TONE_DURATION: Record<FeedbackTone, number> = {
 };
 
 interface NotifyOptions {
-	/** A second line: the reason, or what happens next. */
+	/** description - a second line: the reason, or what happens next. */
 	description?: string;
 	/** Overrides the tone's default lifetime. `Infinity` pins it open. */
 	duration?: number;

@@ -1,8 +1,7 @@
 /**
- * The icons a status or priority badge is allowed to show.
- *
- * A union rather than `string` so a config map cannot name an icon the badge has
- * no case for - that would render nothing at all, silently.
+ * icon name - union of allowed status and priority badge icons to ensure 
+ * compile-time safety and prevent config maps from naming unsupported icons
+ * that would silently fail to render.
  */
 export type IconName =
 	| "clock"

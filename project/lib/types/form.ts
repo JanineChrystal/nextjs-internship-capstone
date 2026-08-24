@@ -1,9 +1,6 @@
 /**
- * One option in a select or combobox.
- *
- * Declared here rather than in the create-project constants that first needed
- * it: the same shape drives the edit-project form and the task property
- * dropdowns, and a constants file is for values, not type declarations.
+ * select option - represents a single key-value pair for dropdowns, located
+ * here instead of in constants to decouple type definitions from values.
  */
 export type SelectOption = {
 	label: string;
@@ -11,8 +8,9 @@ export type SelectOption = {
 };
 
 /**
- * A declaratively described form field, so the project modals can render their
- * inputs from an array instead of hand-writing each one.
+ * form field config - declarative configuration for rendering dynamic form
+ * inputs, enabling arrays to drive project modals instead of hand-writing
+ * individual fields.
  */
 export type FormFieldConfig = {
 	id: string;

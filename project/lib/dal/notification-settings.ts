@@ -11,22 +11,15 @@ import {
 import type { NotificationSettingsPatch } from "@/lib/types/notification-settings";
 
 /**
- * A user's own email preferences.
- *
- * Neither function takes a userId. That is the access control: there is exactly
- * one row a caller may read or write, and it is resolved from the session here
- * rather than accepted as an argument - so there is no parameter to tamper with
- * and no permission check that a future call site could forget to make.
+ * notification settings - manages a user's email preferences, strictly
+ * scoping reads and writes to the active session rather than accepting
+ * user IDs to inherently prevent cross-user access.
  */
 
 /**
- * Reads the caller's preferences, falling back to the defaults when no row
- * exists.
- *
- * A row is deliberately NOT created on read. Most users never open this page,
- * and writing a row of pure defaults for every signup would fill the table with
- * data that says nothing. `createNotificationDAL` already treats a missing row
- * as "everything on", so absence and an all-default row mean the same thing.
+ * get notification settings - retrieves the caller's preferences, falling
+ * back to defaults without creating a row to avoid filling the database
+ * with redundant default entries.
  */
 export async function getNotificationSettingsDAL(): Promise<NotificationSettingsDTO> {
 	const user = await getCurrentUser();
@@ -52,15 +45,9 @@ export async function getNotificationSettingsDAL(): Promise<NotificationSettings
 }
 
 /**
- * Applies a patch of changed toggles, creating the row on first write.
- *
- * An upsert rather than a read-then-write: two toggles flipped quickly would
- * otherwise race, with the second insert failing on the userId unique
- * constraint because the first had already created the row. Conflict targets
- * that constraint and merges instead.
- *
- * Only the keys present in the patch are written, so flipping one switch cannot
- * quietly reset the others to whatever the client last believed they were.
+ * update notification settings - applies a patch to the user's settings
+ * via a conflict-safe upsert, preventing race conditions and ensuring
+ * unmodified toggles remain untouched.
  */
 export async function updateNotificationSettingsDAL(
 	patch: NotificationSettingsPatch,

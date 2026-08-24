@@ -12,12 +12,10 @@ interface ProjectState {
 export const useProjectStore = create<ProjectState>((set) => ({
 	projects: [],
 
-	// CREATE
+	/** create action - inserts a new project at the beginning of the list. */
 	addProject: (projectData) =>
 		set((state) => {
-			// Respect a caller-supplied id (e.g. a real DB id being hydrated into
-			// the store, or an optimistic temp id awaiting server confirmation).
-			// Only mint a new one if the caller genuinely didn't provide any.
+			/** id generation - respects caller-supplied IDs (like real DB IDs or temp UI IDs) and only mints a UUID if none was provided. */
 			const newProject: Project = {
 				...projectData,
 				id:
@@ -28,13 +26,13 @@ export const useProjectStore = create<ProjectState>((set) => ({
 			return { projects: [newProject, ...state.projects] };
 		}),
 
-	// DELETE
+	/** delete action - removes projects by ID from the state. */
 	deleteProjects: (ids) =>
 		set((state) => ({
 			projects: state.projects.filter((project) => !ids.has(project.id)),
 		})),
 
-	// UPDATE
+	/** update action - merges partial changes into an existing project. */
 	updateProject: (id, updates) =>
 		set((state) => ({
 			projects: state.projects.map((project) =>
@@ -42,6 +40,6 @@ export const useProjectStore = create<ProjectState>((set) => ({
 			),
 		})),
 
-	// SET: Hydrates the store with initial data passed down from the server
+	/** hydration action - seeds the store with initial project data passed down from the server. */
 	setProjects: (projects) => set({ projects }),
 }));

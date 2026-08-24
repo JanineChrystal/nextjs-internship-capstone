@@ -5,7 +5,7 @@ import {
 } from "./derive-palette-tokens";
 import { DEFAULT_PALETTE_ID, THEME_PALETTES } from "./palettes";
 
-/** The palette whose id is `id`, or `null` if nothing matches. */
+/** find palette - the palette whose id is `id`, or `null` if nothing matches. */
 export function findPalette(id: string) {
 	return THEME_PALETTES.find((palette) => palette.id === id) ?? null;
 }

@@ -16,7 +16,7 @@
  * until it is legible, and that is what `adjustForContrast` does.
  */
 
-/** WCAG AA for normal-size text. Also what this app uses for icon-sized marks. */
+/** min text contrast - WCAG AA for normal-size text. Also what this app uses for icon-sized marks. */
 export const MIN_TEXT_CONTRAST = 4.5;
 
 /**

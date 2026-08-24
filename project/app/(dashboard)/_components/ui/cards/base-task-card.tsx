@@ -36,7 +36,7 @@ export function BaseTaskCard({
 		: null;
 
 	return (
-		// dynamic a11y role - sets interactive roles only when click handlers are provided.
+		// biome-ignore lint/a11y/noStaticElementInteractions: We dynamically set role based on onClick
 		<div
 			onClick={onClick}
 			onDoubleClick={onDoubleClick}

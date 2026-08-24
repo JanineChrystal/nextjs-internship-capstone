@@ -1,17 +1,13 @@
 /**
- * The legal pages, as data.
- *
- * Written as structured content rather than two hand-built pages so both
- * documents render through the same component and cannot drift in typography,
- * spacing or heading levels. `lastUpdated` lives beside the text it describes,
- * which is the only way it stays honest - a date held in the page template gets
- * bumped when the layout changes and left alone when the wording does.
+ * legal documents content - structures legal texts as data rather
+ * than pages to ensure uniform rendering and keep the last-updated
+ * date tightly coupled to the actual content.
  */
 export interface LegalSection {
 	heading: string;
-	/** Rendered as paragraphs, in order. */
+	/** paragraphs - rendered as paragraphs in order */
 	body: string[];
-	/** Optional bullet list, rendered after the paragraphs. */
+	/** bullet list - optional bullet list, rendered after the paragraphs */
 	points?: string[];
 }
 
@@ -24,11 +20,9 @@ export interface LegalDocument {
 }
 
 /**
- * Shown at the top of both documents.
- *
- * This is a capstone project, not a commercial service, and saying so plainly
- * is both the honest thing to do and the useful one: a reader who believes this
- * is a live product will assume guarantees behind it that do not exist.
+ * legal disclaimer - clearly establishes the application as a student
+ * project to prevent users from assuming commercial-level guarantees
+ * or support.
  */
 export const LEGAL_DISCLAIMER =
 	"Takda PH is a student capstone project, not a commercial service. This document describes how the application actually behaves, in plain language. It is not legal advice and has not been reviewed by a lawyer.";

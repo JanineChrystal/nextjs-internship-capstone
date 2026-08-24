@@ -6,7 +6,7 @@ import * as RechartsPrimitive from "recharts";
 
 import { cn } from "@/lib/utils";
 
-// Format: { THEME_NAME: CSS_SELECTOR }
+// theme map - maps theme names to their corresponding CSS selectors for dynamic chart styling.
 const THEMES = { light: "", dark: ".dark" } as const;
 
 const INITIAL_DIMENSION = { width: 320, height: 200 } as const;
@@ -106,9 +106,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 		})
 		.join("\n");
 
-	// A string child rather than dangerouslySetInnerHTML: the content is built
-	// from the chart's own config and never from user input, and this codebase
-	// bans that attribute outright, vendored file or not.
+	/** safe style injection - renders a string child instead of dangerouslySetInnerHTML since the content is built purely from internal config. */
 	return <style>{css}</style>;
 };
 

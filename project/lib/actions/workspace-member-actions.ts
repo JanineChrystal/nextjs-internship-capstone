@@ -53,8 +53,10 @@ export async function inviteToWorkspaceAction(
 ): Promise<{
 	success: boolean;
 	data?: WorkspaceMemberOutputDTO;
-	// Set when the address had no account and the invitation was stored instead.
-	// A success, not a failure - the caller reports it rather than raising it.
+	/**
+	 * notice explanation - explains that a pending invite without an account
+	 * is a success state with a notice, rather than an error to be raised.
+	 */
 	notice?: string;
 	error?: string;
 }> {
@@ -67,9 +69,10 @@ export async function inviteToWorkspaceAction(
 			return { success: false, error: "Email is required" };
 		}
 
-		// Checked before the write, not after: the point is to stop the outbound
-		// email, and by the time the membership row exists the invitation has
-		// effectively happened.
+		/**
+		 * rate limit evaluation - validates invite rate limits prior to
+		 * database writes to block unauthorized outbound emails.
+		 */
 		if (!(await isWithinInviteRateLimit(user.id))) {
 			return { success: false, error: INVITE_RATE_LIMIT_MESSAGE };
 		}
@@ -79,20 +82,21 @@ export async function inviteToWorkspaceAction(
 		revalidatePath("/team");
 
 		if (result.outcome === "pending" || result.outcome === "invited") {
-			// An address with no account has no settings row and has not had the
-			// chance to opt out of the message telling them they were invited.
+			/**
+			 * default email opt-in - assumes consent to email for pending
+			 * invites since unregistered users lack notification settings.
+			 */
 			let mayEmailInvitee = true;
 			const invitedMemberId =
 				result.outcome === "invited" ? result.member?.id : undefined;
 
 			if (invitedMemberId) {
-				// The invitee gets an in-app notification as well as the email. They
-				// previously got only the email, which made the directory the one
-				// invite that never appeared on the Notifications page.
-				//
-				// No projectId is passed, and that is load-bearing: it is what makes
-				// toEmailPreferenceKey resolve this to emailWorkspaceInvites rather
-				// than emailProjectInvites, without needing a second action type.
+				/**
+				 * dual notification dispatch - sends both an email and an
+				 * in-app notification for directory invites, omitting projectId
+				 * to correctly trigger workspace-level email preferences instead
+				 * of project-level ones.
+				 */
 				const workspace = await resolveActiveWorkspaceDAL(workspaceId);
 				const recorded = await recordActivity({
 					workspaceId: workspace.id,
@@ -153,8 +157,9 @@ export async function inviteToWorkspaceAction(
 }
 
 /**
- * Removes members from the caller's directory. Accepts an array so single and
- * bulk removal share one batched code path.
+ * remove workspace members action - removes members from the
+ * workspace directory, accepting an array to unify single and bulk
+ * removal operations.
  */
 export async function removeWorkspaceMembersAction(
 	userIds: string[],

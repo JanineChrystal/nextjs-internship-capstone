@@ -7,25 +7,9 @@ const FALLBACK_TINT = "#2b5bb5";
 const HEX = /^#[0-9a-f]{6}$/i;
 
 /**
- * A single luminous swell travelling slowly across the page.
- *
- * ## Why canvas rather than SVG or CSS
- *
- * The shape is a sine wave whose amplitude is shaped by a moving envelope, so
- * every frame is a different path. In SVG that means rewriting a `d` attribute
- * of a few hundred coordinates sixty times a second, which thrashes the DOM for
- * something that is purely decorative. CSS cannot express it at all - a
- * gradient can be animated, but not a curve whose geometry changes. Canvas
- * draws it in one pass with no DOM involved.
- *
- * ## Why it reads its colour from a CSS variable
- *
- * `--surface-tint` rather than a hard-coded blue, so the wave follows the theme
- * without a second definition - and follows the Phase 7 palettes for free, since
- * nothing here is a literal colour. The token is re-read when the theme class on
- * `<html>` changes, because a canvas holds pixels, not bindings: without the
- * observer it would keep painting last theme's colour until something else
- * forced a resize.
+ * glowing wave - renders an animated, luminous sine wave background using
+ * Canvas to avoid DOM thrashing from constant path updates. Colors are synced
+ * dynamically from CSS variables via observers to support themes seamlessly.
  */
 export function GlowingWave({ className }: { className?: string }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,16 +30,16 @@ export function GlowingWave({ className }: { className?: string }) {
 			const value = getComputedStyle(document.documentElement)
 				.getPropertyValue("--surface-tint")
 				.trim();
-			// The alpha suffixes below build 8-digit hex, which only works if the
-			// token really is 6-digit hex. Anything else falls back rather than
-			// producing a colour string the canvas silently ignores.
+			/**
+			 * enforce 6-digit hex - verifies the theme token format to safely
+			 * append alpha suffixes, falling back if it's not exactly 6-digit hex.
+			 */
 			tint = HEX.test(value) ? value : FALLBACK_TINT;
 			isDark = document.documentElement.classList.contains("dark");
 		};
 
 		const resize = () => {
-			// Capped at 2: beyond that the extra pixels are invisible on a blurred
-			// glow and cost real frame time on high-density displays.
+			/** cap pixel ratio - limits rendering density to save frame time on high-DPI screens without visual loss. */
 			const dpr = Math.min(window.devicePixelRatio || 1, 2);
 			const rect = canvas.getBoundingClientRect();
 			width = rect.width;
@@ -72,9 +56,7 @@ export function GlowingWave({ className }: { className?: string }) {
 			const baseY = height * 0.62;
 			const amplitude = Math.min(height * 0.17, 150);
 
-			// The swell's centre, travelling left to right and wrapping. It starts
-			// and ends off-canvas so the wave enters and leaves rather than popping
-			// into existence at the edge.
+			/** off-canvas sweep - computes a sweep center that wraps smoothly from off-canvas to prevent sudden popping. */
 			const sweepX = (((elapsed * 0.022) % 140) / 100 - 0.2) * width;
 			const sigma = width * 0.26;
 
@@ -88,15 +70,16 @@ export function GlowingWave({ className }: { className?: string }) {
 				points.push([x, y]);
 			}
 
-			// Fades in and out at the edges so the line has no visible start or end.
+			/** edge fading - applies a gradient stroke to dissolve the line's endpoints smoothly. */
 			const stroke = ctx.createLinearGradient(0, 0, width, 0);
 			stroke.addColorStop(0, `${tint}00`);
 			stroke.addColorStop(0.5, `${tint}${isDark ? "ff" : "cc"}`);
 			stroke.addColorStop(1, `${tint}00`);
 
-			// The wash under the curve. Still lighter in light mode - the same alpha
-			// over a near-white ground reads as a smudge rather than as light - but
-			// not so light that it vanishes, which is what the first pass did.
+			/**
+			 * underlying wash - fills the wave body with a subtle gradient, dynamically
+			 * adjusting alpha for light mode to maintain luminosity without smudging.
+			 */
 			const fill = ctx.createLinearGradient(0, baseY - amplitude, 0, height);
 			fill.addColorStop(0, `${tint}${isDark ? "33" : "2b"}`);
 			fill.addColorStop(1, `${tint}00`);
@@ -114,8 +97,7 @@ export function GlowingWave({ className }: { className?: string }) {
 			ctx.moveTo(points[0][0], points[0][1]);
 			for (const [x, y] of points) ctx.lineTo(x, y);
 			ctx.strokeStyle = stroke;
-			// A hair thicker on a light ground, where a 2px line at this alpha is
-			// close to invisible against #f9f9f9.
+			/** theme-adaptive stroke width - thickens the wave line in light mode to preserve contrast against bright backgrounds. */
 			ctx.lineWidth = isDark ? 2 : 2.5;
 			ctx.shadowBlur = isDark ? 48 : 34;
 			ctx.shadowColor = `${tint}${isDark ? "aa" : "80"}`;
@@ -123,9 +105,7 @@ export function GlowingWave({ className }: { className?: string }) {
 			ctx.shadowBlur = 0;
 		};
 
-		// A slow ambient animation is exactly what someone disables motion to be
-		// rid of. One frame is still drawn, so the page keeps its composition
-		// rather than losing the wave entirely.
+		/** respect reduced motion - halts the animation loop while retaining a static composition frame for reduced-motion settings. */
 		const prefersReducedMotion = window.matchMedia(
 			"(prefers-reduced-motion: reduce)",
 		);
@@ -141,8 +121,7 @@ export function GlowingWave({ className }: { className?: string }) {
 			resize();
 			cancelAnimationFrame(raf);
 			if (prefersReducedMotion.matches) {
-				// Mid-sweep, so the still frame shows the wave at its fullest rather
-				// than at whatever the clock happened to land on.
+				/** static climax frame - manually advances the clock to 3000ms so the static fallback displays a full wave. */
 				draw(3000);
 			} else {
 				raf = requestAnimationFrame(loop);
@@ -173,11 +152,11 @@ export function GlowingWave({ className }: { className?: string }) {
 		};
 	}, []);
 
-	// The canvas carries no ARIA of its own. It counts as an interactive element
-	// to the linter - a canvas can be given focus and keyboard handling - so both
-	// `aria-hidden` and a presentation role are rejected on it. The decoration is
-	// hidden from assistive technology by the wrapper below, which is a plain div
-	// and unambiguous. The canvas is empty of accessible content either way.
+	/**
+	 * accessible hiding wrapper - wraps the canvas in an aria-hidden div
+	 * to cleanly obscure the purely decorative element from screen readers,
+	 * sidestepping linter warnings on the canvas itself.
+	 */
 	return (
 		<div
 			aria-hidden="true"

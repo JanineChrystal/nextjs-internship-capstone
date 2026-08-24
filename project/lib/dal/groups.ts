@@ -19,19 +19,9 @@ import {
 } from "@/lib/dtos/group-dto";
 
 /**
- * Groups are saved lists of collaborators, stored in the existing Teams tables.
- *
- * They are deliberately a *template*, not a live link: applying a group copies
- * its people into a project as ordinary ProjectMembers rows, and nothing about
- * the group is consulted afterwards. Editing or deleting a group therefore never
- * changes who can reach a project that was created from it.
- *
- * The alternative - resolving access through the group at request time, via
- * ProjectTeams - is already supported by getEffectiveProjectRoleDAL, so this can
- * become a live link later without reworking access resolution. The snapshot
- * model was chosen because "a saved list of people you can add in one click" is
- * a single sentence to explain, whereas live links make one edit silently change
- * access across every linked project.
+ * groups template model - defines groups as static templates utilizing
+ * the Teams schema, copying members directly into projects on application
+ * to avoid unexpected, cascading access changes.
  */
 
 async function requireGroupManager(projectId: string): Promise<void> {
@@ -42,10 +32,9 @@ async function requireGroupManager(projectId: string): Promise<void> {
 }
 
 /**
- * Every group in the caller's workspace, with how many people each holds.
- *
- * One grouped count query rather than a lookup per group, so the cost does not
- * grow with the number of groups.
+ * get workspace groups - retrieves all groups in the active workspace
+ * with a single grouped count query to keep performance decoupled from
+ * the number of groups.
  */
 export async function getWorkspaceGroupsDAL(): Promise<GroupOutputDTO[]> {
 	const user = await getCurrentUser();
@@ -74,8 +63,7 @@ export async function getGroupMembersDAL(
 
 	const workspace = await resolveActiveWorkspaceDAL();
 
-	// Confirms the group belongs to the caller's workspace before returning any
-	// of its people.
+	/** verify workspace ownership - ensures the requested group belongs to the active workspace before leaking member data. */
 	const [group] = await db
 		.select({ id: teams.id })
 		.from(teams)
@@ -99,11 +87,9 @@ export async function getGroupMembersDAL(
 }
 
 /**
- * Captures a project's current members as a reusable group.
- *
- * The project owner is included alongside the ProjectMembers rows, because
- * owning a project produces no membership row and leaving them out would make
- * the saved group quietly incomplete.
+ * save project members as group - snapshots a project's current member
+ * list into a reusable group template, explicitly injecting the project
+ * owner to ensure a complete roster.
  */
 export async function saveProjectMembersAsGroupDAL(
 	projectId: string,
@@ -168,12 +154,9 @@ export async function saveProjectMembersAsGroupDAL(
 }
 
 /**
- * Copies a group's people into a project.
- *
- * Existing members keep the position and access level they already hold: the
- * conflict path only clears deletedAt. Applying a group must never demote
- * someone who was already there, and it is a one-time copy, so no link back to
- * the group is recorded.
+ * apply group to project - copies group members into a project,
+ * resolving conflicts harmlessly to preserve existing positions and
+ * access levels without establishing a live link back to the group.
  */
 export async function applyGroupToProjectDAL(
 	projectId: string,
@@ -212,8 +195,7 @@ export async function applyGroupToProjectDAL(
 		.from(teamMembers)
 		.where(eq(teamMembers.teamId, groupId));
 
-	// The owner already has full access through ownership; inserting a
-	// ProjectMembers row for them would show a duplicate in the member list.
+	/** omit duplicate owner - filters out the project owner from insertion to prevent duplicate listing in the members UI. */
 	const userIds = memberRows
 		.map((row) => row.userId)
 		.filter((id) => id !== project.ownerId);
@@ -239,8 +221,8 @@ export async function applyGroupToProjectDAL(
 }
 
 /**
- * Replaces a group's roster. Managed from project settings, which is the only
- * place groups are surfaced.
+ * set group members - completely replaces a group's roster, executed via
+ * the project settings surface.
  */
 export async function setGroupMembersDAL(
 	groupId: string,
@@ -269,8 +251,7 @@ export async function setGroupMembersDAL(
 	if (!group) throw new Error("Group not found");
 
 	await db.transaction(async (tx) => {
-		// TeamMembers is hard-deleted, so replacing the roster is a delete and
-		// re-insert rather than a soft-delete sweep.
+		/** hard delete swap - implements roster replacement via a delete-and-insert transaction since TeamMembers uses hard deletion. */
 		await tx.delete(teamMembers).where(eq(teamMembers.teamId, groupId));
 
 		if (userIds.length > 0) {
@@ -292,9 +273,11 @@ export async function deleteGroupDAL(groupId: string): Promise<void> {
 		throw new Error("Only the workspace owner can delete groups");
 	}
 
-	// Soft delete, which also frees the name for reuse thanks to the partial
-	// unique index on live rows only. Projects created from this group are
-	// untouched - that is the point of the snapshot model.
+	/**
+	 * soft delete group - soft deletes the group to free its name for reuse,
+	 * intentionally leaving previously created projects unaffected per the
+	 * snapshot model.
+	 */
 	await db
 		.update(teams)
 		.set({ deletedAt: new Date(), updatedAt: new Date() })
@@ -308,8 +291,8 @@ export async function deleteGroupDAL(groupId: string): Promise<void> {
 }
 
 /**
- * Candidates for a group's roster: everyone already reachable in the workspace
- * directory. Used by the member picker in project settings.
+ * get group candidates - retrieves all reachable users from the workspace
+ * directory to populate the member picker in project settings.
  */
 export async function getGroupCandidatesDAL(
 	userIds: string[],

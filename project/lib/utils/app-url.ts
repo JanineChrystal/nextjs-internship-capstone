@@ -46,7 +46,7 @@ export function getAppBaseUrl(): string {
 	return "http://localhost:3000";
 }
 
-/** Vercel's variables omit the scheme; an explicit override usually includes it. */
+/** with protocol - Vercel's variables omit the scheme; an explicit override usually includes it. */
 function withProtocol(host: string): string {
 	return /^https?:\/\//.test(host) ? host : `https://${host}`;
 }

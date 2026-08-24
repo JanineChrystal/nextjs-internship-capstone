@@ -7,9 +7,11 @@ import { type CommentOutputDTO, toCommentDTO } from "@/lib/dtos/comment-dto";
 import type { CommentsPageResult } from "@/lib/types/comment";
 import { encrypt } from "@/lib/utils/encryption";
 
-// Paginates by top-level (root) comment thread, always including every reply
-// to whatever root comments are on the page - keeps replies from ever being
-// orphaned from their parent across a page boundary.
+/**
+ * thread pagination strategy - paginates by top-level comment threads,
+ * eagerly fetching all direct replies to ensure threads are never orphaned
+ * across page boundaries.
+ */
 export async function getCommentsByTaskId(
 	taskId: string,
 	projectId: string,
@@ -65,8 +67,10 @@ export async function getCommentsByTaskId(
 	}
 }
 
-// Used to enforce a 2-level (root + direct reply) thread limit before insert -
-// a reply's parent must itself be a root comment (parentId === null).
+/**
+ * get comment parent id - retrieves a comment's parent to enforce the
+ * 2-level maximum nesting limit before allowing new replies.
+ */
 export async function getCommentParentId(
 	commentId: string,
 ): Promise<string | null> {

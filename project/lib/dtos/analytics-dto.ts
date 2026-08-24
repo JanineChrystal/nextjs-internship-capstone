@@ -1,21 +1,23 @@
 /**
- * The shapes the analytics surfaces render.
- *
- * Deliberately flat and already-computed: a chart component should never have to
- * divide, filter or bucket anything. Every number a chart draws is calculated in
- * the DAL (using the pure helpers in lib/utils/analytics.ts) and handed over
- * finished, so the same DTO can feed a chart, a table or a stat tile without any
- * of them disagreeing about the maths.
+ * analytics dtos - defines pre-computed shapes for analytics surfaces,
+ * ensuring calculations occur purely in the DAL so that charts, tables,
+ * and tiles share exactly the same mathematical logic.
  */
 
-/** One day of a trailing window. `date` is a sortable key, `label` is for the axis. */
+/**
+ * daily count dto - represents a single day within a trailing window,
+ * providing both a sortable date key and an axis-ready label.
+ */
 export interface DailyCountDTO {
 	date: string;
 	label: string;
 	tasksCompleted: number;
 }
 
-/** A named slice of a whole - task statuses, priorities, per-member workload. */
+/**
+ * chart slice dto - describes a named slice of a whole, such as task statuses
+ * or per-member workloads.
+ */
 export interface ChartSliceDTO {
 	name: string;
 	value: number;
@@ -66,13 +68,9 @@ export interface AnalyticsDashboardDTO {
 }
 
 /**
- * How many tasks sit in each of the four status buckets.
- *
- * A type alias rather than an interface, deliberately: TypeScript gives an alias
- * an implicit index signature and an interface none, so only this form is
- * assignable to the Record<string, number> the chart components take. Declaring
- * it as an interface compiles here and then fails at the one call site that
- * matters.
+ * status totals dto - defines counts across the four core task statuses,
+ * exposed as a type alias instead of an interface to maintain assignability
+ * to the generic Record<string, number> required by chart components.
  */
 export type StatusTotalsDTO = {
 	notStarted: number;
@@ -82,8 +80,9 @@ export type StatusTotalsDTO = {
 };
 
 /**
- * One column of a stacked chart: a category, its own total, and the status split
- * inside it. Used identically by the Priority, Bucket and Members panels.
+ * stacked group dto - defines one column of a stacked chart, including a
+ * category, its total, and the internal status split, shared identically by
+ * multiple panels.
  */
 export interface StackedGroupDTO {
 	name: string;

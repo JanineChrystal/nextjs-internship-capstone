@@ -14,12 +14,9 @@ export type UserInputDTO = z.infer<typeof userSchema>;
 export type ChangePasswordDTO = z.infer<typeof changePasswordSchema>;
 
 /**
- * The user fields every authenticated request needs.
- *
- * Narrower than DbUser on purpose - a session lookup runs on nearly every
- * request, so it selects only what callers actually read. Shared by
- * getCurrentUser and the webhook-outage fallback so the two can never return
- * differently shaped objects.
+ * session user - defines a minimal subset of user fields required for almost
+ * every authenticated request, ensuring consistency between standard lookup
+ * and outage fallbacks.
  */
 export interface SessionUser {
 	id: string;

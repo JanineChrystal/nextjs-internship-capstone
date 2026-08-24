@@ -26,9 +26,8 @@ function toAuthorName(author: {
 }
 
 /**
- * The body is truncated here rather than in the component: the moderation table
- * only ever shows a preview, so sending a 2,000-character comment to draw two
- * lines is wasted payload.
+ * to flagged comment dto - truncates the comment body within the mapper to
+ * prevent transmitting a massive payload just to draw a two-line preview.
  */
 export function toFlaggedCommentDTO(row: {
 	commentId: string;

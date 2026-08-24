@@ -97,7 +97,7 @@ export function wasNotificationDelivered(outcomes: DeliveryOutcome[]): boolean {
 	return outcomes.some((outcome) => outcome.status === "delivered");
 }
 
-/** Names the configured channels, for the startup/debug log. */
+/** configured channels - names the configured channels, for the startup/debug log. */
 export function listConfiguredChannels(): string[] {
 	return NOTIFIERS.filter((notifier) => notifier.isConfigured()).map(
 		(notifier) => notifier.channel,

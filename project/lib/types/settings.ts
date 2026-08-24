@@ -1,4 +1,4 @@
-/** One entry in the Settings sub-menu. */
+/** settings nav id - defines a single entry in the settings sub-menu. */
 export type SettingsNavId =
 	| "account"
 	| "security"
@@ -6,10 +6,8 @@ export type SettingsNavId =
 	| "appearance";
 
 /**
- * One scrollable card on the Settings page.
- *
- * Fewer of these than there are menu entries, because Account and Security are
- * both served by the single Clerk panel - see lib/constants/settings-nav.ts.
+ * settings section dom id - defines the allowed scrollable section targets
+ * on the settings page, uniquely mapping to clerk and custom sections.
  */
 export type SettingsSectionDomId =
 	| "settings-account"
@@ -17,11 +15,7 @@ export type SettingsSectionDomId =
 	| "settings-appearance";
 
 /**
- * Which screen Clerk's `<UserProfile>` is showing.
- *
- * A narrower type than `SettingsNavId` on purpose: those four are our menu
- * entries, and only two of them are screens Clerk owns. Reusing the wider type
- * would let `"appearance"` be passed to something that can only ever answer
- * Profile or Security.
+ * clerk profile screen - constrains the views available within Clerk's
+ * UserProfile component to prevent passing invalid views like 'appearance'.
  */
 export type ClerkProfileScreen = "account" | "security";

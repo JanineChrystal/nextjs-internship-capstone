@@ -27,13 +27,9 @@ import {
 import type { InviteOutcome } from "@/lib/types/pending-invite";
 
 /**
- * Everyone in the caller's workspace directory, with the projects they can
- * reach and the job roles they hold.
- *
- * Three grouped queries run in parallel and are merged in memory, rather than
- * one query per member. Project access is counted from BOTH routes - direct
- * ProjectMembers rows and Teams linked to projects - then de-duplicated,
- * because a user reachable by both must not be counted twice.
+ * get workspace directory - efficiently retrieves all directory members
+ * alongside their project access and roles by executing three parallel
+ * grouped queries and merging the results in-memory.
  */
 export async function getWorkspaceDirectoryDAL(
 	workspaceId?: string,
@@ -90,9 +86,7 @@ export async function getWorkspaceDirectoryDAL(
 					),
 				),
 
-			// The third access route. Owning a project grants access to it without
-			// producing a ProjectMembers row, so counting only the other two routes
-			// reported zero projects for the owner.
+			/** include owned projects - counts project ownership as an access route to prevent owners from appearing with zero projects. */
 			db
 				.select({
 					userId: projects.ownerId,
@@ -107,7 +101,7 @@ export async function getWorkspaceDirectoryDAL(
 				),
 		]);
 
-		// Sets rather than arrays so the two access routes de-duplicate for free.
+		/** deduplicate projects - uses Sets to automatically merge and deduplicate access routes. */
 		const projectIdsByUser = new Map<string, Set<string>>();
 		const jobRolesByUser = new Map<string, Set<string>>();
 
@@ -136,9 +130,7 @@ export async function getWorkspaceDirectoryDAL(
 
 		return (
 			memberRows
-				// The directory lists people you collaborate with. Your own row adds
-				// nothing - your profile is reachable from the top bar, and its remove
-				// button is misleading since self-removal is rejected server-side.
+				/** exclude self - filters out the caller's own row since the directory is meant for collaborators. */
 				.filter((row) => row.user.id !== user.id)
 				.map((row) =>
 					toWorkspaceMemberDTO(
@@ -155,14 +147,9 @@ export async function getWorkspaceDirectoryDAL(
 }
 
 /**
- * Adds someone to the caller's directory without granting any project or team
- * access - the standalone "Add Member" path on the team page.
- *
- * Deliberately has no project side effect: this is a contact-list addition, and
- * project access is granted separately from within a project.
- *
- * An address with no account yet is recorded as a pending invite rather than
- * refused, and claimed automatically when that person signs up.
+ * invite to workspace - adds an email to the caller's directory without
+ * granting project access. Unregistered emails are safely recorded as pending
+ * invites to be claimed upon signup.
  */
 export async function inviteToWorkspaceInDB(
 	email: string,
@@ -185,9 +172,10 @@ export async function inviteToWorkspaceInDB(
 			.from(users)
 			.where(and(eq(users.email, normalizedEmail), isNull(users.deletedAt)));
 
-		// No account yet: store the invitation so signing up grants directory
-		// membership automatically, instead of asking the inviter to remember to
-		// come back and do it again.
+		/**
+		 * store pending invite - records invitations for unregistered users
+		 * so directory membership is automatically granted upon signup.
+		 */
 		if (!targetUser) {
 			await createPendingInviteInDB({
 				workspaceId: workspace.id,
@@ -202,10 +190,11 @@ export async function inviteToWorkspaceInDB(
 			throw new Error("You are already a member of this workspace");
 		}
 
-		// Wrapped in a transaction because a directory link is a pair of writes:
-		// the invitee joins the caller's directory and the caller joins theirs.
-		// Applying only half would leave one side able to see a collaborator the
-		// other cannot.
+		/**
+		 * mutual directory linking - wraps reciprocal directory links in a
+		 * transaction to prevent mismatched visibility where only one party
+		 * can see the other.
+		 */
 		const membership = await db.transaction((tx) =>
 			linkWorkspaceDirectoriesInDB(tx, {
 				inviterId: user.id,
@@ -230,16 +219,9 @@ export async function inviteToWorkspaceInDB(
 }
 
 /**
- * Removes people from the caller's workspace directory only.
- *
- * Deliberately does NOT cascade. A workspace here is a personal contact
- * directory, not a shared organisation, so removing someone must not revoke the
- * team and project memberships they hold - those may have been granted by other
- * people, and other users' directories are unaffected. The member simply stops
- * appearing in this directory and in this user's member pickers; re-inviting
- * them by email restores the row.
- *
- * Serves single and bulk removal through the same batched path.
+ * remove workspace members - removes users from the caller's directory
+ * without cascading to projects or teams, functioning as a personal contact
+ * list removal rather than an organizational revocation.
  */
 export async function removeWorkspaceMembersDAL(
 	userIds: string[],
@@ -251,13 +233,12 @@ export async function removeWorkspaceMembersDAL(
 
 	const workspace = await resolveActiveWorkspaceDAL(workspaceId);
 
-	// Only the workspace owner administers the directory - membership carries no
-	// role column, so administration is intentionally binary.
+	/** verify workspace ownership - ensures only the owner can administer the directory, as membership lacks granular roles. */
 	if (workspace.ownerId !== user.id) {
 		throw new Error("Only the workspace owner can remove members");
 	}
 
-	// Removing the owner would leave the workspace unadministerable.
+	/** protect owner - prevents removal of the workspace owner to ensure the workspace remains administrable. */
 	if (userIds.includes(workspace.ownerId)) {
 		throw new Error("The workspace owner cannot be removed");
 	}

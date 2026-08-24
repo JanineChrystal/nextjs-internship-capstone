@@ -38,15 +38,12 @@ function readCounts(): Partial<Record<SkeletonCountKey, number>> {
 		if (!raw) return {};
 
 		const parsed: unknown = JSON.parse(raw);
-		// Guarded because this is user-writable in DevTools and survives deploys.
-		// A string where a number belongs would reach `Array.from({ length })` and
-		// throw during render, taking the page down instead of the skeleton.
+		/** type guard - prevents user-modified devtools values from crashing the page by ensuring stored counts are actual numbers. */
 		if (typeof parsed !== "object" || parsed === null) return {};
 
 		return parsed as Partial<Record<SkeletonCountKey, number>>;
 	} catch {
-		// Unavailable (private window, blocked site data) or malformed. Neither is
-		// worth an error: the fallback is a working skeleton.
+		/** error fallback - safely swallows storage errors (like private browsing) since the default counts are a perfectly fine fallback. */
 		return {};
 	}
 }
@@ -103,8 +100,7 @@ export function useRecordSkeletonCount(
 			};
 			window.localStorage.setItem(SKELETON_STORAGE_KEY, JSON.stringify(next));
 		} catch {
-			// Storage unavailable. The skeleton falls back to its default next time,
-			// which is a worse preview but not a broken one.
+			/** write fallback - ignores quota/storage errors since falling back to default counts is acceptable. */
 		}
 	}, [key, count]);
 }

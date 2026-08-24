@@ -67,11 +67,9 @@ export type DbAttachment = typeof attachments.$inferSelect;
 export type NewDbAttachment = typeof attachments.$inferInsert;
 
 /**
- * What the create-task form sends to the server.
- *
- * Lives here rather than in the action file because client components build this
- * object before calling the action, and a client must never import from a module
- * whose other exports are server-only.
+ * create task input - defines the shape of form data sent to the server for
+ * task creation, isolated from the action file to prevent client components
+ * from importing a server-only module.
  */
 export interface CreateTaskInput {
 	name: string;

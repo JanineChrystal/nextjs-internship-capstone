@@ -1,21 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 
 /**
- * The shapes the public landing page is built from.
- *
- * These live in lib/types rather than beside the page for the usual reason: the
- * constants file declares the data, several section components consume it, and a
- * type declared inside one of those components would point the dependency arrow
- * backwards. Component prop interfaces still stay with their component - those
- * have exactly one consumer.
+ * landing types - defines the shapes the public landing page is built from,
+ * placed in types rather than constants to prevent dependency inversion where
+ * generic sections would depend on the components they configure.
  */
 
 /**
- * One entry in the landing navigation.
- *
- * `sectionId` is the id of the element it scrolls to, not a route. The whole
- * page is one document, so every nav entry is an in-page anchor; making them
- * routes would mean rendering the same page under five URLs.
+ * landing navigation item - defines a single entry in the public landing page's
+ * navigation, targeting in-page anchor IDs rather than routing to new URLs.
  */
 export interface LandingNavItem {
 	label: string;
@@ -25,7 +18,10 @@ export interface LandingNavItem {
 	icon?: LucideIcon;
 }
 
-/** A large feature panel in the bento grid. */
+/**
+ * bento feature - describes a large feature panel within the landing page's
+ * bento grid layout, optionally supporting wide column spans.
+ */
 export interface BentoFeature {
 	title: string;
 	description: string;
@@ -34,14 +30,20 @@ export interface BentoFeature {
 	wide?: boolean;
 }
 
-/** A one-line capability in the dense "everything you need" grid. */
+/**
+ * capability - defines a concise, single-line capability entry for the dense
+ * feature grid on the landing page.
+ */
 export interface Capability {
 	title: string;
 	description: string;
 	icon: LucideIcon;
 }
 
-/** A numbered step in the how-it-works rail. */
+/**
+ * workflow step - describes a numbered sequence step within the how-it-works
+ * rail.
+ */
 export interface WorkflowStep {
 	title: string;
 	description: string;

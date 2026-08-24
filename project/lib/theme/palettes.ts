@@ -185,5 +185,5 @@ export const THEME_PALETTES: ThemePalette[] = [
 	},
 ];
 
-/** The theme in force today, and the one the picker shows as selected. */
+/** default palette id - the theme in force today, and the one the picker shows as selected. */
 export const DEFAULT_PALETTE_ID = "default";

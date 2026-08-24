@@ -8,12 +8,9 @@ import { categories, projects, tasks } from "@/lib/db/schema";
 import type { CategoryType } from "@/lib/types/category";
 
 /**
- * The workspace a category operation should act on.
- *
- * Delegates to resolveActiveWorkspaceDAL rather than trusting the id it is
- * given: these ids arrive from client components, and the previous version
- * returned any non-"default" value verbatim, so a crafted id could read or
- * rename another tenant's categories.
+ * resolve workspace context - determines the authoritative workspace
+ * for a category operation via backend resolution, ignoring
+ * client-provided IDs to prevent unauthorized cross-tenant data access.
  */
 export async function resolveWorkspaceIdDAL(
 	workspaceId: string,
@@ -23,12 +20,9 @@ export async function resolveWorkspaceIdDAL(
 }
 
 /**
- * The workspace that owns a project, for categories set on that project's tasks.
- *
- * A task category belongs to the project's workspace, not to whoever happens to
- * be editing. Resolving it from the editor meant a member styling a task in
- * someone else's project created the Categories row in their own workspace, so
- * the project owner never saw the colour.
+ * resolve project workspace context - retrieves the parent workspace
+ * of a project to ensure task categories are registered to the project's
+ * tenant, rather than the individual editor's workspace.
  */
 export async function resolveProjectWorkspaceIdDAL(
 	projectId: string,
@@ -52,8 +46,11 @@ export async function getUniqueTaskCategoriesDAL(
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	// Access resolved centrally rather than by owner, so members of the project
-	// see the categories in use on it.
+	/**
+	 * central access resolution - authorizes task category reads via
+	 * project roles rather than ownership, allowing all project members
+	 * to see active categories.
+	 */
 	const role = await getEffectiveProjectRoleDAL(projectId);
 	if (!role) throw new Error("Unauthorized");
 
@@ -97,7 +94,7 @@ export async function getUniqueProjectCategoriesDAL(): Promise<string[]> {
 	}
 }
 
-// Fetch Categories
+// fetch workspace categories - retrieves all categories of a given type within a resolved workspace context.
 export async function getWorkspaceCategoryStylesDAL(
 	workspaceId: string,
 	type: CategoryType,
@@ -117,12 +114,9 @@ export async function getWorkspaceCategoryStylesDAL(
 }
 
 /**
- * The styled categories belonging to a project's workspace.
- *
- * The task modal used the workspace-scoped read with the "default" placeholder,
- * which resolves the *viewer's* workspace - so a member opening a task in
- * someone else's project saw an empty dropdown, and any category they typed was
- * the only one they could then see or manage.
+ * get project category styles - retrieves styled categories specifically
+ * from the project's parent workspace, ensuring members view the project's
+ * shared categories instead of their own personal workspace's ones.
  */
 export async function getProjectCategoryStylesDAL(
 	projectId: string,

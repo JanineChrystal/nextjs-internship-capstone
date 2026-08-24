@@ -1,10 +1,7 @@
 /**
- * The surfaces whose item count is worth remembering between visits.
- *
- * A closed union rather than a free string. These names are storage keys - a
- * typo would not fail, it would silently start a second, empty entry and the
- * skeleton would quietly fall back to its default forever. The compiler catches
- * that; nothing at runtime would.
+ * skeleton count key - storage keys for surfaces whose item count should
+ * persist between visits, defined as a closed union to prevent silent typos
+ * causing fallback defaults.
  */
 export type SkeletonCountKey =
 	| "projects"

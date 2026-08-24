@@ -7,13 +7,9 @@ interface ChartCardProps {
 	title: string;
 	description?: string;
 	/**
-	 * The same numbers the chart draws, offered as a table.
-	 *
-	 * Not optional politeness - it is the required fallback for the two cases
-	 * colour cannot serve: a screen-reader user, and a reader for whom two
-	 * adjacent hues sit below the 3:1 contrast line against the card. Rendering
-	 * it from the identical array the chart receives is what stops the table and
-	 * the picture from ever disagreeing.
+	 * table fallback - provides a vital accessibility alternative to the chart
+	 * for screen readers and contrast-impaired users, rendered from the exact
+	 * same data to guarantee consistency.
 	 */
 	tableRows?: ChartDatum[];
 	tableValueLabel?: string;
@@ -34,9 +30,11 @@ export function ChartCard({
 	return (
 		<BaseCard
 			className={cn(
-				// BaseCard lifts on hover, which is right for a clickable card and
-				// wrong for a chart: the surface would slide out from under the
-				// cursor at the exact moment the reader is aiming at a tooltip.
+				/**
+				 * suppress hover lift - disables the default hover scale effect on
+				 * charts to prevent the surface from shifting while a user is
+				 * targeting a tooltip.
+				 */
 				"hover:scale-100 gap-3",
 				className,
 			)}
@@ -75,7 +73,7 @@ export function ChartCard({
 								{tableRows.map((row) => (
 									<tr key={row.label} className="border-b border-border/50">
 										<td className="py-1.5 pr-4 text-on-surface">{row.label}</td>
-										{/* tabular-nums so the column of figures lines up */}
+										{/* tabular numbers - ensures the column of figures perfectly aligns. */}
 										<td className="py-1.5 text-right text-on-surface tabular-nums">
 											{row.value}
 										</td>

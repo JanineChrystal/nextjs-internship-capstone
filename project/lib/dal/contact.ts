@@ -10,17 +10,9 @@ import type { NewDbContactMessage } from "@/lib/types/contact";
 import { encrypt } from "@/lib/utils/encryption";
 
 /**
- * The one DAL function in this codebase that does not call getCurrentUser().
- *
- * Every other read and write here starts by resolving a session and scoping to
- * what that person may touch. This one deliberately does not, because a contact
- * form that required an account would only be reachable by people who already
- * have one - which is nobody the landing page is written for.
- *
- * The protections that replace the session check live in the action above it:
- * schema validation, the honeypot, and an IP rate limit. They are named here so
- * the missing auth check reads as a decision rather than an omission, and so
- * nobody "fixes" it later by bolting a session onto a public form.
+ * create contact message - intentionally omits session checks to allow
+ * public landing page submissions, relying instead on action-layer
+ * protections like honeypots and IP rate limits.
  */
 export async function createContactMessageDAL(
 	data: NewDbContactMessage,
@@ -46,17 +38,9 @@ export async function createContactMessageDAL(
 }
 
 /**
- * Records that the alert for a message reached somebody.
- *
- * Separate from the insert, and run afterwards, because the two answer different
- * questions and fail independently: the insert is whether we still have the
- * message, this is whether anyone was told about it. Writing one timestamp at
- * insert time and hoping would mean a row that claims it was announced during an
- * outage in which nothing was.
- *
- * A failure here is swallowed by the caller for the same reason the delivery
- * itself is - the message is safe either way, and nothing the sender sees
- * depends on it.
+ * mark contact message notified - records successful notification delivery
+ * separately from insertion to ensure the notifiedAt timestamp accurately
+ * reflects real alerts, unaffected by outages.
  */
 export async function markContactMessageNotifiedDAL(id: string): Promise<void> {
 	try {

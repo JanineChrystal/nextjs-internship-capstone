@@ -2,16 +2,9 @@ import type { LucideIcon } from "lucide-react";
 import type { Permission, RoleAccess } from "@/lib/types/member";
 
 /**
- * One project as the "which project?" picker needs it.
- *
- * Deliberately much smaller than the project DTO: the picker shows a name, a
- * category and whether you own it, and sending the whole row - description,
- * dates, counts - would ship a page's worth of data to render a list of names.
- *
- * `roleAccess` is the one role that governs this user on this project, already
- * collapsed across every route they hold it by. It is here so the picker can
- * disable a project the action would be refused on, instead of letting someone
- * pick it, fill in a form and only then be told no.
+ * project picker option - represents a minimal project projection optimized
+ * for dropdowns, including pre-calculated role access to preemptively
+ * disable unauthorized selections.
  */
 export interface ProjectPickerOption {
 	id: string;
@@ -22,12 +15,8 @@ export interface ProjectPickerOption {
 }
 
 /**
- * The four dashboard shortcuts.
- *
- * A union rather than free-text ids, so the panel's switch has to handle every
- * one of them - adding a fifth without wiring it up becomes a compile error
- * rather than a button that silently does nothing, which is exactly how the
- * previous version of this panel shipped three dead buttons.
+ * quick action id - union of all allowed dashboard shortcut identifiers,
+ * ensuring exhaustive switch handling and compile-time validation for actions.
  */
 export type QuickActionId =
 	| "create-project"
@@ -45,12 +34,9 @@ export interface QuickAction {
 }
 
 /**
- * What the "which project?" step needs to know about the action behind it.
- *
- * `requiredPermission` is what the picker greys rows out by. It names the same
- * permission the server will check, so the two cannot drift into disagreeing
- * about which projects are usable - the disabled row and the refusal are two
- * readings of one rule, not two rules.
+ * project picker copy - defines the text and permission rules for the
+ * project picker step, binding the UI disabled state to the same permission
+ * evaluated on the server.
  */
 export interface ProjectPickerCopy {
 	title: string;

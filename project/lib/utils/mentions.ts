@@ -35,7 +35,7 @@
  */
 const MENTION_PATTERN = /(^|[^\w@])@([a-zA-Z0-9._%+-]+)/g;
 
-/** The handle for a member, derived from their address. */
+/** handle formatter - the handle for a member, derived from their address. */
 export function toMentionHandle(email: string): string {
 	return email.split("@")[0].toLowerCase();
 }

@@ -23,7 +23,7 @@ import {
 } from "@/lib/dtos/project-member-dto";
 import type { InviteOutcome } from "@/lib/types/pending-invite";
 
-// project members access - defines who can reach a project and at what level, separated from projects.ts to maintain the single responsibility principle.
+/** project members access - defines who can reach a project and at what level, separated to maintain SRP. */
 
 export async function inviteUserToProjectInDB(
 	projectId: string,
@@ -49,7 +49,7 @@ export async function inviteUserToProjectInDB(
 			.from(users)
 			.where(and(eq(users.email, normalizedEmail), isNull(users.deletedAt)));
 
-		// store invitation - saves pending invites for unregistered emails to be converted into actual membership via Clerk webhook upon signup.
+		/** store pending invitation - saves invites for unregistered emails to be claimed via webhook upon signup. */
 		if (!knownUser) {
 			await createPendingInviteInDB({
 				workspaceId: existingProject.workspaceId,
@@ -60,7 +60,7 @@ export async function inviteUserToProjectInDB(
 				accessLevel,
 			});
 
-			// log invite activity - records the invite action even without a registered user row, to be completed when INVITE_ACCEPTED triggers upon signup.
+			/** log pending invite activity - records the invite action immediately, pending the INVITE_ACCEPTED completion event. */
 			await recordActivity({
 				workspaceId: existingProject.workspaceId,
 				actorId: user.id,
@@ -76,7 +76,7 @@ export async function inviteUserToProjectInDB(
 			const targetUser = knownUser;
 			const project = existingProject;
 
-			// link mutual directories - adds the invitee to the project's workspace and the inviter to the invitee's workspace to establish a two-way visible working relationship.
+			/** link mutual directories - establishes a two-way directory relationship to ensure mutual visibility. */
 			await linkWorkspaceDirectoriesInDB(tx, {
 				inviterId: user.id,
 				inviteeId: targetUser.id,

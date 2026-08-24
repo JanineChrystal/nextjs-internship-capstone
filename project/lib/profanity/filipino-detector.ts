@@ -37,7 +37,7 @@ import type { DetectionResult, ProfanityDetector } from "@/lib/types/profanity";
 export class FilipinoProfanityDetector implements ProfanityDetector {
 	readonly name = "filipino";
 
-	/** Read at call time, never at module load, so a bad value cannot throw. */
+	/** lazy configuration - read at call time, never at module load, so a bad value cannot throw. */
 	private get baseUrl(): string {
 		return (
 			process.env.FILIPINO_PROFANITY_API_URL?.replace(/\/+$/, "") ||
@@ -54,7 +54,7 @@ export class FilipinoProfanityDetector implements ProfanityDetector {
 		return process.env.FILIPINO_PROFANITY_API_KEY;
 	}
 
-	/** Always available: the base URL falls back to the public deployment. */
+	/** default fallback - always available: the base URL falls back to the public deployment. */
 	isConfigured(): boolean {
 		return Boolean(this.baseUrl);
 	}

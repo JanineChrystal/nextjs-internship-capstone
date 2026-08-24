@@ -4,11 +4,11 @@ import type { ReactElement } from "react";
 import { type EmailResult, sendEmail } from "@/lib/email/send-email";
 
 interface SendNotificationOptions {
-	/** The email address to send to */
+	/** recipient address - the email address to send to */
 	to: string;
-	/** The subject of the email */
+	/** email subject - the subject of the email */
 	subject: string;
-	/** The React Email component to render */
+	/** email template - the React Email component to render */
 	template: ReactElement;
 	/**
 	 * Whether this recipient's preferences allow the email.
@@ -24,7 +24,7 @@ interface SendNotificationOptions {
 	 * of the message that tells them they were invited.
 	 */
 	shouldSend: boolean;
-	/** Optional reply-to address */
+	/** reply address - optional reply-to address */
 	replyTo?: string;
 }
 

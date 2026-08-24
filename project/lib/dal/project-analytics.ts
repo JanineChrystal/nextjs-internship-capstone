@@ -11,19 +11,12 @@ import type {
 import { toStatusBucket } from "@/lib/utils/task-status";
 
 /**
- * The four panels on a project's Charts tab: Status, Priority, Bucket, Members.
- *
- * Three of the four are the same question asked about a different column -
- * "how do this project's tasks split by status, grouped by X" - so they are
- * built by one helper (toStackedGroups) rather than three near-identical loops.
- * Adding a fifth grouping later is one more call, not one more loop.
- *
- * Gated by project role rather than by the accessible-projects list: this takes
- * an id straight from the URL, so it has to prove the caller may read that
- * specific project before it reads anything at all.
+ * project analytics - generates data for the four project chart panels,
+ * utilizing a shared grouping helper to efficiently aggregate task statuses
+ * across different dimensions. Strictly gated by project role.
  */
 
-/** Every field the four panels need, in one query. */
+/** project task row - consolidates all fields required by the four analytics panels into a single type. */
 interface ProjectTaskRow {
 	id: string;
 	isCompleted: boolean;
@@ -60,12 +53,9 @@ async function loadProjectTasks(projectId: string): Promise<ProjectTaskRow[]> {
 }
 
 /**
- * Who each task is assigned to, one row per assignment.
- *
- * A LEFT JOIN would have been wrong here: a task with no assignee must still
- * appear in the Members chart under "Unassigned", and joining from the
- * assignment side is what makes that absence visible - the tasks with no row
- * here are exactly the unassigned ones.
+ * load assignments - retrieves task assignments via an inner join to
+ * explicitly distinguish assigned tasks, allowing callers to accurately
+ * bucket tasks missing from this list as 'Unassigned'.
  */
 async function loadAssignments(
 	projectId: string,
@@ -97,17 +87,10 @@ async function loadAssignments(
 }
 
 /**
- * Groups tasks into columns, each column split into status buckets.
- *
- * `toGroups` returns a list rather than a single key because a task can belong
- * to several columns at once: one task with two assignees is real work for both
- * of them and has to appear in both. Priority and bucket always return exactly
- * one, so the same helper serves all three.
- *
- * `order` fixes the column sequence. Without it the columns would appear in
- * whatever order the rows arrived, so a priority with no tasks today would shift
- * every other column along - and a chart whose axis moves between page loads is
- * one nobody trusts.
+ * to stacked groups - aggregates tasks into predefined or derived columns,
+ * splitting each into status buckets. Supports multi-column assignment
+ * (e.g., multiple assignees) and enforces fixed column ordering for chart
+ * stability.
  */
 function toStackedGroups(
 	taskRows: ProjectTaskRow[],
@@ -150,13 +133,9 @@ function toStackedGroups(
 }
 
 /**
- * Every board in the project, in board order - the x-axis of the Bucket panel.
- *
- * Read from the Boards table rather than derived from the tasks, so a column
- * nobody has put anything in yet still appears with a height of zero. Deriving
- * the axis from the data would make an empty board silently vanish, and "we have
- * no Blocked tasks" is a different, more useful statement than "there is no
- * Blocked column".
+ * load board order - fetches all boards to establish the exact x-axis
+ * for the Bucket panel, ensuring empty boards are visibly represented
+ * with zero height rather than vanishing entirely.
  */
 async function loadBoardOrder(projectId: string): Promise<string[]> {
 	const rows = await db
@@ -188,9 +167,11 @@ export async function getProjectAnalyticsDAL(
 			namesByTask.set(assignment.taskId, existing);
 		}
 
-		// The whole project as a single group, which is exactly what the Status
-		// donut needs - so the donut and the three bar charts are counted by the
-		// same code and can never disagree about what "Overdue" means.
+		/**
+		 * aggregate overall status - groups all tasks into a single bucket
+		 * using the shared counting logic, guaranteeing consistency between
+		 * the overall donut chart and individual bar charts.
+		 */
 		const [overall] = toStackedGroups(taskRows, () => ["all"], ["all"]);
 
 		const completedTasks = overall.segments.completed;
@@ -200,8 +181,7 @@ export async function getProjectAnalyticsDAL(
 			return names && names.length > 0 ? names : [UNASSIGNED_LABEL];
 		})
 			.sort((a, b) => b.total - a.total)
-			// Unassigned is pushed last regardless of size: it is not a person, and
-			// letting it sort into the middle of a list of names reads as one.
+			/** pin unassigned last - sorts 'Unassigned' to the end to prevent it from mingling with actual names. */
 			.sort((a, b) =>
 				a.name === UNASSIGNED_LABEL ? 1 : b.name === UNASSIGNED_LABEL ? -1 : 0,
 			);

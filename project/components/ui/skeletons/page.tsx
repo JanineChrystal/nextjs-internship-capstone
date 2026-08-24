@@ -2,18 +2,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 /**
- * The page header placeholder.
- *
- * Its proportions track `PageHeader`'s responsive type scale - `h-8` on a phone
- * against `text-2xl`, `h-12` from `xl` against `text-5xl`. A fixed-height
- * skeleton would be correct at one breakpoint and would make the page jump at
- * every other one.
+ * page header skeleton - mimics the `PageHeader` component, scaling
+ * its height across breakpoints to match the real typography perfectly
+ * and prevent layout shifts.
  */
 export function SkeletonPageHeader({
 	withAction = false,
 	className,
 }: {
-	/** Reserves space for the buttons some headers carry. */
+	/** header action slots - reserves layout space for right-aligned header buttons. */
 	withAction?: boolean;
 	className?: string;
 }) {
@@ -40,13 +37,9 @@ export function SkeletonPageHeader({
 }
 
 /**
- * The outer frame every dashboard loading state shares.
- *
- * Matches the `flex flex-col gap-6 w-full max-w-7xl mx-auto pb-8` wrapper the
- * real pages use. Repeating that string in nine `loading.tsx` files is how the
- * skeletons end up a different width from the pages they precede - and the
- * mismatch only shows as a sideways shift at the moment content arrives, which
- * is the hardest kind of layout bug to attribute.
+ * page layout skeleton - centralizes the main dashboard layout constraints
+ * (max-width, padding, gap) to ensure the skeleton container perfectly
+ * matches the loaded state, preventing horizontal layout shifts.
  */
 export function SkeletonPage({
 	withAction,
@@ -73,17 +66,15 @@ export function SkeletonPage({
 }
 
 interface SkeletonStatGridProps {
-	/** Stat tiles are a fixed set per page, so this is a real count, not a guess. */
+	/** static count - the fixed number of stat tiles expected, avoiding dynamic cache lookups. */
 	count?: number;
 	className?: string;
 }
 
 /**
- * The row of stat tiles above most dashboard pages.
- *
- * `count` has no remembered variant on purpose. These come from a constant -
- * `DASHBOARD_STAT_CARDS`, `ANALYTICS_STAT_CARDS` - so the caller genuinely
- * knows the number at render time and there is nothing to remember.
+ * stat grid skeleton - renders placeholders for the top stat cards. Uses a
+ * deterministic count rather than `useSkeletonCount` since stat rows are
+ * always defined by fixed page constants.
  */
 export function SkeletonStatGrid({
 	count = 4,
@@ -114,7 +105,7 @@ export function SkeletonStatGrid({
 	);
 }
 
-/** A chart panel: title, subtitle, plot area. */
+/** chart card skeleton - simulates a standard panel containing a title, description, and chart area. */
 export function SkeletonChartCard({ className }: { className?: string }) {
 	return (
 		<div

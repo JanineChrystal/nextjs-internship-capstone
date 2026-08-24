@@ -8,11 +8,9 @@ import { getCurrentUser, getSessionFailureReason } from "@/lib/dal/auth";
 import type { ActivityFeedItemDTO } from "@/lib/dtos/activity-dto";
 
 /**
- * History feeds for the two surfaces that show them.
- *
- * Both are read-only, and both delegate the access decision to the DAL, which
- * resolves project role. This layer only translates a thrown error into the
- * { success, data, error } shape the client hooks already expect.
+ * activity actions - fetches history feeds for tasks and projects,
+ * delegating access checks to the DAL and formatting responses for
+ * client hooks.
  */
 
 export async function getTaskActivityAction(

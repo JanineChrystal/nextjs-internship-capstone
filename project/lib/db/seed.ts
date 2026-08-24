@@ -47,7 +47,7 @@ import {
 
 const DEMO_PREFIX = "[Demo]";
 
-/** Everything is generated inside this window so the 28-day metrics have shape. */
+/** analytics window - everything is generated inside this window so the 28-day metrics have shape. */
 const HISTORY_DAYS = 30;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 

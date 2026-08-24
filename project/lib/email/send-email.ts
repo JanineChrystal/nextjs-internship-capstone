@@ -26,7 +26,7 @@ import "server-only";
 
 const SENDGRID_ENDPOINT = "https://api.sendgrid.com/v3/mail/send";
 
-/** Long enough for a slow API, short enough not to hold a serverless function. */
+/** timeout threshold - long enough for a slow API, short enough not to hold a serverless function. */
 const EMAIL_TIMEOUT_MS = 10_000;
 
 /**

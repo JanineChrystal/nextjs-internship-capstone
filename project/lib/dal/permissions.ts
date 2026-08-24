@@ -18,43 +18,11 @@ import {
 import type { Permission, RoleAccess } from "@/lib/types/member";
 
 /**
- * Resolves the single role that governs a user's access to a project.
- *
- * Access can arrive by three independent routes, and a user may hold several at
- * once, so all three are gathered in ONE round trip and collapsed to the
- * highest-ranked role:
- *
- *   1. Project owner
- *   2. A direct ProjectMembers row
- *   3. Membership of a Team that has been linked to the project
- *
- * Route 3 was previously ignored entirely, which meant anyone whose access came
- * through a team failed every permission check.
- *
- * Returns null when the user has no access at all, or the project does not
- * exist - both are indistinguishable to the caller by design, so a probe cannot
- * confirm whether another tenant's project exists.
- *
- * ## The scope argument, and the bug it fixes
- *
- * "live" is right for every normal screen: a trashed project should answer like
- * one that was never there. But that made restoring impossible. Every branch
- * below filtered on `isNull(projects.deletedAt)`, so once a project was in the
- * trash the resolver reported no role, and `restore` and `purge` - the two
- * operations that exist *because* the row is deleted - were refused as
- * "You do not have permission to do that".
- *
- * `getAllUserProjectsDAL` had already met this and grown the same escape hatch;
- * the archive page passes "all" there to list trashed rows at all. The
- * permission check simply never got the matching change, so the page could show
- * you an item and then refuse to act on it.
- *
- * A string rather than an options object, matching `ProjectScope`: cache() keys
- * an object argument by reference, so every call would miss and re-run the
- * union.
- *
- * Cached per request so the many permission checks a single action performs
- * collapse to one query.
+ * get effective project role - resolves a user's highest-ranked access
+ * level across ownership, direct membership, and team membership in a
+ * single round trip. Incorporates a 'scope' parameter to correctly
+ * authorize actions on trashed projects, and caches per request to
+ * optimize multi-check actions.
  */
 export const getEffectiveProjectRoleDAL = cache(
 	async (
@@ -64,10 +32,11 @@ export const getEffectiveProjectRoleDAL = cache(
 		const user = await getCurrentUser();
 		if (!user) return null;
 
-		// Undefined for "all", which drizzle drops from the AND. Only the project's
-		// own deletedAt is relaxed: a removed membership and a deleted team must
-		// still stop granting access in every scope, because those are revocations
-		// rather than a state the item can be recovered from.
+		/**
+		 * visibility resolution - relaxes project deletion filters for the
+		 * 'all' scope, but strictly maintains revocation filters (deleted
+		 * memberships/teams) to prevent unauthorized access to archived items.
+		 */
 		const projectVisibility =
 			scope === "live" ? isNull(projects.deletedAt) : undefined;
 
@@ -95,9 +64,10 @@ export const getEffectiveProjectRoleDAL = cache(
 				),
 			);
 
-		// A soft-deleted team must stop granting access immediately, hence the
-		// teams.deletedAt filter. TeamMembers is hard-deleted, so a missing row
-		// already means no access and needs no filter of its own.
+		/**
+		 * team revocation filter - strictly filters out soft-deleted teams to
+		 * instantly revoke access, relying on hard deletion for TeamMembers.
+		 */
 		const teamBranch = db
 			.select({ role: sql<string>`${projectTeams.accessLevel}`.as("role") })
 			.from(projectTeams)
@@ -123,21 +93,9 @@ export const getEffectiveProjectRoleDAL = cache(
 );
 
 /**
- * Every project the user can reach, with the one role that governs each.
- *
- * The single-project resolver above answers "what am I on this project?" and is
- * cached per request, which is right when an action checks one project several
- * times. It is the wrong shape for a list: calling it once per project runs its
- * three-branch union N times, so a directory of thirty projects costs thirty
- * round trips to grey out a few rows.
- *
- * This gathers the same three access routes unfiltered - once each - and
- * collapses them per project in memory. Three queries regardless of how many
- * projects exist, matching how getProjectStatsDAL already avoids the same N+1.
- *
- * The collapse reuses resolveEffectiveRole rather than re-deriving "highest
- * wins" here, so the two resolvers cannot disagree about what a user holding
- * both a direct membership and a team membership actually gets.
+ * get effective project roles - retrieves governing roles for all accessible
+ * projects via three bulk queries, eliminating the N+1 problem inherent in
+ * calling the single-project resolver repeatedly.
  */
 export const getEffectiveProjectRolesDAL = cache(
 	async (): Promise<Map<string, RoleAccess>> => {
@@ -168,9 +126,10 @@ export const getEffectiveProjectRolesDAL = cache(
 						),
 					),
 
-				// Same soft-delete rule as the single-project resolver: a deleted team
-				// must stop granting access immediately, while TeamMembers is
-				// hard-deleted so a missing row already means no access.
+				/**
+				 * team revocation filter - strictly filters out soft-deleted teams to
+				 * instantly revoke access, aligning with single-project resolution.
+				 */
 				db
 					.select({
 						projectId: projectTeams.projectId,
@@ -214,9 +173,9 @@ export const getEffectiveProjectRolesDAL = cache(
 );
 
 /**
- * `scope` is passed straight through. Leave it alone for anything that acts on
- * a live project; pass "all" only where the row being acted on is expected to
- * be archived or trashed, which today means the archive operations.
+ * verify project permission - evaluates a specific permission against the
+ * user's effective role, passing the scope parameter through to support
+ * archive operations.
  */
 export async function verifyProjectPermissionDAL(
 	projectId: string,
@@ -228,10 +187,9 @@ export async function verifyProjectPermissionDAL(
 }
 
 /**
- * Whether the current user belongs to a workspace, as owner or active member.
- *
- * Workspace administration is intentionally binary - WorkspaceMembers carries no
- * role column - so this is a membership check, not a permission check.
+ * verify workspace membership - determines if the user is an owner or
+ * active member of a workspace, functioning as a binary access check
+ * since workspaces lack granular roles.
  */
 export const verifyWorkspaceMembershipDAL = cache(
 	async (workspaceId: string): Promise<boolean> => {

@@ -23,9 +23,9 @@ export interface TaskDeadlineItem extends TaskItem {
 export type CalendarDeadlineItem = ProjectDeadlineItem | TaskDeadlineItem;
 
 /**
- * What react-big-calendar renders. Declared here rather than inside
- * big-calendar.tsx because two hooks build these objects, and a hook importing a
- * type out of the component it feeds points the dependency arrow backwards.
+ * calendar event - defines the object structure rendered by react-big-calendar,
+ * declared externally to avoid reverse dependency cycles where hooks would
+ * otherwise import types from the components they feed.
  */
 export interface CalendarEvent {
 	id: string;

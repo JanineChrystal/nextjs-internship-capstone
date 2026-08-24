@@ -81,7 +81,7 @@ async function runDetectors(
 	};
 }
 
-/** Turns the set of detectors that fired into the sentence a moderator reads. */
+/** reason compiler - turns the set of detectors that fired into the sentence a moderator reads. */
 function reasonFor(hits: string[]): string | null {
 	if (hits.length === 0) return null;
 	if (hits.length > 1) return FLAG_REASONS.both;

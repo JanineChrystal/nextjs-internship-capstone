@@ -12,11 +12,8 @@ export interface PendingInviteOutputDTO {
 }
 
 /**
- * Strips a stored invite down to what the UI needs.
- *
- * `invitedBy` and `workspaceId` are deliberately omitted: neither is rendered,
- * and leaking internal ids from a list that is visible to co-owners buys
- * nothing.
+ * to pending invite dto - strips a stored invite down to its essential UI
+ * fields, intentionally omitting internal IDs from a roster visible to co-owners.
  */
 export function toPendingInviteDTO(
 	invite: DbPendingInvite,

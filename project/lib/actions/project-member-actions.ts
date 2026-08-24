@@ -28,12 +28,9 @@ import {
 } from "@/lib/utils/invite-rate-limit";
 
 /**
- * Server actions for project membership, mirroring the lib/dal/project-members
- * split one layer up.
- *
- * Keeping the action and DAL boundaries identical is the point: when the two
- * layers are carved differently, tracing a feature means jumping between files
- * that only half overlap.
+ * project member actions - delegates project membership operations
+ * to the DAL, maintaining matching boundaries for easier feature
+ * tracing.
  */
 
 export async function inviteUserToProjectAction(
@@ -51,9 +48,10 @@ export async function inviteUserToProjectAction(
 			return { success: false, error: await getSessionFailureReason() };
 		}
 
-		// Checked before the write, not after: the point is to stop the outbound
-		// email, and by the time the membership row exists the invitation has
-		// effectively happened.
+		/**
+		 * rate limit evaluation - validates invite rate limits prior to
+		 * database writes to block unauthorized outbound emails.
+		 */
 		const limitActor = await getCurrentUser();
 		if (limitActor && !(await isWithinInviteRateLimit(limitActor.id))) {
 			return { success: false, error: INVITE_RATE_LIMIT_MESSAGE };
@@ -66,14 +64,16 @@ export async function inviteUserToProjectAction(
 			accessLevel,
 		);
 
-		// A real membership row only exists for the "invited" outcome; a pending
-		// invite has no Users row yet, so there is nobody to notify. That case is
-		// covered by INVITE_ACCEPTED when they eventually sign up.
+		/**
+		 * conditional notification - limits notifications to existing
+		 * users, leaving pending invites to be handled on signup.
+		 */
 		const actor = await getCurrentUser();
 		let invitedUserId: string | null = null;
-		// Nobody to consult for a pending invite: there is no settings row, and
-		// someone has not had the chance to opt out of the message telling them
-		// they were invited.
+		/**
+		 * default email opt-in - assumes consent to email for pending
+		 * invites since unregistered users lack notification settings.
+		 */
 		let mayEmailInvitee = true;
 
 		if (actor && outcome === "invited") {
@@ -105,9 +105,11 @@ export async function inviteUserToProjectAction(
 
 		revalidatePath(`/projects/${projectId}`);
 
-		// An address with no account is no longer a failure: the invitation is
-		// stored and claimed on signup, so the caller is told what happened rather
-		// than shown an error.
+		/**
+		 * graceful missing account handling - treats unknown addresses as
+		 * pending invites rather than errors, notifying the caller of the
+		 * outcome.
+		 */
 		if (outcome === "pending" || outcome === "invited") {
 			after(async () => {
 				try {
@@ -245,8 +247,10 @@ export async function removeMemberAction(
 
 		await removeMemberFromProjectDAL(projectId, userId);
 
-		// Logged for the project history, but the removed member is not notified:
-		// they lose access to the project immediately, which is feedback enough.
+		/**
+		 * silent member removal - logs the removal activity but does not
+		 * notify the removed member, as the loss of access is immediate.
+		 */
 		const actor = await getCurrentUser();
 		if (actor) {
 			await recordActivity({

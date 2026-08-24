@@ -1,10 +1,7 @@
 /**
- * Messages the group DAL raises deliberately for a user to read.
- *
- * An allow-list rather than a blanket "show the error": a DAL failure can carry
- * a Postgres constraint name or a driver message, and forwarding those to the
- * browser leaks schema details. Anything not listed here is replaced with a
- * generic sentence.
+ * group user-facing errors - provides an allow-list of safe error
+ * messages that the DAL can surface for group actions, preventing
+ * database schema details from leaking to the client.
  */
 export const GROUP_USER_FACING_ERRORS = [
 	"A group with that name already exists",
@@ -15,10 +12,9 @@ export const GROUP_USER_FACING_ERRORS = [
 ] as const;
 
 /**
- * The same allow-list for workspace directory operations. Kept separate from the
- * group list rather than merged: an allow-list is only meaningful if it is
- * narrow, and one combined list would let a group action surface a workspace
- * message it can never legitimately raise.
+ * workspace user-facing errors - provides a distinct, isolated
+ * allow-list for workspace directory operations to ensure actions
+ * only surface strictly relevant messages.
  */
 export const WORKSPACE_MEMBER_USER_FACING_ERRORS = [
 	"Workspace not found",

@@ -21,22 +21,15 @@ interface RankedBarChartProps {
 	className?: string;
 }
 
-/** Roughly 28px per row plus the axis, so ten rows do not squash into a strip. */
+/** dynamic chart height - ensures adequate vertical spacing per row so charts don't compress. */
 function toChartHeight(rowCount: number): number {
 	return Math.max(160, rowCount * 34 + 24);
 }
 
 /**
- * Comparing magnitude across named things - project progress, per-member workload.
- *
- * Horizontal rather than vertical, because the category names here are project
- * and people names. Vertical bars would force those labels to rotate 45 degrees,
- * and rotated text is measurably slower to read; laid on its side, each label
- * gets a full line of its own.
- *
- * One hue for every bar. The bars are already sorted, so length carries the
- * ranking; giving each bar its own colour would imply the colours meant
- * something and leave the reader hunting for a legend that explains nothing.
+ * ranked bar chart - compares magnitude across named entities using horizontal
+ * bars to preserve legible, unrotated labels. Employs a single uniform hue,
+ * relying on bar length and sorting to communicate rank.
  */
 export function RankedBarChart({
 	data,
@@ -84,16 +77,15 @@ export function RankedBarChart({
 					dataKey="value"
 					name={seriesLabel}
 					fill={PRIMARY_SERIES}
-					// Rounded only on the growing end. Rounding the baseline end too
-					// would detach the bar from its axis and make short bars look like
-					// floating pills rather than measurements from zero.
+					/** asymmetrical rounding - rounds only the growing end of the bar to maintain visual anchoring at the baseline. */
 					radius={[0, 4, 4, 0]}
 					barSize={16}
 				>
-					{/* Direct labels, not a value on hover only. Three of the palette's
-					    light-mode steps sit below 3:1 against a white card, and the rule
-					    for that is simple: if colour alone cannot carry it, print the
-					    number. */}
+					{/*
+					  * direct value labels - displays values statically next to bars
+					  * to ensure readability when color contrast against the background
+					  * might fail.
+					  */}
 					<LabelList
 						dataKey="value"
 						position="right"

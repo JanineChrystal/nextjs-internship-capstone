@@ -3,7 +3,7 @@ export const TASK_STATUS_IN_PROGRESS = "In Progress";
 export const TASK_STATUS_COMPLETED = "Completed";
 export const TASK_STATUS_OVERDUE = "Overdue";
 
-/** The statuses a user may pick by hand. "Overdue" is applied by the system. */
+/** selectable statuses - the statuses a user may pick by hand. "Overdue" is applied by the system. */
 export const SELECTABLE_TASK_STATUSES = [
 	TASK_STATUS_NOT_STARTED,
 	TASK_STATUS_IN_PROGRESS,

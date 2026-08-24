@@ -39,14 +39,10 @@ export async function createActivityLogDAL(
 }
 
 /**
- * Which email preference, if any, governs a given notification.
- *
- * Project and workspace invitations are both recorded as INVITE_SENT, so the
- * action type cannot tell them apart - but the row can, because only a
- * project-scoped invite carries a projectId. That is what makes them two
- * separate switches without a second enum value and a migration.
- *
- * null means no switch governs it, which the caller treats as do-not-send.
+ * resolve email preference key - determines the appropriate notification
+ * setting key for an event, using context like projectId to distinguish
+ * overloaded action types (e.g. invites) without requiring new enum
+ * values.
  */
 function toEmailPreferenceKey(
 	data: NewDbNotification,
@@ -62,15 +58,15 @@ function toEmailPreferenceKey(
 		case "COMMENT_FLAGGED":
 			return "emailCommentViolations";
 		case "COMMENT_ADDED":
-			// Deliberately null rather than emailCommentMentions. COMMENT_ADDED
-			// covers two different events - a comment on a task you are assigned to,
-			// and a mention - and only the second has a switch. The mention site
-			// passes emailCommentMentions explicitly; the assignee notice has no
-			// switch, so it must not borrow one.
+			/**
+			 * comment preference override - returns null for comments to
+			 * prevent generic assignee notices from falsely triggering the
+			 * mention-specific email switch. Mentions will pass their
+			 * preference explicitly.
+			 */
 			return null;
 		default:
-			// Overdue projects will map here once something checks a due date. The
-			// column is already stored and editable; nothing raises the event yet.
+			/** overdue projects placeholder - future mapping for overdue project events once a check mechanism is implemented. */
 			return null;
 	}
 }
@@ -94,23 +90,29 @@ export async function createNotificationDAL(
 				),
 			);
 
-		// An explicit key wins, including an explicit null. `undefined` is the only
-		// value that means "you decide" - which is what lets a caller say "no
-		// switch governs this" and have it respected rather than re-derived.
+		/**
+		 * explicit preference handling - honors explicit keys or null
+		 * overrides, falling back to derivation only when undefined,
+		 * allowing callers to strictly enforce ungoverned events.
+		 */
 		const preferenceKey =
 			explicitPreference !== undefined
 				? explicitPreference
 				: toEmailPreferenceKey(data);
 
 		if (settings) {
-			// An event with no preference governing it stays off rather than
-			// defaulting on: the user has no switch for it, so sending anyway would
-			// be mail they cannot stop.
+			/**
+			 * ungoverned event suppression - ensures events without a specific
+			 * preference key default to off, preventing users from receiving
+			 * unstoppable emails.
+			 */
 			shouldSendEmail = preferenceKey ? settings[preferenceKey] : false;
 		} else {
-			// No row means the user has never changed anything, and every column
-			// defaults to true - so a governed event sends and an ungoverned one
-			// still does not, matching the branch above.
+			/**
+			 * default notification state - assumes true for governed events
+			 * if the user has no settings row, mirroring default database
+			 * states while correctly suppressing ungoverned events.
+			 */
 			shouldSendEmail = preferenceKey !== null;
 		}
 
@@ -121,11 +123,9 @@ export async function createNotificationDAL(
 }
 
 /**
- * The shared row shape for both history feeds, built from one joined query.
- *
- * Rows whose actor has since been deleted are dropped by the inner join rather
- * than rendered as an anonymous entry - an audit line nobody can be held to is
- * worse than no line.
+ * activity feed columns - defines a unified projection for activity
+ * feeds, utilizing inner joins to intentionally drop audit lines
+ * belonging to deleted actors rather than rendering anonymous entries.
  */
 const activityFeedColumns = {
 	id: activityLogs.id,
@@ -167,11 +167,9 @@ function toActivityFeedItem(row: ActivityFeedRow): ActivityFeedItemDTO {
 }
 
 /**
- * Everything that has happened on a project, newest first.
- *
- * Gated by project role rather than by being signed in: this is the whole
- * history of a project, and reading it should require the same access as
- * opening the project itself.
+ * get project activity logs - retrieves the entire activity history
+ * for a project, strictly gated by project-level access rather than
+ * simple authentication.
  */
 export async function getProjectActivityLogsDAL(
 	projectId: string,
@@ -202,12 +200,9 @@ export async function getProjectActivityLogsDAL(
 }
 
 /**
- * The history of one task, for the Activity tab in the task modal.
- *
- * Takes projectId as well as taskId so authorisation can be resolved without a
- * second lookup, and verifies the task really belongs to that project - passing
- * a foreign taskId with a project you can see must not leak another task's
- * history.
+ * get task activity logs - retrieves the activity history for a
+ * specific task, requiring projectId to validate task ownership and
+ * prevent cross-project data leaks.
  */
 export async function getTaskActivityLogsDAL(
 	taskId: string,
@@ -253,19 +248,10 @@ export async function getTaskActivityLogsDAL(
  * raised by the system rather than a person still has to render.
  */
 /**
- * One page of this user's notifications, newest first.
- *
- * Scoped to recipientId, which is the only tenancy rule notifications need: a
- * notification is addressed to exactly one person, so there is no project or
- * workspace check to make.
- *
- * The actor join is a LEFT join because actorId is nullable - a notification
- * raised by the system rather than a person still has to render.
- *
- * Paginated with the limit + 1 trick the comments query already uses: ask for
- * one row beyond the page and report whether it arrived. That answers "is there
- * more" without a second COUNT across the whole table, which would get slower
- * exactly as someone accumulates the notifications that make paging worthwhile.
+ * get user notifications - retrieves a paginated inbox of
+ * notifications for the current user. It uses a limit+1 pagination
+ * strategy to avoid expensive count queries and relies on LEFT joins
+ * to accommodate system-generated events.
  */
 export async function getUserNotificationsDAL(
 	limit = 20,
@@ -329,12 +315,9 @@ export async function getUserNotificationsDAL(
 }
 
 /**
- * Removes one notification from the recipient's list.
- *
- * A soft delete, and scoped to the signed-in recipient so someone else's id
- * simply matches nothing. Notifications are a personal inbox - dismissing one
- * is the reader's decision and affects nobody else, which is exactly why the
- * activity log has no equivalent: that is a shared audit trail.
+ * delete notification - performs a soft delete of a notification,
+ * strictly scoped to the recipient since the inbox is personal,
+ * unlike the shared project activity log.
  */
 export async function deleteNotificationDAL(
 	notificationId: string,
@@ -359,16 +342,9 @@ export async function deleteNotificationDAL(
 }
 
 /**
- * How many unread notifications the current user has.
- *
- * A `count(*)` rather than fetching rows and measuring the array. The sidebar
- * badge needs one number, and the feed query it would otherwise reuse joins
- * users and tasks and decrypts message bodies - all of it thrown away to read a
- * length. This touches one index and returns one integer.
- *
- * Returns 0 rather than throwing when there is no session. The badge is chrome
- * on a page that is already rendering; a signed-out reader should see no badge,
- * not a broken layout.
+ * count unread notifications - executes an optimized count query for
+ * the unread badge, returning 0 gracefully for signed-out users to
+ * avoid breaking chrome layouts.
  */
 export async function countUnreadNotificationsDAL(): Promise<number> {
 	const user = await getCurrentUser();
@@ -388,8 +364,10 @@ export async function countUnreadNotificationsDAL(): Promise<number> {
 
 		return row?.value ?? 0;
 	} catch (error) {
-		// Deliberately swallowed. A failed count must not take the whole dashboard
-		// shell down with it - the worst acceptable outcome is a missing badge.
+		/**
+		 * count error swallowing - swallows badge count errors to prevent
+		 * minor query failures from bringing down the entire dashboard shell.
+		 */
 		console.error("countUnreadNotificationsDAL failed:", error);
 		return 0;
 	}

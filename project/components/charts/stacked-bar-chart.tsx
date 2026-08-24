@@ -22,24 +22,17 @@ interface StackedBarChartProps {
 }
 
 /**
- * A column per category, split into stacked segments by series.
- *
- * This one component draws the Priority, Bucket and Members panels. They differ
- * only in what the x-axis is - the series, the colours, the stacking and the
- * tooltip are identical - so building three of these would have meant three
- * copies drifting apart the first time any of them was restyled.
- *
- * Every column shares one y-axis, deliberately. A per-column axis would let a
- * bucket holding two tasks draw the same height as one holding twenty, which is
- * the single fastest way to make a chart lie.
+ * stacked bar chart - a unified component for drawing multi-series grouped
+ * columns, centralizing styling and tooltips for various panel types. Enforces
+ * a shared global Y-axis to prevent misleading, disproportionate scaling
+ * between categories.
  */
 export function StackedBarChart({
 	data,
 	series,
 	className,
 }: StackedBarChartProps) {
-	// Recharts reads flat objects, so each column's segments are spread onto the
-	// row alongside its label.
+	/** flatten segments for recharts - spreads nested segment values onto the root row object for Recharts ingestion. */
 	const rows = data.map((datum) => ({
 		label: datum.label,
 		...Object.fromEntries(
@@ -70,8 +63,7 @@ export function StackedBarChart({
 						axisLine={{ stroke: CHART_AXIS }}
 						tickMargin={8}
 						interval={0}
-						// Names can be long. Truncating beats rotating: rotated text is
-						// measurably slower to read, and the tooltip carries the full name.
+						/** truncate labels - prefers ellipsis over rotation to keep long X-axis names highly readable. */
 						tickFormatter={(value: string) =>
 							value.length > 14 ? `${value.slice(0, 13)}…` : value
 						}
@@ -81,7 +73,7 @@ export function StackedBarChart({
 						axisLine={false}
 						tickMargin={4}
 						width={44}
-						// Tasks are whole things; a gridline at 2.5 tasks is a lie.
+						/** force integer ticks - disables decimal Y-axis labels since tasks are indivisible units. */
 						allowDecimals={false}
 					/>
 
@@ -97,10 +89,10 @@ export function StackedBarChart({
 							name={entry.label}
 							stackId="status"
 							fill={entry.color}
-							// A 2px stroke in the surface colour is what puts a hairline gap
-							// between one segment and the next. Without it, two adjacent
-							// segments of similar lightness merge into one taller segment -
-							// the most common way a stacked bar quietly misleads.
+							/**
+							 * segment separation - applies a surface-colored stroke to prevent
+							 * similarly colored stacked segments from merging visually.
+							 */
 							stroke={CHART_SURFACE}
 							strokeWidth={2}
 						/>
@@ -114,12 +106,9 @@ export function StackedBarChart({
 }
 
 /**
- * The legend, shared by every chart that has more than one series.
- *
- * Always present, never optional. With four series stacked into thin segments,
- * this is the only place the reader can learn what a colour means - and three of
- * the light-mode status colours sit below 3:1 contrast against the card, so
- * identity must not rest on the swatch alone.
+ * chart legend - a mandatory shared legend component providing textual labels
+ * for multi-series charts, ensuring color identity is never strictly reliant
+ * on potentially low-contrast swatches.
  */
 export function ChartLegend({ series }: { series: ChartSeries[] }) {
 	return (
@@ -131,9 +120,7 @@ export function ChartLegend({ series }: { series: ChartSeries[] }) {
 						style={{ backgroundColor: entry.color }}
 						aria-hidden="true"
 					/>
-					{/* Label text stays in the normal ink colour, never tinted to match
-					    the swatch - coloured text at 12px is the quickest way to fail
-					    contrast. */}
+					{/* high contrast text - forces legend labels to standard ink colors to prevent contrast failure. */}
 					<span className="text-xs text-on-surface">{entry.label}</span>
 				</li>
 			))}

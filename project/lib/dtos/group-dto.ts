@@ -27,8 +27,8 @@ export function toGroupDTO(team: DbTeam, memberCount: number): GroupOutputDTO {
 }
 
 /**
- * clerkId is omitted deliberately: group rosters are visible to co-owners, and
- * the identity-provider id is of no use to the UI.
+ * to group member dto - omits clerkId deliberately because group rosters
+ * are visible to co-owners, making identity provider IDs unnecessary for the UI.
  */
 export function toGroupMemberDTO(user: DbUser): GroupMemberDTO {
 	const fullName = [user.firstName, user.lastName]

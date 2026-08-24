@@ -8,12 +8,9 @@ import { type TeamOutputDTO, toTeamDTO } from "@/lib/dtos/team-dto";
 import type { CreateTeamInput } from "@/lib/types/team";
 
 /**
- * Confirms every supplied user is an active member of the workspace.
- *
- * Without this, any user id could be placed in a team; once a team is linked to
- * a project that becomes cross-tenant privilege escalation, since team
- * membership now grants project access. Runs as a single inArray query rather
- * than a per-user loop.
+ * assert users are workspace members - strictly validates that all users
+ * belong to the workspace before addition to a team, preventing cross-tenant
+ * privilege escalation.
  */
 async function assertUsersAreWorkspaceMembers(
 	tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
@@ -45,8 +42,7 @@ export async function createTeamInDB(
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	// Verifies the caller actually belongs to the workspace before anything is
-	// written, replacing the previous unchecked pass-through of a client value.
+	/** verify workspace access - ensures the caller genuinely belongs to the workspace before allowing team creation. */
 	const workspace = await resolveActiveWorkspaceDAL(workspaceId);
 
 	try {
@@ -74,8 +70,7 @@ export async function createTeamInDB(
 			return toTeamDTO(newTeam);
 		});
 	} catch (error) {
-		// Surfaced verbatim so the action can show them to the user; anything else
-		// is wrapped to avoid leaking database internals.
+		/** surface safe errors - bubbles up specific validation messages verbatim while wrapping database internals. */
 		if (
 			error instanceof Error &&
 			(error.message ===

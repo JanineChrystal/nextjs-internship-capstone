@@ -1,12 +1,9 @@
 import type { DbNotificationSettings } from "@/lib/types/notification-settings";
 
 /**
- * The preferences the settings page renders.
- *
- * Deliberately omits `id`, `userId` and the soft-delete timestamp. The page has
- * no use for any of them, and the row id in particular is something the client
- * should never hold - the only row a user may write is their own, and the server
- * resolves that from the session rather than trusting an id sent back to it.
+ * notification settings dto - shapes the preferences rendered by the settings
+ * page, deliberately omitting internal IDs and timestamps that the client has
+ * no use for, relying on server-side session resolution instead.
  */
 export interface NotificationSettingsDTO {
 	emailWorkspaceInvites: boolean;
@@ -33,12 +30,9 @@ export function toNotificationSettingsDTO(
 }
 
 /**
- * What a user who has never opened this page gets.
- *
- * Matches the column defaults in the schema exactly. It exists so the page can
- * render before a row is written - the row is only created when someone
- * actually changes something, which keeps a table of all-default rows from
- * being created for every signup.
+ * default notification settings - provides the fallback defaults mimicking
+ * the schema for new users, preventing the creation of all-default rows
+ * upon signup until explicit changes are made.
  */
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettingsDTO = {
 	emailWorkspaceInvites: true,

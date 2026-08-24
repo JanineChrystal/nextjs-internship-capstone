@@ -5,7 +5,7 @@ import { useSkeletonCount } from "@/hooks/use-skeleton-count";
 import type { SkeletonCountKey } from "@/lib/types/skeleton";
 import { cn } from "@/lib/utils";
 
-/** One row: a leading mark, two lines of text, and a trailing meta chip. */
+/** list row skeleton - renders a single list item featuring an icon, two lines of text, and a trailing badge. */
 export function SkeletonListRow({ className }: { className?: string }) {
 	return (
 		<div
@@ -25,20 +25,16 @@ export function SkeletonListRow({ className }: { className?: string }) {
 }
 
 interface SkeletonListProps {
-	/** An exact count when the caller knows one. Wins over `rememberAs`. */
+	/** known item count - bypasses the cache hook to force an exact number of rows. */
 	count?: number;
 	rememberAs?: SkeletonCountKey;
 	className?: string;
 }
 
 /**
- * A stacked list placeholder - side panels, notification feeds, activity.
- *
- * Deliberately distinct from `SkeletonTable`: a list row wraps its own border
- * and sits in a column, where a table row is ruled columns sharing one grid.
- * Using the table for a side panel produced a skeleton that turned into
- * something visibly different, which is worse than no skeleton - the reader
- * watches the layout rearrange under the content they were about to read.
+ * list skeleton - represents a stacked column of individual bordered items
+ * (e.g., sidebars, feeds). Built distinctly from tables so the structural
+ * layout doesn't jar when the real cards arrive.
  */
 export function SkeletonList({
 	count,

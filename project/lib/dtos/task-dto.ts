@@ -146,11 +146,9 @@ export function toAttachmentDTO(attachment: DbAttachment): AttachmentOutputDTO {
 }
 
 /**
- * A task carrying the name of the board it sits on.
- *
- * Only the cross-project surfaces need this - the global calendar and the
- * dashboard span many projects at once, so the column a task belongs to is no
- * longer implied by which board you are looking at.
+ * task with board output dto - represents a task carrying its board name,
+ * required by cross-project surfaces like the global calendar and dashboard
+ * where context is not implied by the view.
  */
 export interface TaskWithBoardOutputDTO extends TaskOutputDTO {
 	boardTitle: string;

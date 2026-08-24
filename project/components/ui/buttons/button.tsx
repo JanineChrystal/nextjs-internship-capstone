@@ -20,17 +20,9 @@ const buttonVariants = cva(
 					"bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
 				link: "text-primary underline-offset-4 hover:underline",
 				/**
-				 * The primary call to action on a gradient surface.
-				 *
-				 * One variant, not a class sprinkled at call sites, so the restraint
-				 * rule has somewhere to live: this is for the single most important
-				 * action on a screen - the button inside a `GradientSurface`, a hero
-				 * CTA - and never for a toolbar or a row of equals, where a gradient
-				 * on each removes the ranking it exists to signal.
-				 *
-				 * `--on-gradient` rather than white: it is chosen against the worst
-				 * point of the ramp, so the label stays legible on the pale palettes
-				 * where white would not.
+				 * gradient variant - reserved strictly for the primary CTA on a screen
+				 * (like a hero button), utilizing `--on-gradient` to guarantee text
+				 * legibility across varying palette lightness levels.
 				 */
 				gradient:
 					"bg-[linear-gradient(135deg,var(--gradient-from),var(--gradient-to))] text-[var(--on-gradient)] shadow-sm hover:brightness-110",

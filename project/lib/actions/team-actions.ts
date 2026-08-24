@@ -36,8 +36,10 @@ export async function createTeamAction(
 
 		return { success: true, data: newTeam };
 	} catch (error) {
-		// Validation failures raised by the DAL carry messages meant for the user;
-		// everything else is reported generically.
+		/**
+		 * targeted error reporting - passes specific DAL validation
+		 * messages to the user while masking generic or unexpected errors.
+		 */
 		const message =
 			error instanceof Error &&
 			[

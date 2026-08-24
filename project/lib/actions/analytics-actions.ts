@@ -5,17 +5,9 @@ import { getProjectAnalyticsDAL } from "@/lib/dal/project-analytics";
 import type { ProjectAnalyticsDTO } from "@/lib/dtos/analytics-dto";
 
 /**
- * The one analytics read that needs an action layer.
- *
- * The dashboard and /analytics pages are server components and call the DAL
- * directly - going through an action there would add a network round-trip to
- * fetch data the server already had. A project's Charts tab is different: it
- * lives inside a client component that switches views without navigating, so it
- * has no server render to piggyback on.
- *
- * The access decision stays in the DAL, which resolves the caller's project
- * role. This layer only converts a thrown error into the { success, data, error }
- * shape the client hooks expect.
+ * analytics actions - provides a server action for client
+ * components (like the project charts tab) to fetch analytics data,
+ * avoiding unnecessary round-trips for server components.
  */
 export async function getProjectAnalyticsAction(projectId: string): Promise<{
 	success: boolean;

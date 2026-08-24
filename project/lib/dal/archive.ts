@@ -9,39 +9,26 @@ import { projects, tasks } from "@/lib/db/schema";
 import type { ArchivedItemDTO, ArchivePageDTO } from "@/lib/dtos/archive-dto";
 
 /**
- * Archive and Trash.
- *
- * Two nullable timestamps carry the whole model. `archivedAt` means put aside
- * on purpose - hidden from lists, kept forever. `deletedAt` means on the way
- * out - hidden from lists, destroyed after the retention window. An item is in
- * exactly one of three states and the WHERE clause can say which:
- *
- *     archivedAt IS NULL  AND deletedAt IS NULL   ->  live
- *     archivedAt NOT NULL AND deletedAt IS NULL   ->  archived
- *     deletedAt  NOT NULL                         ->  trashed
- *
- * Trashed wins over archived on purpose: moving an archived item to the trash
- * has to take it out of the archive list, and leaving both stamps set is what
- * lets "restore" put it back where it came from.
- *
- * Everything here is scoped through getAllUserProjectsDAL() for the same reason
- * the analytics are - a shared project lives in its owner's workspace, so a
- * workspace-scoped query would show a member an empty archive.
+ * archive data model - manages state via two nullable timestamps
+ * (archivedAt and deletedAt), where trash precedence removes items
+ * from active/archived views while allowing precise restorations.
+ * Scoping uses reachable projects.
  */
 
 /**
- * Deleting a project would orphan its tasks in the trash list, so both are
- * always resolved together and a task row is only listed when its project is
- * still reachable.
+ * load accessible project ids - resolves available projects to ensure
+ * tasks are only listed in the archive/trash if their parent project
+ * is still reachable.
  */
 async function loadAccessibleProjectIds(): Promise<{
 	ids: string[];
 	names: Map<string, string>;
 }> {
-	// "all", not the default "live". This is the one caller that needs archived
-	// and trashed projects in scope - asking for the live set here would make the
-	// archive page permanently empty, since every row it wants to list is one the
-	// live filter exists to hide.
+	/**
+	 * include non live projects - explicitly requests all project states
+	 * to ensure archived and trashed rows are visible, overriding the
+	 * default live filter.
+	 */
 	const accessible = await getAllUserProjectsDAL("all");
 	return {
 		ids: accessible.map((project) => project.id),
@@ -50,25 +37,17 @@ async function loadAccessibleProjectIds(): Promise<{
 }
 
 /**
- * Destroys trashed rows whose retention window has closed.
- *
- * Run when the archive page is opened rather than on a schedule. A cron job or
- * a queue worker is the textbook answer and is genuinely better, but it is also
- * infrastructure this project does not have - and a sweep that runs whenever
- * anyone looks at their trash is honest about what it does, needs nothing
- * deployed, and cannot delete anything the retention rule would not have.
- *
- * The trade-off worth naming: an item can outlive its thirty days if nobody
- * opens the page. It is never destroyed early, only late, which is the correct
- * direction for a mistake about deletion to lean.
+ * purge expired items - lazily destroys expired trash rows when the
+ * archive page is accessed. This avoids external infrastructure
+ * requirements while ensuring items are only ever deleted late, never
+ * early.
  */
 async function purgeExpired(projectIds: string[]): Promise<number> {
 	if (projectIds.length === 0) return 0;
 
 	const cutoff = toPurgeCutoff();
 
-	// Tasks first. Deleting the projects first would cascade their tasks away and
-	// leave the second delete counting rows that no longer exist.
+	/** sequence deletions - purges tasks before projects to prevent database cascades from misreporting the number of deleted rows. */
 	const purgedTasks = await db
 		.delete(tasks)
 		.where(
@@ -104,9 +83,10 @@ export async function getArchivePageDAL(): Promise<ArchivePageDTO> {
 			return { archived: [], trashed: [], purgedCount: 0 };
 		}
 
-		// Swept before reading, so an expired row is never listed with "0 days
-		// left" and a Restore button that would bring back something the retention
-		// policy already promised was gone.
+		/**
+		 * pre read sweep - purges expired rows before returning lists so
+		 * the UI does not display un-restorable items with 0 days left.
+		 */
 		const purgedCount = await purgeExpired(ids);
 
 		const [archivedProjects, trashedProjects, archivedTasks, trashedTasks] =
@@ -176,15 +156,19 @@ export async function getArchivePageDAL(): Promise<ArchivePageDTO> {
 			daysLeft: trashed ? daysUntilPurge(at) : null,
 		});
 
-		// Interleaved newest-first across both kinds rather than projects-then-tasks:
-		// the reader is looking for the thing they just put aside, and that is
-		// answered by recency, not by type.
+		/**
+		 * sort interleaved recency - sorts items globally by recency
+		 * rather than grouped by type, optimizing for users looking for
+		 * their most recently dismissed items.
+		 */
 		const byNewest = (a: ArchivedItemDTO, b: ArchivedItemDTO) =>
 			b.at.getTime() - a.at.getTime();
 
-		// The queries already filter on IS NOT NULL, but TypeScript cannot see
-		// that through drizzle's return type. Filtering again is cheaper than a
-		// non-null assertion and stays correct if a query is ever loosened.
+		/**
+		 * runtime null guard - provides an explicit runtime check for
+		 * timestamps that satisfies TypeScript types, remaining safe even
+		 * if query constraints loosen later.
+		 */
 		const withStamp = <
 			T extends { archivedAt: Date | null; deletedAt: Date | null },
 		>(
@@ -223,12 +207,9 @@ export async function getArchivePageDAL(): Promise<ArchivePageDTO> {
 }
 
 /**
- * The five state changes, behind one function.
- *
- * They differ only in which timestamps they write and which permission they
- * demand, so writing five near-identical functions would have meant five places
- * to forget the permission check. The permission is resolved from the operation
- * rather than passed in, so a caller cannot ask for a cheaper one.
+ * apply archive operation - unifies all five state transitions behind
+ * one interface to prevent duplicated logic and ensure permission
+ * checks are securely resolved by the operation type.
  */
 export type ArchiveOperation =
 	| "archive"
@@ -242,14 +223,18 @@ const OPERATION_STAMPS: Record<
 	{ archivedAt?: Date | null; deletedAt?: Date | null } | "delete"
 > = {
 	archive: { archivedAt: new Date(0) },
-	// Clears only archivedAt. Something both archived and trashed stays in the
-	// trash until it is restored - un-archiving must not quietly pull an item
-	// back out of a deletion the user asked for.
+	/**
+	 * safe unarchive - clears only the archivedAt stamp, ensuring that
+	 * an item also in the trash remains deleted rather than unexpectedly
+	 * becoming live.
+	 */
 	unarchive: { archivedAt: null },
 	trash: { deletedAt: new Date(0) },
-	// Only deletedAt is cleared. An item archived first and then trashed goes
-	// back to the archive, not to the live list - restoring should undo the last
-	// thing that happened to it, not everything.
+	/**
+	 * accurate restore - clears only the deletedAt stamp so that items
+	 * originally trashed from the archive return to the archive instead
+	 * of the live view.
+	 */
 	restore: { deletedAt: null },
 	purge: "delete",
 };
@@ -262,9 +247,11 @@ export async function applyArchiveOperationDAL(
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	// Archiving is an edit; trashing and destroying are deletions. A member who
-	// may edit a task should be able to put it aside, but only someone who may
-	// delete it should be able to start - or finish - its removal.
+	/**
+	 * map destructive permissions - classifies archiving as an edit and
+	 * trashing/purging as a deletion to enforce strict role-based access
+	 * limits.
+	 */
 	const isDestructive = operation !== "archive" && operation !== "unarchive";
 	const permission =
 		kind === "project"
@@ -275,10 +262,11 @@ export async function applyArchiveOperationDAL(
 				? ("delete_task" as const)
 				: ("edit_task" as const);
 
-	// A task is governed by its project, so the project id is resolved first -
-	// and resolving it from the database rather than trusting a client-supplied
-	// one is what stops a caller naming a project they can edit to act on a task
-	// in one they cannot.
+	/**
+	 * secure project resolution - fetches the parent project directly
+	 * from the DB to prevent callers from bypassing permissions using a
+	 * spoofed project ID.
+	 */
 	let projectId = id;
 	if (kind === "task") {
 		const [task] = await db
@@ -289,16 +277,11 @@ export async function applyArchiveOperationDAL(
 		projectId = task.projectId;
 	}
 
-	// "all", not the default "live" - the same reason loadAccessibleProjectIds
-	// needs it above. Every operation here acts on a row that is archived or
-	// trashed, and the live scope treats a trashed project as though it does not
-	// exist. Under the default, restore and purge could never succeed on a
-	// trashed project: the page listed the item, then refused to act on it with
-	// "You do not have permission to do that".
-	//
-	// This widens WHERE the role is looked for, not WHO gets one. The user must
-	// still hold delete_project (or delete_task) on the row - a stranger is
-	// refused exactly as before.
+	/**
+	 * verify permissions globally - checks permissions across 'all'
+	 * project states rather than just 'live', preventing valid restores
+	 * on trashed items from failing with unauthorized errors.
+	 */
 	const allowed = await verifyProjectPermissionDAL(
 		projectId,
 		permission,
@@ -315,9 +298,11 @@ export async function applyArchiveOperationDAL(
 			return;
 		}
 
-		// `new Date(0)` in the table above is a placeholder for "stamp it now" -
-		// the real timestamp is taken here so it reflects when the operation ran,
-		// not when this module was first loaded.
+		/**
+		 * dynamic timestamp evaluation - substitutes placeholder dates with
+		 * fresh values so mutations reflect the exact execution time rather
+		 * than module load time.
+		 */
 		const values: Record<string, Date | null> = { updatedAt: new Date() };
 		if ("archivedAt" in stamps) {
 			values.archivedAt = stamps.archivedAt === null ? null : new Date();

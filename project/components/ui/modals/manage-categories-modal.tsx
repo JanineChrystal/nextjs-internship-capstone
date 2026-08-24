@@ -18,9 +18,7 @@ interface ManageCategoriesModalProps {
 	onClose: () => void;
 	type: CategoryType;
 	workspaceId: string;
-	// Present for task categories, which belong to the project's workspace rather
-	// than the viewer's. Without it a member could only manage the categories
-	// they had personally created.
+	/** workspace ownership - defines whether the category belongs to the project workspace instead of the user's personal workspace, ensuring correct permissions. */
 	projectId?: string;
 }
 

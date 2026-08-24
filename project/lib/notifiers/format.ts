@@ -51,8 +51,11 @@ export function escapeHtml(value: string): string {
 		.replace(/'/g, "&#39;");
 }
 
-/** The topic's human label, falling back to the raw value if one is ever added
- *  to the enum without a label. Better a slightly ugly alert than no alert. */
+/**
+ * topic label - the topic's human label, falling back to the raw value if one
+ * is ever added to the enum without a label. Better a slightly ugly alert than
+ * no alert.
+ */
 export function toTopicLabel(topic: ContactNotification["topic"]): string {
 	return CONTACT_TOPIC_LABELS[topic] ?? topic;
 }

@@ -35,16 +35,9 @@ import {
 } from "@/lib/utils/analytics";
 
 /**
- * Everything below is scoped through getAllUserProjectsDAL() rather than through
- * projects.workspaceId.
- *
- * That is the correctness story of this file. A shared project lives in its
- * OWNER's workspace, so a member invited into it has a different workspaceId of
- * their own - and a workspace-scoped query therefore returned zero rows for
- * exactly the people the dashboard was meant to serve. Resolving the reachable
- * project ids first (owned, invited directly, or reached through a team) is the
- * same access rule the projects list already uses, so the analytics can never
- * show a project the list does not, nor miss one that it does.
+ * project scoped analytics - scopes all queries by reachable projects
+ * instead of workspaceId, ensuring accurate counts for users accessing
+ * shared projects owned by different workspaces.
  */
 
 async function loadProjectPeople(
@@ -64,11 +57,9 @@ async function loadProjectPeople(
 }
 
 /**
- * Distinct people who did anything at all in the window.
- *
- * "Active users" deliberately means acted, not has an account. The previous
- * version counted workspace members, a number that never changes from one week
- * to the next and so told the reader nothing.
+ * load recent actors - identifies users who actively performed actions
+ * within the window, rather than just counting dormant workspace
+ * members.
  */
 async function loadRecentActors(
 	projectIds: string[],
@@ -109,11 +100,9 @@ function toRecentProjects(
 }
 
 /**
- * The four headline numbers plus the two panels on the dashboard home page.
- *
- * Takes no workspaceId argument any more - the caller cannot be expected to know
- * which workspace a shared project belongs to, and asking it to was how the old
- * version ended up reading the wrong scope.
+ * get dashboard overview - aggregates headline metrics and recent
+ * activity for the dashboard, deriving scope strictly from reachable
+ * projects rather than relying on an unreliable workspaceId argument.
  */
 export async function getDashboardOverviewDAL(): Promise<DashboardOverviewDTO> {
 	const user = await getCurrentUser();
@@ -132,8 +121,7 @@ export async function getDashboardOverviewDAL(): Promise<DashboardOverviewDTO> {
 		const completedCount = taskRows.filter((task) => task.isCompleted).length;
 
 		const teamMembers = new Set<string>(memberRows.map((row) => row.userId));
-		// The owner holds no ProjectMembers row, so they would otherwise be missing
-		// from the count of their own team.
+		/** owner team inclusion - explicitly adds project owners to the team count since they lack standard project member rows. */
 		for (const project of projects) teamMembers.add(project.ownerId);
 
 		return {
@@ -154,12 +142,9 @@ export async function getDashboardOverviewDAL(): Promise<DashboardOverviewDTO> {
 }
 
 /**
- * The four metrics and four charts on the /analytics page.
- *
- * One pass over one task result set feeds all eight. The alternative - a GROUP BY
- * per chart - would be four extra round-trips over identical rows, and each one
- * would have to restate the access scope, which is four more places for the
- * scoping bug described at the top of this file to come back.
+ * get analytics dashboard - constructs comprehensive analytics from a
+ * single data pass, avoiding redundant GROUP BY queries and ensuring
+ * the access scope is applied uniformly across all metrics.
  */
 export async function getAnalyticsDashboardDAL(): Promise<AnalyticsDashboardDTO> {
 	const user = await getCurrentUser();
@@ -178,9 +163,11 @@ export async function getAnalyticsDashboardDAL(): Promise<AnalyticsDashboardDTO>
 		const completedTasks = taskRows.filter((task) => task.isCompleted);
 		const completionsInWindow = Array.from(completionTimes.values());
 
-		// Cycle time is measured only over tasks whose completion falls inside the
-		// window, so the figure tracks how the team works now. Averaging every task
-		// ever completed would let one abandoned item from months ago dominate.
+		/**
+		 * cycle time window filter - calculates cycle times exclusively
+		 * for tasks completed within the current window to accurately
+		 * reflect current team performance and ignore stale outliers.
+		 */
 		const cycleTimes = completedTasks
 			.filter((task) => completionTimes.has(task.id))
 			.map(
@@ -214,8 +201,11 @@ export async function getAnalyticsDashboardDAL(): Promise<AnalyticsDashboardDTO>
 						progress: toPercentage(counts.completed, counts.total),
 					};
 				})
-				// A project with no tasks has no progress to compare, and drawing it as
-				// a 0% bar reads as "behind" rather than "not started".
+				/**
+				 * exclude empty projects - filters out projects with zero tasks
+				 * so they are not misleadingly displayed as 0% (behind) on
+				 * progress charts.
+				 */
 				.filter((row) => row.totalTasks > 0)
 				.sort((a, b) => b.progress - a.progress),
 			statusBreakdown: tallyBy(taskRows, toDisplayStatus, STATUS_CHART_ORDER),
