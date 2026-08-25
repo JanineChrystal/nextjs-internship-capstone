@@ -39,29 +39,29 @@ export function NotificationsClient({
 
 	return (
 		<div className="flex flex-col gap-6 w-full mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-			<div className="flex flex-wrap items-start justify-between gap-4">
-				<PageHeader
-					title="Notifications"
-					description={
-						unreadCount > 0
-							? `You have ${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}.`
-							: "You are all caught up."
-					}
-				/>
-
-				{unreadCount > 0 && (
-					<Button
-						type="button"
-						variant="outline"
-						onClick={() => setIsConfirmingMarkAll(true)}
-						disabled={isBusy}
-						className="gap-2 shrink-0"
-					>
-						<CheckCheck className="h-4 w-4" />
-						Mark all as read
-					</Button>
-				)}
-			</div>
+			{/* topAction, not a sibling - as a flex item beside the button the header shrank to its own content and read half-height next to every other page. */}
+			<PageHeader
+				title="Notifications"
+				description={
+					unreadCount > 0
+						? `You have ${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}.`
+						: "You are all caught up."
+				}
+				topAction={
+					unreadCount > 0 ? (
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setIsConfirmingMarkAll(true)}
+							disabled={isBusy}
+							className="w-full gap-2 sm:w-auto"
+						>
+							<CheckCheck className="h-4 w-4" />
+							Mark all as read
+						</Button>
+					) : undefined
+				}
+			/>
 
 			{/* confirmation boundary - requires confirmation for bulk destructive actions while leaving individual dismissals immediate for better flow. */}
 			<ConfirmDialog

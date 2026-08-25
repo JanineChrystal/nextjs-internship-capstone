@@ -4,6 +4,10 @@ import {
 	PROFANITY_API_TIMEOUT_MS,
 } from "@/lib/constants/profanity";
 import type { DetectionResult, ProfanityDetector } from "@/lib/types/profanity";
+import {
+	findLocalFilipinoProfanity,
+	matchesFilipinoWord,
+} from "./filipino-wordlist";
 
 /**
  * Filipino and Visayan profanity, via the Filipino Profanity API.
@@ -60,25 +64,35 @@ export class FilipinoProfanityDetector implements ProfanityDetector {
 	}
 
 	async detect(text: string): Promise<DetectionResult> {
-		// Parallel, not sequential. Two round trips one after the other would
-		// double a latency that is already the slowest part of posting a comment.
-		const [check, variants] = await Promise.all([
-			// normal bad words check
-			this.post("/check", text),
-			// leetspeak bad words w/ special characters
-			this.post("/variants/lookup", text),
-		]);
+		/** local first - it needs no network, so it still answers when the API is cold or has gaps. */
+		const local = findLocalFilipinoProfanity(text);
 
-		const direct = parseCheckResponse(check);
-		const obfuscated = parseVariantResponse(variants);
+		try {
+			// Parallel, not sequential. Two round trips one after the other would
+			// double a latency that is already the slowest part of posting a comment.
+			const [check, variants] = await Promise.all([
+				// normal bad words check
+				this.post("/check", text),
+				// leetspeak bad words w/ special characters
+				this.post("/variants/lookup", text),
+			]);
 
-		return {
-			isProfane: direct.isProfane || obfuscated.isProfane,
-			matched: [
-				...(direct.matched ?? []),
-				...(obfuscated.matched ?? []),
-			].filter((word, index, all) => all.indexOf(word) === index),
-		};
+			const direct = parseCheckResponse(check);
+			const obfuscated = parseVariantResponse(variants, text);
+
+			return {
+				isProfane: local.length > 0 || direct.isProfane || obfuscated.isProfane,
+				matched: unique([
+					...local,
+					...(direct.matched ?? []),
+					...(obfuscated.matched ?? []),
+				]),
+			};
+		} catch (error) {
+			/** a local hit still stands - throwing here would fail open on a word this process already recognised. */
+			if (local.length > 0) return { isProfane: true, matched: local };
+			throw error;
+		}
 	}
 
 	private async post(path: string, text: string): Promise<unknown> {
@@ -140,7 +154,10 @@ export function parseCheckResponse(payload: unknown): DetectionResult {
  * the two endpoints agreed on a name is exactly the kind of thing that returns
  * "clean" forever without anyone noticing.
  */
-export function parseVariantResponse(payload: unknown): DetectionResult {
+export function parseVariantResponse(
+	payload: unknown,
+	originalText?: string,
+): DetectionResult {
 	const body = asObject(payload, "variants/lookup");
 
 	if (typeof body.hasMatch !== "boolean") {
@@ -149,7 +166,21 @@ export function parseVariantResponse(payload: unknown): DetectionResult {
 		);
 	}
 
-	return { isProfane: body.hasMatch, matched: readWords(body.data) };
+	/**
+	 * bounded, because the API is not.
+	 *
+	 * /variants/lookup matches substrings: @tempestpxyruz comes back as the
+	 * word peste via the variant pest at position 4. Every username or
+	 * ordinary word containing a listed fragment would be flagged.
+	 */
+	const matched = originalText
+		? readBoundedVariants(body.data, originalText)
+		: readWords(body.data);
+
+	/** without the text there is nothing to bound against, so the endpoint's own verdict stands. */
+	const isProfane = originalText ? Boolean(matched?.length) : body.hasMatch;
+
+	return { isProfane, matched };
 }
 
 function asObject(payload: unknown, label: string): Record<string, unknown> {
@@ -179,4 +210,45 @@ function readWords(data: unknown): string[] | undefined {
 		.filter((word): word is string => typeof word === "string");
 
 	return words.length > 0 ? words : undefined;
+}
+
+/** dedupe - both endpoints and the local list can name the same base word. */
+function unique(words: string[]): string[] | undefined {
+	const deduped = words.filter(
+		(word, index, all) => all.indexOf(word) === index,
+	);
+	return deduped.length > 0 ? deduped : undefined;
+}
+
+/**
+ * Keeps only the variants that start a word in the original text.
+ *
+ * Left boundary only: Tagalog takes suffixes, so "tanginang" and "gagong" are
+ * the same word inflected and must still match, while "pest" inside
+ * "tempestpxyruz" must not.
+ */
+function readBoundedVariants(
+	data: unknown,
+	originalText: string,
+): string[] | undefined {
+	if (!Array.isArray(data)) return undefined;
+
+	const words = data
+		.filter((entry) => {
+			if (entry === null || typeof entry !== "object") return false;
+			const { variant, position } = entry as Record<string, unknown>;
+			if (typeof variant !== "string") return false;
+
+			/** trust position when the API sends one, and fall back to a search when it does not. */
+			if (typeof position === "number") {
+				const before = originalText[position - 1];
+				return before === undefined || !/[\p{L}\p{N}]/u.test(before);
+			}
+
+			return matchesFilipinoWord(originalText, variant);
+		})
+		.map((entry) => (entry as Record<string, unknown>).word)
+		.filter((word): word is string => typeof word === "string");
+
+	return unique(words);
 }

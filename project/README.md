@@ -1,500 +1,544 @@
-# ProjectFlow - Next.js Internship Capstone Project
+# Takda PH
 
-## 🚀 Project Overview
+A team project-management tool built around Kanban boards, with the parts that
+usually get skipped actually built: bilingual comment moderation, email
+notifications people can switch off per category, and an archive that lets you
+undo a delete.
 
-**ProjectFlow** is a collaborative project management tool built with Next.js 16 App Router, designed as the capstone project for a 12-week full-stack development internship program. This is currently a **mockup/prototype** with placeholder components and incomplete functionality.
+Named for the Filipino *takda* — an assigned task.
 
-### 📋 What We're Building
+**Live:** _add your production URL here_
 
-A modern, Kanban-style project management application similar to Trello or Asana, featuring:
+---
 
-- **Landing Page** with project overview and roadmap ✅ *Implemented*
-- **Dashboard Layout** with navigation and theme toggle ✅ *Implemented*
-- **Project Management Interface** with placeholder components ✅ *Basic Structure*
-- **User Authentication** with Clerk ⏳ *Planned*
-- **Interactive Kanban Board** with drag-and-drop ⏳ *Planned*
-- **Real-time Collaboration** features ⏳ *Planned*
-- **Responsive Design** with Tailwind CSS + custom color scheme ✅ *Implemented*
+## Table of contents
 
-## 🎯 Learning Objectives
+- [Major features](#major-features)
+- [Tech stack](#tech-stack)
+- [Security](#security)
+- [Testing](#testing)
+- [Setup](#setup)
+- [Folder structure](#folder-structure)
+- [Database schema](#database-schema)
 
-By completing this project, interns will demonstrate proficiency in:
+---
 
-- ✅ **Full-Stack Next.js Development** (App Router, Server Components, Server Actions)
-- ✅ **Secure Authentication** (Clerk integration)
-- ✅ **Database Design & Management** (PostgreSQL with Drizzle ORM)
-- ✅ **State Management** (Zustand for client-side state)
-- ✅ **Professional Git Workflow** (GitHub Flow, PR reviews)
-- ✅ **Testing Strategy** (Unit, Integration, E2E)
-- ✅ **Production Deployment** (Vercel CI/CD)
+## Major features
 
-## 📅 Timeline
+### Projects and tasks, in five views
 
-- **Duration**: 10-12 weeks
-- **Team Size**: Multiple interns
-- **Structure**: Individual development with collaborative learning and task tracking
+A project opens on a **Kanban board** and switches to **Grid**, **Calendar**,
+**Charts** or **Settings** without leaving the page. Tasks drag between columns,
+and one column per project can be marked the *completion column* — completing a
+task moves it there, and un-completing sends it back where it came from rather
+than dumping it in the first column.
 
-### Phase Breakdown
-- **Weeks 1-2**: Project setup, authentication, basic UI
-- **Weeks 3-4**: Core CRUD operations (Projects, Lists, Tasks)
-- **Weeks 5-6**: Advanced features (Drag & Drop, State Management)
-- **Weeks 7-8**: Polish, optimization, advanced collaboration features
-- **Weeks 9-10**: Testing, deployment, final polish
-- **Weeks 11-12**: Documentation, showcase preparation (if time permits)
+Every view reads the same store, so a rename in the grid shows on the board
+without a refetch. Filters apply to the three views where they mean something
+and are absent from the two where they do not.
 
-## 🛠 Tech Stack
+### Bilingual comment moderation
 
-### Currently Implemented
-- **Framework**: Next.js 16.1.6 (App Router with Turbopack) ✅
-- **Runtime**: React 19 ✅
-- **Language**: TypeScript 5.9 ✅
-- **Styling**: Tailwind CSS with custom color scheme ✅
-- **Icons**: Lucide React ✅
-- **Theme System**: Dark/Light mode toggle ✅
+The innovation the project is built around. Comments are checked against **two
+detectors before they are stored**, not after:
 
-### Planned Dependencies (Not Yet Installed)
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Clerk
-- **State Management**: Zustand
-- **Drag & Drop**: @dnd-kit/core, @dnd-kit/sortable
-- **Form Validation**: Zod
-- **Testing**: Jest, React Testing Library, Playwright
-- **Deployment**: Vercel
+| Detector | Runs | Catches |
+| :-- | :-- | :-- |
+| English | in-process, `bad-words` | English profanity, some symbol substitution |
+| Filipino / Visayan | Filipino Profanity API + a local word list | Tagalog and Visayan, plus leetspeak |
 
-### Development Tools
-- **Version Control**: Git + GitHub
-- **Package Manager**: pnpm 10.10.0
-- **Linting**: ESLint 9 + Next.js config
-- **IDE**: VS Code
+Three details worth knowing, because each one was a bug first:
 
-## 📁 Current Project Structure
+- **Two endpoints, not one.** The API's `/api/check` does *not* apply its 8,000+
+  leetspeak variants — `g4g0 ka` returns clean there and flags on
+  `/api/variants/lookup`. Both are called in parallel and either firing flags
+  the comment.
+- **Matches are bounded on the left.** `/variants/lookup` matches substrings, so
+  a username came back as profanity via `pest` inside it. A match now has to
+  begin a word. The boundary is left-only on purpose: Tagalog takes suffixes, so
+  `tanginang` and `gagong` must still match.
+- **A local Filipino word list backs up the API.** Measured, not assumed:
+  `tangina` is absent from the service's database entirely. The local list fills
+  the gaps and keeps Filipino detection alive while the API is cold or rate
+  limited.
+
+Detection **fails open** — if a detector throws, the comment posts and is queued
+for a recheck. A moderation outage should not stop a team talking to each other.
+
+### Email notifications with real switches
+
+Seven categories on Settings, each governing a real email: project invites,
+workspace invites, comment mentions, comment violations, task completions,
+project completions, and project overdue. The preference is resolved in one
+place in the data layer rather than at each sender, so an email cannot be sent
+by a path that forgot to check.
+
+Emails are React Email components rendered server-side and sent through
+SendGrid. Delivery runs inside Next's `after()`, so nobody waits on an HTTP call
+for a result they do not need.
+
+### Archive and trash
+
+Deleting is reversible. Projects and tasks go to **Archive** (kept indefinitely)
+or **Trash** (purged after a retention window), and both can be restored.
+Deleting a project asks you to type its name first.
+
+### The rest
+
+Invitations that are an offer rather than a grant · @-mentions with autocomplete
+· task checklists, links and comments · per-project and per-workspace member
+roles · a global calendar and a per-project one · analytics charts · global
+search · twelve colour palettes with a measured contrast floor · light and dark
+themes.
+
+---
+
+## Tech stack
+
+**Language** — TypeScript (strict), SQL
+
+**Framework** — Next.js 16 (App Router, Server Actions, React Server
+Components), React 19
+
+**Database** — PostgreSQL on Neon · Drizzle ORM · Drizzle Kit for migrations ·
+`drizzle-zod` to derive validation from the schema
+
+**Auth** — Clerk (`@clerk/nextjs`), with a Svix-verified webhook syncing users
+into the database
+
+**State** — Zustand stores · React Hook Form + Zod for forms
+
+**UI** — Tailwind CSS v4 · shadcn/ui on Radix primitives · Base UI · Lucide
+icons · Motion for animation · Sonner for toasts · React Bits Pro components
+
+**Feature libraries** — dnd-kit (drag and drop) · react-big-calendar ·
+react-day-picker · Recharts · date-fns
+
+**Storage** — Vercel Blob for task attachments
+
+**Email** — React Email components, rendered server-side
+
+**Tooling** — Biome (lint and format) · pnpm · tsx
+
+### Libraries worth naming
+
+- **bad-words** — the in-process English word list. Checked for the Scunthorpe
+  problem before adoption: `assignment`, `classic` and `bass` all come back
+  clean, so it matches words rather than substrings.
+- **Filipino Profanity API** — Tagalog and Visayan detection, including a
+  leetspeak variant database.
+  - API: <https://filipino-profanity-api-latest.vercel.app/api>
+  - Source: <https://github.com/jobelGolde12/filipino_profanity_api_latest>
+
+### Third-party services
+
+| Service | Used for |
+| :-- | :-- |
+| Clerk | authentication, sessions, the user webhook |
+| Neon | serverless PostgreSQL, one branch per environment |
+| Vercel | hosting and preview deployments |
+| SendGrid | notification and contact email |
+| Telegram Bot API | instant contact-form alerts |
+| Upstash Redis | rate limiting |
+| Vercel Blob | task file attachments |
+| React Email | email templates as components |
+| shadcn/ui | component primitives |
+| React Bits Pro | animated landing-page components |
+
+> Email originally went through **Resend** and moved to **SendGrid**, because
+> Single Sender Verification proves one address rather than requiring a whole
+> verified domain — which is what lets a prototype email real people without
+> buying one.
+
+---
+
+## Security
+
+### Rate limiting
+
+Upstash Redis, with a window sized to the risk of each surface:
+
+| Limiter | Window | Applies to |
+| :-- | :-- | :-- |
+| `actionRateLimiter` | 5 per 10s | the public contact form |
+| `inviteRateLimiter` | 10 per 60s | invitations, keyed by user id |
+| `globalRateLimiter` | 100 per 10s | general action traffic |
+
+It **fails open** and is imported lazily inside a `try`, so a deployment missing
+its Upstash variables degrades spam protection instead of taking the whole
+landing page down.
+
+### Encryption at rest
+
+Sensitive free text — comments, checklist items, contact messages, activity
+details — is encrypted with **AES-256-GCM using a random IV per value**.
+
+Deterministic encryption was rejected deliberately: it produces the same
+ciphertext for the same plaintext, so anyone with database access can count
+repeats and match values across rows without ever decrypting anything. A random
+IV means two identical comments are two different ciphertexts. The cost is that
+encrypted columns cannot be searched or indexed by value, which is a trade worth
+making for text nobody queries by content.
+
+### IDOR prevention through the data layer
+
+Authorisation is resolved **where the row is read**, not by a route matcher.
+Clerk deprecated `createRouteMatcher` because path matching can diverge from how
+Next actually routes a request — a URL nobody anticipated walks straight past a
+matcher, but it cannot walk past `requireUser`, `getEffectiveProjectRoleDAL` or
+`verifyProjectPermissionDAL`.
+
+The backend is six layers, each depending only on the one before:
+
+```
+db  →  validations  →  types  →  dtos  →  dal  →  actions
+```
+
+- **db** — Drizzle schema and connection
+- **validations** — Zod schemas, several derived from the schema itself
+- **types** — shared TypeScript contracts
+- **dtos** — shapes the UI receives, never raw rows
+- **dal** — every query, and every permission check
+- **actions** — Server Actions; they orchestrate, they do not query
+
+An action that wanted to skip the permission check would have to write its own
+query, and there are none outside `lib/dal`.
+
+### Security headers
+
+Set in `next.config.ts` for every route: `Content-Security-Policy`,
+`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and
+`Strict-Transport-Security`.
+
+The CSP is explicit about `frame-src`. Without that entry it falls back to
+`default-src 'self'` and silently blocks Cloudflare Turnstile, which Clerk uses
+for bot protection — the symptom is "The CAPTCHA failed to load" on sign-up,
+which reads like a browser-extension problem and is not.
+
+---
+
+## Testing
+
+### Vitest — unit and integration
+
+**405 tests across 52 files.** Pure logic: validation schemas, DTO mappers,
+status derivation, date rules, the profanity response parsers, encryption
+round-trips, utility helpers.
+
+```bash
+pnpm test          # watch
+pnpm test --run    # once
+```
+
+### Playwright — end to end
+
+**64 tests across 19 spec files**, against a real browser and a real database.
+Coverage by module: Projects (21), Tasks (19), Kanban board (6), Authentication
+(9), Contact (4), Team invitations (2), Project calendar (3).
+
+```bash
+pnpm test:e2e              # local, against pnpm start
+pnpm test:e2e:ui           # the Playwright UI
+pnpm test:e2e:deployed     # against E2E_BASE_URL
+pnpm test:e2e:report       # last HTML report
+```
+
+Notes that matter when running it:
+
+- Sign-in state is captured once and reused for 8 hours. Clerk **development
+  instances are rate limited**, and a full run makes hundreds of authenticated
+  page loads — set `E2E_FORCE_SIGN_IN=true` to force a fresh sign-in.
+- Every run cleans up the projects it created. Set `E2E_SKIP_CLEANUP=true` to
+  keep them while debugging a failure.
+- `pnpm e2e:cleanup` removes leftovers by hand; it is a dry run unless you pass
+  `--yes`.
+
+### All gates
+
+```bash
+pnpm check          # Biome lint and format
+pnpm typecheck      # tsc --noEmit
+pnpm test --run     # Vitest
+pnpm build          # production build
+pnpm verify         # all of the above
+```
+
+---
+
+## Setup
+
+### 1 · Clone and install
+
+```bash
+git clone <your-repo-url>
+cd nextjs-internship-capstone/project
+pnpm install
+```
+
+pnpm is required — the lockfile and `node_modules` layout are pnpm's, and npm
+will rewrite the tree.
+
+### 2 · Environment
+
+Copy `.env.example` to `.env.local` and fill it in. `.env.example` holds
+placeholders only and is the one `.env*` file git tracks.
+
+### 3 · Neon (PostgreSQL)
+
+Create a project at [neon.tech](https://neon.tech). Create a **branch per
+environment** — development, preview, integration, production — and take the
+pooled connection string of each.
+
+```env
+DATABASE_URL=postgresql://...        # development
+PREVIEW_DATABASE_URL=postgresql://...
+INTEGRATION_DATABASE_URL=postgresql://...
+PRODUCTION_DATABASE_URL=postgresql://...
+```
+
+Then migrate **each branch on purpose** — deploying code does not migrate a
+database:
+
+```bash
+pnpm db:migrate                 # development
+pnpm db:migrate:preview
+pnpm db:migrate:integration
+pnpm db:migrate:production
+pnpm db:seed                    # optional [Demo] data
+```
+
+Each command prints the host it is about to touch. Read that line. The configs
+refuse to run if the URL is missing or identical to `DATABASE_URL`.
+
+### 4 · Clerk (authentication)
+
+Create an application at [clerk.com](https://clerk.com) and take the development
+instance's keys:
+
+```env
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL=/dashboard
+NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL=/dashboard
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/dashboard
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/dashboard
+CLERK_WEBHOOK_SECRET=whsec_...
+```
+
+Add a webhook at Clerk, pointing to
+`https://<your-domain>/api/webhooks/clerk`, subscribed to `user.created`,
+`user.updated` and `user.deleted`. Put its signing secret in
+`CLERK_WEBHOOK_SECRET`.
+
+> Development keys work on any domain including `localhost` and `*.vercel.app`.
+> A **production** instance requires a domain you control plus DNS records, and
+> its user list starts empty — the two instances do not share accounts.
+
+### 5 · SendGrid (email)
+
+Create an API key with **Mail Send** permission, then verify a sender address
+under Single Sender Verification.
+
+```env
+SENDGRID_API_KEY=SG....
+CONTACT_EMAIL_FROM=Takda PH <your-verified@address>
+CONTACT_EMAIL_TO=where-contact-goes@example.com
+```
+
+`CONTACT_EMAIL_FROM` must match the verified address exactly — anything else is
+a 403 on every send while looking perfectly reasonable in the environment file.
+
+### 6 · Telegram (contact alerts)
+
+Message [@BotFather](https://t.me/botfather), create a bot, take its token, then
+get your chat id from `https://api.telegram.org/bot<TOKEN>/getUpdates`.
+
+```env
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+```
+
+Verify both channels without sending anything:
+
+```bash
+pnpm check:notifiers --no-send
+```
+
+### 7 · Upstash (rate limiting)
+
+Create a Redis database at [upstash.com](https://upstash.com):
+
+```env
+UPSTASH_REDIS_REST_URL=https://...
+UPSTASH_REDIS_REST_TOKEN=...
+```
+
+### 8 · Vercel Blob (file attachments)
+
+In the Vercel dashboard, open **Storage**, create a Blob store, and connect it
+to the project. Vercel injects the token into deployments automatically; for
+local development copy it from the store's `.env.local` tab:
+
+```env
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
+```
+
+Files upload **browser-to-Blob** through a short-lived token issued by
+`/api/blob/upload`, so they never pass through a Server Action — whose body is
+capped at a megabyte by default. Uploads are limited to 10MB and to document and
+image types, and the token is only issued to a signed-in user.
+
+Without the token, links still work and file attachments report a failure rather
+than silently doing nothing.
+
+### 9 · Encryption key
+
+```bash
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+```env
+ENCRYPTION_KEY=<the 64-character hex string>
+```
+
+Losing this key makes every encrypted value unreadable. There is no recovery.
+
+### 10 · Profanity API
+
+Works with no configuration — it defaults to the public deployment. Override
+only for a self-hosted instance:
+
+```env
+FILIPINO_PROFANITY_API_URL=https://your-instance/api
+```
+
+Check it responds with `pnpm check:profanity`.
+
+### 11 · Playwright
+
+```bash
+pnpm exec playwright install chromium
+```
+
+Add three test accounts. On a Clerk development instance with Test mode on, any
+`+clerk_test` address is accepted with the fixed code `424242`, so no real inbox
+is involved:
+
+```env
+E2E_USER_EMAIL=you+clerk_test@gmail.com
+E2E_USER_PASSWORD=...
+E2E_USER_B_EMAIL=you+clerk_test_b@gmail.com
+E2E_USER_B_PASSWORD=...
+E2E_USER_C_EMAIL=you+clerk_test_c@gmail.com
+E2E_USER_C_PASSWORD=...
+```
+
+### 12 · Run it
+
+```bash
+pnpm dev        # http://localhost:3000
+```
+
+### 13 · Vercel (deployment)
+
+Import the repository at [vercel.com](https://vercel.com), set the root
+directory to `project/`, and add every variable above to the **Production**
+scope — Preview and Production are separate scopes and do not share values.
+
+`DATABASE_URL` in Vercel must be your **production** Neon branch, which is what
+keeps a bad migration off production. The cost is that redeploying does not
+migrate anything; each branch is migrated on purpose.
+
+---
+
+## Folder structure
 
 ```
 project/
-├── app/                    # Next.js App Router pages
-│   ├── (auth)/            # Authentication routes (placeholder)
-│   ├── (dashboard)/       # Dashboard routes (placeholder)
-│   ├── dashboard/         # Main dashboard page ✅
-│   ├── projects/          # Project pages (placeholder)
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Landing page ✅
-├── components/             # Reusable UI components ✅
-│   ├── modals/            # Modal components (placeholder)
-│   ├── dashboard-*.tsx    # Dashboard components ✅
-│   ├── kanban-board.tsx   # Kanban board (placeholder)
-│   ├── project-*.tsx      # Project components (placeholder)
-│   ├── task-*.tsx         # Task components (placeholder)
-│   └── theme-*.tsx        # Theme components ✅
-├── hooks/                 # Custom React hooks (placeholder)
-├── lib/                   # Utilities and configurations
-│   ├── db/               # Database schema (placeholder)
-│   ├── utils.ts          # Utility functions
-│   └── validations.ts    # Form validations (placeholder)
-├── stores/                # Zustand state stores (placeholder)
-├── types/                 # TypeScript type definitions ✅
-├── styles/                # Additional styles
-└── public/                # Static assets (placeholder images)
+├── app/
+│   ├── (auth)/              sign-in and sign-up
+│   ├── (public)/            landing page, privacy, terms
+│   │   ├── _components/     hero, features, pricing, FAQ, contact drawer
+│   │   ├── _constants/      landing copy
+│   │   └── _hooks/          section spy, contact form
+│   ├── (dashboard)/         the authenticated app
+│   │   ├── _components/     shared shell, modals, badges, toolbars
+│   │   ├── _constants/      shared config
+│   │   ├── _hooks/          shared hooks
+│   │   ├── analytics/       charts across projects
+│   │   ├── archive/         archive and trash
+│   │   ├── calendar/        global calendar
+│   │   ├── dashboard/       quick actions and summary
+│   │   ├── notifications/   inbox and email templates
+│   │   ├── profile/         member profiles
+│   │   ├── projects/        list, detail, and the five views
+│   │   ├── settings/        appearance and notification preferences
+│   │   └── team/            directory, invites, pending
+│   └── api/                 route handlers (Clerk webhook)
+│
+├── lib/                     the backend, in six layers
+│   ├── db/                  Drizzle schema, connection, seed
+│   ├── validations/         Zod schemas
+│   ├── types/               shared TypeScript contracts
+│   ├── dtos/                shapes the UI receives
+│   ├── dal/                 every query and permission check
+│   ├── actions/             Server Actions
+│   ├── email/               SendGrid transport, notification sender
+│   ├── notifiers/           contact-form channels
+│   ├── profanity/           English and Filipino detectors
+│   ├── clerk/               appearance bridge
+│   ├── constants/           tuning values
+│   ├── config/              runtime configuration
+│   ├── theme/               palette definitions
+│   └── utils/               encryption, dates, mentions, toasts
+│
+├── components/
+│   ├── ui/                  shadcn primitives and shared widgets
+│   ├── charts/              chart wrappers
+│   ├── modals/              base modal shells
+│   └── views/               shared table views
+│
+├── stores/                  Zustand stores
+├── hooks/                   app-wide React hooks
+├── styles/                  Tailwind v4 theme tokens
+├── test/                    Vitest suites
+├── e2e/                     Playwright specs, helpers, teardown
+├── scripts/                 seed, migrations, notifier and profanity checks,
+│                            DBML generator, E2E cleanup
+├── drizzle/                 generated migrations
+├── docs/                    phase notes, schema.dbml
+└── public/                  static assets
 ```
 
-### 🚧 Implementation Status
-
-- ✅ **Completed**: Landing page, basic dashboard layout, theme system, TypeScript types
-- ⏳ **In Progress**: Component placeholders, routing structure
-- ❌ **Not Started**: Authentication, database, state management, testing
-
-## 🚀 Getting Started
-
-### Prerequisites
-- **Node.js**: 20+ LTS
-- **pnpm**: Latest version (`npm install -g pnpm`)
-- **Git**: For version control
-- **VS Code**: Recommended IDE
-
-### Setup Instructions
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd nextjs-internship-capstone/project
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
-
-3. **Start development server**
-   ```bash
-   pnpm dev
-   ```
-
-4. **Open in browser**
-   - Navigate to `http://localhost:3000`
-   - Explore the landing page and dashboard mockup
-
-### Available Scripts
-- `pnpm dev` - Start development server
-- `pnpm build` - Build for production
-- `pnpm start` - Start production server
-- `pnpm lint` - Run ESLint
-
-### 🚧 Current Limitations
-- **No Authentication**: Sign-in/sign-up buttons are placeholders
-- **No Database**: All data is mocked/placeholder
-- **No State Management**: Zustand stores are placeholder functions
-- **No Real Functionality**: Most interactions are visual only
-
-
-
-## 👥 Individual Development & Collaboration
-
-### Project Setup
-**Each intern should fork this repository individually** to create their own complete implementation:
-
-1. **Fork the Repository**
-   ```bash
-   # Fork this repo on GitHub to your personal account
-   # Clone your fork locally
-   git clone https://github.com/YOUR-USERNAME/nextjs-internship-capstone.git
-   cd nextjs-internship-capstone/project
-   ```
-
-2. **Set Up Your Development Environment**
-   ```bash
-   # Install dependencies
-   pnpm install
-
-   # Start development
-   pnpm dev
-   ```
-
-3. **Create Your Implementation**
-   - Work on your own fork independently
-   - Build the complete project from start to finish
-   - Own your entire codebase and learning journey
-
-### Why Individual Forks?
-- **Complete Learning Experience**: Every intern builds the full stack
-- **Portfolio Project**: Each intern owns a complete project for their portfolio
-- **Individual Pacing**: Work at your own pace while following milestones
-- **Problem-Solving Skills**: Handle all types of challenges independently
-- **Flexibility**: Explore different approaches and implementations
-
-### Collaboration & Learning
-Despite individual development, interns collaborate through:
-- **Daily Standups**: Share progress, blockers, and solutions
-- **Code Review Sessions**: Optional peer reviews for learning
-- **Technical Discussions**: Share different implementation approaches
-- **Knowledge Sharing**: Help each other overcome challenges
-
-## 📋 Task Tracking & Progress Management
-
-### Recommended Task Tracking Methods
-
-#### Option 1: GitHub Issues (Recommended)
-Create issues in your forked repository to track your progress:
-
-```markdown
-## Task: [Phase] - [Feature Name]
-**Priority**: High/Medium/Low
-**Estimated Time**: X hours
-**Week**: Week X
-
-### Description
-Clear description of what needs to be implemented.
-
-### Acceptance Criteria
-- [ ] Specific, measurable criteria
-- [ ] That define when the task is complete
-- [ ] Include testing requirements
-
-### Notes
-- Dependencies on other tasks
-- Useful resources or documentation links
-```
-
-#### Option 2: GitHub Projects Board
-Set up a personal project board in your fork:
-- **📋 Backlog** - All planned tasks
-- **🎯 Current Sprint** - Tasks for this week
-- **👨‍💻 In Progress** - Currently working on
-- **👀 Review** - Self-review and testing
-- **✅ Done** - Completed tasks
-
-#### Option 3: External Tools
-- **Notion**: Create a personal project dashboard
-- **Trello**: Simple Kanban board for task management
-- **Linear**: More advanced project management
-- **GitHub Projects**: Built-in project management
-
-### Task Categories & Labels
-Organize your tasks with these categories:
-- `setup` - Project initialization and configuration
-- `auth` - Authentication and user management
-- `database` - Database schema and operations
-- `frontend` - UI components and pages
-- `backend` - API routes and server logic
-- `testing` - Unit, integration, and E2E tests
-- `deployment` - Production deployment and CI/CD
-- `documentation` - README, comments, and guides
-
-### Weekly Milestone Tracking
-Track your progress against these milestones:
-- **Week 1-2**: Foundation & Setup
-- **Week 3-4**: Authentication & Database
-- **Week 5-6**: Core CRUD Features
-- **Week 7-8**: Advanced Features & UI
-- **Week 9-10**: Testing & Deployment
-- **Week 11-12**: Polish & Documentation
-
-## 📚 Learning Resources
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Clerk Authentication Guide](https://clerk.com/docs)
-- [Drizzle ORM Documentation](https://orm.drizzle.team/)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
-- [Shadcn/UI Components](https://ui.shadcn.com/)
-
-## 🎯 Success Metrics
-
-### Phase 1: Foundation (Current Status)
-- [x] Project structure and basic routing
-- [x] Landing page with project overview
-- [x] Dashboard layout and navigation
-- [x] Theme system (dark/light mode)
-- [x] TypeScript configuration
-- [ ] Authentication system integration
-- [ ] Database schema and connection
-
-### Phase 2: Core Features (Upcoming)
-- [ ] Project CRUD operations
-- [ ] Task management system
-- [ ] Kanban board with drag-and-drop
-- [ ] User management and permissions
-
-### Phase 3: Advanced Features (Future)
-- [ ] Real-time collaboration
-- [ ] Advanced filtering and search
-- [ ] File attachments and comments
-- [ ] Comprehensive test coverage
-- [ ] Production deployment
-
-### Final Goals
-- [ ] Fully functional project management application
-- [ ] Clean, maintainable codebase with proper documentation
-- [ ] Professional Git workflow demonstrated
-- [ ] Successful deployment to production
-
-## 🔧 Development Notes
-
-### Custom Color Scheme
-The project uses a custom Tailwind color palette:
-- **Primary**: Blue Munsell (`blue_munsell`)
-- **Background**: Platinum, Outer Space (`platinum`, `outer_space`)
-- **Accent**: Payne's Gray, French Gray (`payne's_gray`, `french_gray`)
-
-### Component Architecture
-- **Layout Components**: Dashboard layout with sidebar navigation
-- **UI Components**: Reusable cards, buttons, and theme toggle
-- **Page Components**: Landing page and dashboard with placeholder content
-- **Placeholder Components**: Kanban board, modals, and forms (not functional)
-
-### Known Issues
-- Placeholder authentication routes (non-functional)
-- Mock data throughout the application
-- Incomplete state management implementation
-
-## 📞 Getting Help
-
-- **Mentor Office Hours**: [Schedule TBD]
-- **Team Chat**: [Google Chat workspace]
-- **Documentation**: Check component files for TODO comments and implementation notes
-- **Issues**: Use GitHub Issues for bug reports and feature requests
-
-## 🔧 Implementing Real Dependencies
-
-As you progress through development, you'll need to replace placeholder dependencies with real ones:
-
-### Steps to Clean Up Dependencies
-
-1. **Remove placeholder dependencies** from `package.json`:
-   ```bash
-   # Remove the _comment and _todo_dependencies sections
-   # These contain placeholder/mock dependencies
-   ```
-
-2. **Install real dependencies** as you implement features:
-   ```bash
-   # Example: When implementing authentication
-   pnpm add @clerk/nextjs
-
-   # Example: When implementing database
-   pnpm add drizzle-orm drizzle-kit @vercel/postgres
-
-   # Example: When implementing drag & drop
-   pnpm add @dnd-kit/core @dnd-kit/sortable
-
-   # Example: When implementing state management
-   pnpm add zustand
-
-   # Example: When implementing form validation
-   pnpm add zod
-   ```
-
-3. **Add development dependencies**:
-   ```bash
-   # Testing dependencies
-   pnpm add -D jest @testing-library/react @testing-library/jest-dom playwright
-
-   # Additional dev tools as needed
-   pnpm add -D @types/node
-   ```
-
-4. **Check for dependency conflicts**:
-   ```bash
-   # Check for warnings
-   pnpm ls
-
-   # Install missing peer dependencies if needed
-   pnpm add <missing-peer-dependency>
-   ```
-
-### Implementation Checklist
-- [ ] Authentication system with Clerk
-- [ ] Database schema and ORM with Drizzle
-- [ ] State management with Zustand
-- [ ] Drag & drop functionality with @dnd-kit
-- [ ] Form validation with Zod
-- [ ] Testing setup with Jest and Playwright
-- [ ] All placeholder components replaced with real functionality
-- [ ] No more TODO comments in package.json
-
-## 🚀 Next Steps for Development
-
-1. **Set up Authentication**: Integrate Clerk for user management
-2. **Database Integration**: Implement Drizzle ORM with PostgreSQL
-3. **State Management**: Complete Zustand store implementations
-4. **Core Features**: Build functional CRUD operations
-5. **Testing**: Add comprehensive test suite
-6. **Deployment**: Deploy manually to Vercel (see instructions below)
+The `_components` / `_constants` / `_hooks` folders are private by Next's
+convention — the underscore keeps them out of routing, so colocating them next
+to the route that uses them costs nothing.
 
 ---
 
-## 🌐 Vercel Deployment
+## Database schema
 
-> **The GitHub Actions workflow is disabled by default.** Use the manual steps below to deploy. Enable the workflow only when you're ready for automated deployments.
+22 tables, 41 relationships. Regenerate the diagram source at any time:
 
-### Manual Deployment (Recommended for trainees)
-
-1. **Install the Vercel CLI**
-   ```bash
-   pnpm add -g vercel
-   ```
-
-2. **Log in to Vercel**
-   ```bash
-   vercel login
-   ```
-
-3. **Link your project** (first time only)
-   ```bash
-   cd project
-   vercel link
-   # Follow the prompts — create a new project or link to existing
-   ```
-
-4. **Set environment variables on Vercel**
-
-   Go to your project on [vercel.com](https://vercel.com) → Settings → Environment Variables, then add:
-   ```
-   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-   CLERK_SECRET_KEY=
-   NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-   NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-   DATABASE_URL=
-   ```
-   Or push them via CLI:
-   ```bash
-   vercel env add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-   vercel env add CLERK_SECRET_KEY
-   vercel env add DATABASE_URL
-   ```
-
-5. **Deploy a preview**
-   ```bash
-   vercel
-   ```
-
-6. **Deploy to production**
-   ```bash
-   vercel --prod
-   ```
-
----
-
-## ⚙️ GitHub Actions Workflow (Disabled by Default)
-
-The file `.github/workflows/deploy.yml` contains a Vercel deployment workflow. It is **disabled by default** — the automatic triggers are commented out so nothing runs on push or pull request until you explicitly enable them.
-
-### How to enable automatic deployments
-
-Open `.github/workflows/deploy.yml` and uncomment the trigger block you want:
-
-**Option A — Deploy on every push to `main`:**
-```yaml
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+```bash
+pnpm db:dbml
 ```
 
-**Option B — Preview deploy on pull requests:**
-```yaml
-on:
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
-```
+That reads the **live** schema — not `schema.ts` — and writes
+[`docs/schema.dbml`](docs/schema.dbml). Paste it into
+[dbdiagram.io](https://dbdiagram.io/d) to render the ERD.
 
-**Option C — Both push to main and pull requests:**
-```yaml
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
-```
+Reading from the database rather than the source is deliberate: a generator that
+parsed `schema.ts` would happily draw a migration nobody applied.
 
-### Required GitHub Secrets
-
-Before the workflow can run you need to add your Vercel credentials as repository secrets:
-
-1. Go to your fork on GitHub → **Settings → Secrets and variables → Actions → New repository secret**
-
-2. Add these three secrets:
-
-   | Secret name | Where to find it |
-   |---|---|
-   | `VERCEL_TOKEN` | [vercel.com/account/tokens](https://vercel.com/account/tokens) |
-   | `VERCEL_ORG_ID` | Run `vercel link` locally, then check `.vercel/project.json` → `orgId` |
-   | `VERCEL_PROJECT_ID` | Same file → `projectId` |
-
-### Run the workflow manually (without enabling auto-triggers)
-
-The `workflow_dispatch` trigger is always active. To deploy on demand without enabling push/PR triggers:
-
-1. Go to your fork on GitHub → **Actions → Deploy to Vercel → Run workflow**
-2. Choose `preview` or `production`
-3. Click **Run workflow**
-
----
-
-**Let's build something amazing together! 🎉**
-
-*This is a learning project - expect placeholder content and incomplete features as development progresses.*
+| Group | Tables |
+| :-- | :-- |
+| Identity | `Users`, `Workspaces`, `WorkspaceMembers` |
+| Projects | `Projects`, `ProjectMembers`, `ProjectTeams`, `Boards` |
+| Work | `Tasks`, `TaskAssignees`, `Checklists`, `Attachments` |
+| Collaboration | `Comments`, `CommentMentions`, `Teams`, `TeamMembers` |
+| Invitations | `PendingInvites`, `ProjectInvites` |
+| Activity | `ActivityLogs`, `Notifications`, `NotificationSettings` |
+| Other | `Categories`, `ContactMessages` |

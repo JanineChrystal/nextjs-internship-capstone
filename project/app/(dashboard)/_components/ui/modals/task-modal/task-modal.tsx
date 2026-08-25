@@ -46,6 +46,7 @@ export function TaskModal() {
 		removeChecklistItem,
 		toggleTaskCompletion,
 		fileInputRef,
+		isUploading,
 		isAddingLink,
 		setIsAddingLink,
 		linkUrl,
@@ -174,6 +175,7 @@ export function TaskModal() {
 						<TaskAttachmentsLinks
 							taskData={taskData}
 							fileInputRef={fileInputRef}
+							isUploading={isUploading}
 							handleFileChange={handleFileChange}
 							removeAttachment={removeAttachment}
 							isAddingLink={isAddingLink}
