@@ -26,6 +26,16 @@ test.describe("project bulk actions", () => {
 			await confirm.getByRole("button", { name: /archive/i }).click();
 		}
 
+		/**
+		 * the toast, then a reload - bulk archive updates status in the store and
+		 * does not refresh the list, unlike the single-project path, so the cards
+		 * stay put until the page is fetched again.
+		 */
+		await expect(page.getByText(/2 projects archived/i)).toBeVisible({
+			timeout: 20_000,
+		});
+
+		await page.goto("/projects");
 		await expect(projectLink(page, first)).toHaveCount(0, { timeout: 20_000 });
 		await expect(projectLink(page, second)).toHaveCount(0);
 
