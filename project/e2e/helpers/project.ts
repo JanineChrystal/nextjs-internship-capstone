@@ -60,13 +60,19 @@ export async function createProject(
 
 	/**
 	 * the toast, not the card - the card is optimistic and the modal closes
-	 * before the write lands. Not asserted here, only waited on, because the
-	 * toast auto-dismisses; project-lifecycle asserts it properly.
+	 * before the write lands. Waited on rather than asserted, because it
+	 * auto-dismisses; project-lifecycle asserts it properly.
 	 */
 	await page
 		.getByText("Project created")
 		.waitFor({ state: "visible", timeout: 20_000 })
 		.catch(() => undefined);
+
+	/** reload until the row is really there - every later step navigates away, so leaving on an optimistic card is what made the CRUD specs flake. */
+	await expect(async () => {
+		await page.reload();
+		await expect(projectLink(page, title)).toBeVisible({ timeout: 10_000 });
+	}).toPass({ timeout: 45_000 });
 }
 
 /** the card is a link - matching the title text alone also hits the heading inside it, which is not what a click should land on. */

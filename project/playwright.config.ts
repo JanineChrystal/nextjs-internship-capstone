@@ -51,7 +51,14 @@ export default defineConfig({
 
 	projects: [
 		/** setup - signs each configured account in and writes the storage state the rest reuse. */
-		{ name: "setup", testMatch: /auth\.setup\.ts/ },
+		{
+			name: "setup",
+			testMatch: /auth\.setup\.ts/,
+			teardown: "cleanup",
+		},
+
+		/** cleanup - runs once everything depending on setup has finished, so the next run starts from the data it inherited rather than today's leftovers. */
+		{ name: "cleanup", testMatch: /global\.teardown\.ts/ },
 
 		{
 			name: "chromium",

@@ -16,6 +16,16 @@ export async function createTaskOnBoard(
 
 	const modal = taskModal(page);
 	await expect(modal.getByLabel("Task name")).toBeVisible();
+
+	/**
+	 * wait for the column to arrive - the modal opens on the default board and
+	 * adopts the one that opened it a tick later. Submitting before that leaves
+	 * the task on a board this project has no column for, so no card is drawn.
+	 */
+	await expect(
+		modal.locator('div.space-y-1:has(> span:text-is("Board")) button'),
+	).toContainText(columnTitle, { timeout: 10_000 });
+
 	await modal.getByLabel("Task name").fill(taskName);
 	await modal.getByRole("button", { name: "Create Task" }).click();
 

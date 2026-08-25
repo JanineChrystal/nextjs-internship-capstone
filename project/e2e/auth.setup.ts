@@ -1,3 +1,4 @@
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test as setup } from "@playwright/test";
 import { ACCOUNTS, type Account, isConfigured } from "./helpers/accounts";
@@ -61,22 +62,64 @@ async function signIn(page: Page, account: Account): Promise<void> {
 	).toBeVisible();
 
 	await page.context().storageState({ path: account.storageState });
+	writeFileSync(
+		metaPath(account),
+		JSON.stringify({ origin: new URL(page.url()).origin, savedAt: Date.now() }),
+	);
+}
+
+/** sidecar - records which host the cookies belong to, since a localhost session is no use against a deployed one. */
+function metaPath(account: Account): string {
+	return account.storageState.replace(/\.json$/, ".meta.json");
+}
+
+/**
+ * reuse window - Clerk's development instance rate-limits hard, and a full
+ * suite run costs three sign-ins. Eight hours stays well inside the app's own
+ * 24-hour session cap, so a reused session is a real one, never an expired one.
+ */
+const REUSE_WINDOW_MS = 8 * 60 * 60 * 1000;
+
+function hasFreshSession(account: Account, baseURL: string): boolean {
+	if (process.env.E2E_FORCE_SIGN_IN === "true") return false;
+	if (!existsSync(account.storageState) || !existsSync(metaPath(account))) {
+		return false;
+	}
+
+	try {
+		const meta = JSON.parse(readFileSync(metaPath(account), "utf8"));
+		const sameHost = meta.origin === new URL(baseURL).origin;
+		return sameHost && Date.now() - meta.savedAt < REUSE_WINDOW_MS;
+	} catch {
+		return false;
+	}
 }
 
 for (const account of Object.values(ACCOUNTS)) {
-	setup(`authenticate ${account.key} (${account.role})`, async ({ page }) => {
-		/** A is required, B and C are not - the multi-user specs skip themselves when a login is missing, so the suite still runs with one account. */
-		if (!isConfigured(account)) {
-			if (account.key === "a") {
-				throw new Error(
-					"E2E_USER_EMAIL and E2E_USER_PASSWORD must be set in .env.local",
-				);
+	setup(
+		`authenticate ${account.key} (${account.role})`,
+		async ({ page, baseURL }) => {
+			/** A is required, B and C are not - the multi-user specs skip themselves when a login is missing, so the suite still runs with one account. */
+			if (!isConfigured(account)) {
+				if (account.key === "a") {
+					throw new Error(
+						"E2E_USER_EMAIL and E2E_USER_PASSWORD must be set in .env.local",
+					);
+				}
+				setup.skip(true, `no credentials for account ${account.key}`);
+				return;
 			}
-			setup.skip(true, `no credentials for account ${account.key}`);
-			return;
-		}
 
-		await clerkSetup();
-		await signIn(page, account);
-	});
+			if (hasFreshSession(account, baseURL ?? "")) {
+				setup.skip(
+					true,
+					`reusing the saved session for account ${account.key}`,
+				);
+				return;
+			}
+
+			await clerkSetup();
+			await signIn(page, account);
+		},
+	);
 }
