@@ -1,0 +1,1 @@
+ALTER TABLE "ContactMessages" ADD COLUMN "notifiedAt" timestamp;
