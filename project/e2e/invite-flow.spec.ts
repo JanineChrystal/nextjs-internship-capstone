@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { ACCOUNTS, isConfigured } from "./helpers/accounts";
 import { uniqueName } from "./helpers/naming";
+import { createProject, openProject } from "./helpers/project";
 
 /** invite flow - two accounts in one test, because an invitation is only meaningful when someone else answers it. Runbook FIX-04, FIX-05, FIX-06. */
 test.describe("invitations", () => {
@@ -17,34 +18,25 @@ test.describe("invitations", () => {
 	}) => {
 		const projectName = uniqueName("E2E Invite");
 
-		/** A creates a project to invite into. */
-		await page.goto("/projects");
-		await page.getByRole("button", { name: "Create New Project" }).click();
+		await createProject(page, projectName);
+		const projectUrl = await openProject(page, projectName);
 
-		const createDialog = page.getByRole("dialog");
-		await createDialog
-			.getByPlaceholder("Enter project name...")
-			.fill(projectName);
-		await createDialog.getByRole("button", { name: "Create Project" }).click();
-		await expect(createDialog).toBeHidden();
-
-		await page.getByText(projectName, { exact: true }).first().click();
-		await page.waitForURL(/\/projects\/[0-9a-f-]{36}/);
-		const projectUrl = page.url();
-
-		/** A invites B. */
 		await page.getByRole("button", { name: "Add member to project" }).click();
 
-		const inviteDialog = page.getByRole("dialog");
+		/** both fields - a project invite stages nothing until it has a recipient and a job role, so the Add button stays disabled with only one. */
+		const inviteDialog = page
+			.getByRole("dialog")
+			.filter({ hasText: "Share Project & Invite Members" });
+		await inviteDialog.locator("#recipient").fill(ACCOUNTS.b.email as string);
+		await inviteDialog.locator("#jobRole").fill("Tester");
 		await inviteDialog
-			.getByRole("textbox")
-			.first()
-			.fill(ACCOUNTS.b.email as string);
-		await inviteDialog
-			.getByRole("button", { name: /add|stage/i })
-			.first()
+			.getByRole("button", { name: "Add", exact: true })
 			.click();
-		await inviteDialog.getByRole("button", { name: "Send All" }).click();
+
+		const sendAll = inviteDialog.getByRole("button", { name: "Send All" });
+		await expect(sendAll).toBeEnabled();
+		await sendAll.click();
+		await expect(inviteDialog).toBeHidden({ timeout: 20_000 });
 
 		/** B is not a member yet - the invitation is an offer, not a grant. */
 		const contextB = await browser.newContext({
@@ -54,12 +46,13 @@ test.describe("invitations", () => {
 
 		try {
 			await pageB.goto("/team");
-			const invitePanel = pageB.getByRole("heading", {
-				name: /Invitations for you/,
-			});
-			await expect(invitePanel).toBeVisible({ timeout: 20_000 });
 
-			/** B accepts, and only then can reach the project. */
+			/** the Pending tab - the panel is a view of its own, so the directory stays uncluttered when there are no invitations. */
+			await pageB.getByRole("button", { name: "Pending", exact: true }).click();
+			await expect(
+				pageB.getByRole("heading", { name: /Invitations for you/ }),
+			).toBeVisible({ timeout: 20_000 });
+
 			await pageB.getByRole("button", { name: "Accept" }).first().click();
 
 			await pageB.goto(projectUrl);
@@ -89,7 +82,7 @@ test.describe("invitations", () => {
 
 			await expect(
 				pageB.getByRole("heading", { name: "Kanban Board" }),
-			).toBeVisible();
+			).toBeVisible({ timeout: 20_000 });
 			await expect(
 				pageB.getByRole("button", { name: "Add member to project" }),
 			).toHaveCount(0);

@@ -29,7 +29,8 @@ export default defineConfig({
 	retries: process.env.CI ? 2 : 1,
 	reporter: [["list"], ["html", { open: "never" }]],
 
-	timeout: 60_000,
+	/** 90s - a CRUD spec creates its own project first, and the projects list grows slower with every run's leftovers. */
+	timeout: 90_000,
 	expect: { timeout: 15_000 },
 
 	use: {

@@ -19,6 +19,11 @@ test.describe("project lifecycle", () => {
 		await expect(dialog).toBeHidden();
 		await expect(page.getByText(projectName).first()).toBeVisible();
 
+		/** the toast is the write - the modal closes before the action returns, so reloading any earlier cancels it. */
+		await expect(page.getByText("Project created")).toBeVisible({
+			timeout: 20_000,
+		});
+
 		/** the reload is the assertion - appearing in the list only proves the optimistic update ran. */
 		await page.reload();
 		await expect(page.getByText(projectName).first()).toBeVisible();

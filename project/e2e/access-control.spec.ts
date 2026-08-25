@@ -30,8 +30,10 @@ test.describe("access control", () => {
 
 	test("serves the public landing page", async ({ page }) => {
 		await page.goto("/");
+
+		/** the banner, not the nav - the wordmark sits in the header beside the <nav>, which is itself hidden below md. */
 		await expect(
-			page.getByRole("navigation").getByText("Takda PH").first(),
+			page.getByRole("banner").getByRole("link", { name: "Takda PH" }),
 		).toBeVisible();
 	});
 });
