@@ -5,10 +5,7 @@ import {
 	createPendingInviteInDB,
 	normalizeInviteEmail,
 } from "@/lib/dal/pending-invites";
-import {
-	linkWorkspaceDirectoriesInDB,
-	resolveActiveWorkspaceDAL,
-} from "@/lib/dal/workspaces";
+import { resolveActiveWorkspaceDAL } from "@/lib/dal/workspaces";
 import { db } from "@/lib/db";
 import {
 	activityLogs,
@@ -154,7 +151,11 @@ export async function getWorkspaceDirectoryDAL(
 export async function inviteToWorkspaceInDB(
 	email: string,
 	workspaceId?: string,
-): Promise<{ outcome: InviteOutcome; member?: WorkspaceMemberOutputDTO }> {
+): Promise<{
+	outcome: InviteOutcome;
+	member?: WorkspaceMemberOutputDTO;
+	invitedUserId?: string;
+}> {
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
@@ -191,22 +192,21 @@ export async function inviteToWorkspaceInDB(
 		}
 
 		/**
-		 * mutual directory linking - wraps reciprocal directory links in a
-		 * transaction to prevent mismatched visibility where only one party
-		 * can see the other.
+		 * offered, not granted - a registered person now receives the same
+		 * outstanding invitation an unregistered address does, and the mutual
+		 * directory link is written when they accept. Linking here instead made
+		 * the invitee a directory member the moment someone typed their address,
+		 * with nothing to accept and no way to decline.
 		 */
-		const membership = await db.transaction((tx) =>
-			linkWorkspaceDirectoriesInDB(tx, {
-				inviterId: user.id,
-				inviteeId: targetUser.id,
-				inviterWorkspaceId: workspace.id,
-			}),
-		);
+		await createPendingInviteInDB({
+			workspaceId: workspace.id,
+			projectId: null,
+			email: normalizedEmail,
+			invitedBy: user.id,
+		});
 
-		return {
-			outcome: "invited",
-			member: toWorkspaceMemberDTO(membership, targetUser, [], []),
-		};
+		/** invitee id returned - they are not a member yet, so there is no member DTO, but the caller still needs someone to notify. */
+		return { outcome: "invited", invitedUserId: targetUser.id };
 	} catch (error) {
 		if (
 			error instanceof Error &&

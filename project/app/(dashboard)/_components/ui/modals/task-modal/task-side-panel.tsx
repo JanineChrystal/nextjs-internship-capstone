@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { ViewTabs } from "@/app/(dashboard)/_components/ui/toolbar";
 import type { TabOption } from "@/lib/types/nav";
+import type { TaskPanelTab } from "@/lib/types/task";
 import { TaskActivity } from "./task-activity";
 import { TaskComments } from "./task-comments";
-
-type TaskPanelTab = "comments" | "activity";
 
 // tab configuration - hoisted outside the component to prevent unnecessary re-renders as per AGENTS section 10.
 const TASK_PANEL_TABS: TabOption<TaskPanelTab>[] = [
@@ -18,38 +16,47 @@ interface TaskSidePanelProps {
 	taskId: string | undefined;
 	projectId: string | undefined;
 	isOpen: boolean;
+	activeTab: TaskPanelTab;
+	onTabChange: (tab: TaskPanelTab) => void;
 }
 
 /**
- * task side panel component - manages the right-hand views (comments and activity) within the task modal.
- * tabs are kept mounted to preserve state like unsent text and scroll positions, with activity fetching deferred until active.
+ * task side panel component - the comments and activity views.
+ *
+ * The tab state is owned by the modal rather than by this component, because on
+ * a phone the same choice is made from the bottom strip instead of from the row
+ * here. Two sources for one selection would let the strip and the row disagree.
+ * The row is therefore desktop-only; the strip replaces it below `md`.
+ *
+ * Tabs stay mounted so unsent comment text and scroll position survive a switch,
+ * with activity fetching deferred until it is actually shown.
  */
 export function TaskSidePanel({
 	taskId,
 	projectId,
 	isOpen,
+	activeTab,
+	onTabChange,
 }: TaskSidePanelProps) {
-	const [activeTab, setActiveTab] = useState<TaskPanelTab>("comments");
-
 	return (
-		<div className="flex flex-col h-full min-h-0 bg-surface-container-lowest">
-			<div className="px-4 py-3 pr-16 border-b border-outline-variant shrink-0">
+		<div className="flex h-full min-h-0 flex-col bg-surface-container-lowest">
+			<div className="hidden shrink-0 border-b border-outline-variant px-4 py-3 md:block">
 				<ViewTabs
 					tabs={TASK_PANEL_TABS}
 					activeView={activeTab}
-					onViewChange={setActiveTab}
+					onViewChange={onTabChange}
 				/>
 			</div>
 
 			{/* hidden inactive tabs - keeps content mounted via CSS to preserve state without unmounting. */}
 			<div
-				className={`flex-1 min-h-0 flex flex-col ${activeTab === "comments" ? "" : "hidden"}`}
+				className={`flex min-h-0 flex-1 flex-col ${activeTab === "comments" ? "" : "hidden"}`}
 			>
 				<TaskComments taskId={taskId} isOpen={isOpen} />
 			</div>
 
 			<div
-				className={`flex-1 min-h-0 flex flex-col ${activeTab === "activity" ? "" : "hidden"}`}
+				className={`flex min-h-0 flex-1 flex-col ${activeTab === "activity" ? "" : "hidden"}`}
 			>
 				<TaskActivity
 					taskId={taskId}

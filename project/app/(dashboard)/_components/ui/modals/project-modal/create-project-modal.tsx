@@ -52,7 +52,7 @@ export function CreateProjectModal({
 					<div key={field.id} className="space-y-2">
 						<label
 							htmlFor={field.id}
-							className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider"
+							className="block text-label-sm text-muted-foreground uppercase tracking-wider"
 						>
 							{field.label}
 						</label>
@@ -125,7 +125,7 @@ export function CreateProjectModal({
 			<div className="space-y-2">
 				<label
 					htmlFor="description"
-					className="block font-label-sm text-label-sm text-muted-foreground uppercase tracking-wider"
+					className="block text-label-sm text-muted-foreground uppercase tracking-wider"
 				>
 					Project Description
 				</label>

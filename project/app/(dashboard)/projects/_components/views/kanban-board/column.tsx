@@ -87,15 +87,16 @@ export function Column({
 			ref={setNodeRef}
 			style={style}
 			{...attributes}
-			className={`shrink-0 w-80 flex flex-col gap-stack-md bg-surface-container-lowest border border-outline-variant rounded-xl p-4 h-full shadow-sm transition-colors ${
+			className={`shrink-0 w-[85vw] sm:w-80 snap-start flex flex-col gap-stack-md bg-surface-container-lowest border border-outline-variant rounded-xl p-4 h-full shadow-sm transition-colors ${
 				isDragging ? "opacity-50 ring-2 ring-primary/50" : ""
 			}`}
 		>
+			{/* touch-none on the handle only - the browser claims a touch for scrolling before dnd-kit sees it, so the drag never begins. Scoping it to the header keeps the task list below it scrollable. */}
 			<div
-				className="flex items-center justify-between mb-2 cursor-grab active:cursor-grabbing"
+				className="flex items-center justify-between mb-2 cursor-grab active:cursor-grabbing touch-none"
 				{...listeners}
 			>
-				<div className="font-label-md text-label-md text-on-surface flex items-center gap-2">
+				<div className="text-label-md text-on-surface flex items-center gap-2">
 					<span className={`w-2 h-2 rounded-full ${dotColor}`}></span>
 					{isEditingTitle ? (
 						<input
@@ -170,7 +171,7 @@ export function Column({
 				type="button"
 				variant="outline"
 				onClick={() => openTaskModal(undefined, { board: title })}
-				className="w-full py-2 flex items-center justify-center gap-2 text-foreground hover:bg-surface-variant rounded-lg transition-colors font-label-sm text-label-sm mt-2 border border-dashed border-outline-variant bg-transparent"
+				className="w-full py-2 flex items-center justify-center gap-2 text-foreground hover:bg-surface-variant rounded-lg transition-colors text-label-sm mt-2 border border-dashed border-outline-variant bg-transparent"
 			>
 				<Plus className="w-4.5 h-4.5" /> Add Tasks
 			</Button>

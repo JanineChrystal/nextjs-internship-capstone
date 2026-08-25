@@ -38,6 +38,7 @@ import { clerkAppearance } from "@/lib/clerk/appearance";
 import type { NavItem, NavSubItem } from "@/lib/types/nav";
 import { cn } from "@/lib/utils";
 import { useSettingsNavStore } from "@/stores/use-settings-nav-store";
+import { UNREAD_POLL_INTERVAL_MS } from "../../_constants/activity";
 import { bottomNavigation, navigationGroups } from "../../_constants/nav";
 
 /**
@@ -75,17 +76,32 @@ export function AppSidebar({ className }: { className?: string }) {
 		(store) => store.requestScrollTo,
 	);
 
-	// notification count fetcher - triggers on pathname changes to keep the unread badge synchronized, using a cancellation flag to handle rapid navigation races.
-	// biome-ignore lint/correctness/useExhaustiveDependencies: pathname is the refetch trigger
+	/**
+	 * notification count fetcher - refetches on navigation, on a timer, and when
+	 * the tab regains focus. Navigation alone was not enough: a notification that
+	 * arrived while the reader stayed on one page left the badge showing a stale
+	 * number until they happened to click something.
+	 */
+	// biome-ignore lint/correctness/useExhaustiveDependencies: pathname is a refetch trigger, not a value the effect reads
 	useEffect(() => {
 		let cancelled = false;
 
-		getUnreadNotificationCountAction().then((value) => {
-			if (!cancelled) setUnreadNotifications(value);
-		});
+		const refresh = () => {
+			getUnreadNotificationCountAction().then((value) => {
+				if (!cancelled) setUnreadNotifications(value);
+			});
+		};
+
+		refresh();
+
+		const timer = setInterval(refresh, UNREAD_POLL_INTERVAL_MS);
+		/** focus refetch - covers the reader who left the tab open for an hour and came back, where the next tick could be up to a minute away. */
+		window.addEventListener("focus", refresh);
 
 		return () => {
 			cancelled = true;
+			clearInterval(timer);
+			window.removeEventListener("focus", refresh);
 		};
 	}, [pathname]);
 
@@ -157,8 +173,25 @@ export function AppSidebar({ className }: { className?: string }) {
 											)}
 										>
 											<Link href={item.href} onClick={closeOnMobile}>
-												{Icon && <Icon className="size-4.5 shrink-0" />}
-												<span>{item.name}</span>
+												{Icon && (
+													<span className="relative shrink-0">
+														<Icon className="size-4.5" />
+														{/* rail indicator - the numeric badge below is hidden in the collapsed rail, which is the sidebar's default state, so an unread count had nowhere to show. This dot rides the icon itself and is hidden again once the labels are back. */}
+														{count > 0 && (
+															<span
+																aria-hidden="true"
+																className="absolute -right-1 -top-1 hidden size-2 rounded-full bg-primary ring-2 ring-sidebar group-data-[collapsible=icon]:block"
+															/>
+														)}
+													</span>
+												)}
+												{/* nested announcement - the unread count sits inside the label span rather than beside it, because the button styles truncate `span:last-child` and a sibling would take that rule off the label. */}
+												<span>
+													{item.name}
+													{count > 0 && (
+														<span className="sr-only">, {count} unread</span>
+													)}
+												</span>
 											</Link>
 										</SidebarMenuButton>
 
@@ -335,12 +368,12 @@ function AccountMenu({ collapsed }: { collapsed: boolean }) {
 				},
 			}}
 		>
-			{/* static profile link - preserves the existing profile route link, noting that the hardcoded 'u1' parameter requires future correction. */}
+			{/* self link - "me" rather than an id, because this component only ever sees the Clerk id and the route is keyed by the database one. The page resolves it server-side. */}
 			<UserButton.MenuItems>
 				<UserButton.Link
 					label="Workspace Profile"
 					labelIcon={<User className="size-4" />}
-					href="/profile/u1"
+					href="/profile/me"
 				/>
 			</UserButton.MenuItems>
 		</UserButton>

@@ -11,7 +11,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { TaskModalActionId } from "@/types/task";
+import type { TaskModalActionId } from "@/lib/types/task";
 import { TASK_MODAL_ACTIONS } from "../../../../projects/_constants/task-modal";
 
 interface TaskModalToolbarProps {
@@ -23,6 +23,15 @@ interface TaskModalToolbarProps {
 	onAction: (actionId: TaskModalActionId) => void;
 }
 
+/**
+ * task modal toolbar - the modal's own controls, laid out as a normal row in
+ * the header rather than floated over it.
+ *
+ * It used to be absolutely positioned with a `backdrop-blur-sm` pill, which put
+ * it on top of the task name and the status badge on a narrow screen - the blur
+ * made the collision look intentional without making it readable. In flow, the
+ * header simply reserves the space.
+ */
 export function TaskModalToolbar({
 	isCommentsOpen,
 	toggleComments,
@@ -32,19 +41,19 @@ export function TaskModalToolbar({
 	onAction,
 }: TaskModalToolbarProps) {
 	return (
-		<div className="absolute top-2 right-2 z-50 flex items-center gap-1 backdrop-blur-sm rounded-md p-0.5 md:border-none md:shadow-none md:bg-transparent">
+		<div className="flex shrink-0 items-center gap-0.5">
 			{isEditMode && (
 				<Button
 					variant="ghost"
 					size="icon-sm"
-					className="hidden md:flex h-8 w-8 text-secondary hover:text-foreground"
+					className="hidden size-8 text-secondary hover:text-foreground md:flex"
 					onClick={toggleComments}
 					aria-label={isCommentsOpen ? "Close comments" : "Open comments"}
 				>
 					{isCommentsOpen ? (
-						<PanelRightClose className="h-4 w-4" />
+						<PanelRightClose className="size-4" />
 					) : (
-						<PanelRightOpen className="h-4 w-4" />
+						<PanelRightOpen className="size-4" />
 					)}
 				</Button>
 			)}
@@ -54,9 +63,9 @@ export function TaskModalToolbar({
 						<Button
 							variant="ghost"
 							size="icon-sm"
-							className="h-8 w-8 text-secondary"
+							className="size-8 text-secondary hover:text-foreground"
 						>
-							<MoreHorizontal className="h-4 w-4" />
+							<MoreHorizontal className="size-4" />
 							<span className="sr-only">More options</span>
 						</Button>
 					</DropdownMenuTrigger>
@@ -69,7 +78,7 @@ export function TaskModalToolbar({
 									onClick={() => onAction(action.id)}
 									className={action.className}
 								>
-									<Icon className="h-4 w-4 mr-2" />
+									<Icon className="mr-2 size-4" />
 									{action.id === "TOGGLE_COMPLETION"
 										? isCompleted
 											? action.completedLabel
@@ -84,10 +93,10 @@ export function TaskModalToolbar({
 			<Button
 				variant="ghost"
 				size="icon-sm"
-				className="h-8 w-8 text-secondary hover:text-foreground"
+				className="size-8 text-secondary hover:text-foreground"
 				onClick={closeTaskModal}
 			>
-				<X className="h-4 w-4" />
+				<X className="size-4" />
 				<span className="sr-only">Close</span>
 			</Button>
 		</div>

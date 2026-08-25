@@ -1,26 +1,28 @@
-"use client";
-
-import { useUser } from "@clerk/nextjs";
-import { use } from "react";
+import { notFound } from "next/navigation";
 import { UserProfileView } from "@/app/(dashboard)/_components/profile/user-profile-view";
+import { getUserProfileDAL } from "@/lib/dal/profile";
 
 interface ProfilePageProps {
 	params: Promise<{ id: string }>;
 }
 
-export default function ProfilePage({ params }: ProfilePageProps) {
-	// Resolve params in Next.js 15
-	const { id } = use(params);
-	const { user: currentUser } = useUser();
+/**
+ * profile page - resolved on the server, because the route is keyed by the
+ * database user id while the browser only knows the Clerk id. The previous
+ * client version compared the two directly, so "is this me?" was false for
+ * everyone and the page rendered a fixture instead of the person in the URL.
+ */
+export default async function ProfilePage({ params }: ProfilePageProps) {
+	const { id } = await params;
 
-	// Determine if viewing own profile or a team member's
-	const isSelf = currentUser?.id === id || id === "u1";
+	const profile = await getUserProfileDAL(id);
+	if (!profile) notFound();
 
 	return (
 		<UserProfileView
-			targetUserId={id}
-			viewerUserId={currentUser?.id}
-			isSelf={isSelf}
+			user={profile.user}
+			isSelf={profile.isSelf}
+			projects={profile.projects}
 		/>
 	);
 }

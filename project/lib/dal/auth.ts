@@ -29,7 +29,16 @@ export const getCurrentUser = cache(async () => {
 		.from(users)
 		.where(eq(users.clerkId, userId));
 
-	return user || null;
+	if (user) return user;
+
+	/**
+	 * sync here, not only in requireUser - this function is wrapped in `cache`,
+	 * so returning null on a first miss memoises that null for the whole request.
+	 * A page that calls requireUser (which syncs) and then any DAL would have the
+	 * DAL read the cached null and throw, which is the 403 a brand new account
+	 * saw on its very first dashboard render and never again.
+	 */
+	return (await syncClerkUserToDbDAL()) ?? null;
 });
 
 /**
@@ -62,15 +71,9 @@ export const requireUser = cache(async () => {
 		redirect("/");
 	}
 
+	/** getCurrentUser already syncs a missing row, so a null here means Clerk cannot describe the session at all. */
 	const user = await getCurrentUser();
 	if (user) return user;
-
-	/**
-	 * sync delayed webhook - creates the user row directly from the session
-	 * if the clerk webhook was delayed or blocked, preventing a dead-end 401.
-	 */
-	const synced = await syncClerkUserToDbDAL();
-	if (synced) return synced;
 
 	/** handle broken state - triggers 401 if clerk cannot describe the session, indicating a genuinely broken state. */
 	unauthorized();

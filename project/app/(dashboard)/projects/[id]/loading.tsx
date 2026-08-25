@@ -1,13 +1,16 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonPage, SkeletonTable } from "@/components/ui/skeletons";
+import { SkeletonBoard, SkeletonPage } from "@/components/ui/skeletons";
 
 /** view tabs - keyed by name rather than index for stable identification. */
 const VIEW_TABS = ["board", "grid", "calendar", "charts", "settings"];
 
 /**
- * loading state - streamed during project detail fetches, prioritizing the
- * view tabs pill row to reserve height and prevent layout shift as the rest
- * of the page arrives.
+ * loading state - streamed during project detail fetches.
+ *
+ * It draws a **board**, not a table. The view is component state that resets to
+ * "board" on every mount, so the page always opens on the board no matter which
+ * tab was last used - and the skeleton was showing a grid, which meant the
+ * placeholder never once matched what arrived after it.
  */
 export default function Loading() {
 	return (
@@ -18,9 +21,7 @@ export default function Loading() {
 				))}
 			</div>
 
-			<div className="rounded-xl border border-border bg-card p-4 sm:p-6">
-				<SkeletonTable rememberAs="project-tasks" columns={4} />
-			</div>
+			<SkeletonBoard />
 		</SkeletonPage>
 	);
 }

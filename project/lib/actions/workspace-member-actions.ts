@@ -88,7 +88,7 @@ export async function inviteToWorkspaceAction(
 			 */
 			let mayEmailInvitee = true;
 			const invitedMemberId =
-				result.outcome === "invited" ? result.member?.id : undefined;
+				result.outcome === "invited" ? result.invitedUserId : undefined;
 
 			if (invitedMemberId) {
 				/**
@@ -106,7 +106,7 @@ export async function inviteToWorkspaceAction(
 					notify: [
 						{
 							recipientId: invitedMemberId,
-							message: "You were added to a people directory",
+							message: "You have been invited to a people directory",
 						},
 					],
 				});

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseCheckResponse, parseVariantResponse } from "./filipino-detector";
+import {
+	parseCheckResponse,
+	parseVariantResponse,
+} from "@/lib/profanity/filipino-detector";
 
 /**
  * The response parsers, against the shapes the live API actually returns.

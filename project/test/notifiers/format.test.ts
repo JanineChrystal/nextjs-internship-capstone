@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { TELEGRAM_MAX_LENGTH } from "@/lib/constants/contact";
-import type { ContactNotification } from "@/lib/types/notifier";
 import {
 	buildHtmlBody,
 	buildPlainTextBody,
@@ -9,7 +8,8 @@ import {
 	escapeHtml,
 	fitTelegramBody,
 	toTopicLabel,
-} from "./format";
+} from "@/lib/notifiers/format";
+import type { ContactNotification } from "@/lib/types/notifier";
 
 /**
  * These test the one part of the notification pipeline that is pure logic and

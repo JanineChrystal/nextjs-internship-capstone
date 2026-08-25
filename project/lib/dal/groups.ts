@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { DUPLICATE_GROUP_ROSTER_ERROR } from "@/lib/constants/action-errors";
 import { getCurrentUser } from "@/lib/dal/auth";
 import { getEffectiveProjectRoleDAL } from "@/lib/dal/permissions";
 import { resolveActiveWorkspaceDAL } from "@/lib/dal/workspaces";
@@ -17,6 +18,7 @@ import {
 	toGroupDTO,
 	toGroupMemberDTO,
 } from "@/lib/dtos/group-dto";
+import { isSameRoster } from "@/lib/utils/roster";
 
 /**
  * groups template model - defines groups as static templates utilizing
@@ -46,13 +48,19 @@ export async function getWorkspaceGroupsDAL(): Promise<GroupOutputDTO[]> {
 		.select({
 			team: teams,
 			memberCount: sql<number>`count(${teamMembers.userId})`,
+			/** aggregated roster - collected in the same grouped query rather than a second round trip per group, so the cost stays independent of how many groups exist. */
+			memberIds: sql<
+				string[]
+			>`coalesce(array_remove(array_agg(${teamMembers.userId}), null), '{}')`,
 		})
 		.from(teams)
 		.leftJoin(teamMembers, eq(teams.id, teamMembers.teamId))
 		.where(and(eq(teams.workspaceId, workspace.id), isNull(teams.deletedAt)))
 		.groupBy(teams.id);
 
-	return rows.map((row) => toGroupDTO(row.team, Number(row.memberCount)));
+	return rows.map((row) =>
+		toGroupDTO(row.team, Number(row.memberCount), row.memberIds ?? []),
+	);
 }
 
 export async function getGroupMembersDAL(
@@ -121,6 +129,21 @@ export async function saveProjectMembersAsGroupDAL(
 	const userIds = Array.from(
 		new Set([project.ownerId, ...memberRows.map((row) => row.userId)]),
 	);
+
+	/**
+	 * duplicate roster guard - a group is a saved list of people, so a second
+	 * group holding exactly the same people is not a new template, only a second
+	 * name for one that exists. Blocking it here rather than in the form means it
+	 * holds however the save is triggered.
+	 */
+	const existing = await getWorkspaceGroupsDAL();
+	const duplicate = existing.some((group) =>
+		isSameRoster(group.memberIds, userIds),
+	);
+	if (duplicate) {
+		/** fixed wording - the action only forwards messages on an exact-match allow-list, so interpolating the group's name here would collapse the whole thing to "An unexpected error occurred". */
+		throw new Error(DUPLICATE_GROUP_ROSTER_ERROR);
+	}
 
 	try {
 		return await db.transaction(async (tx) => {
@@ -261,6 +284,78 @@ export async function setGroupMembersDAL(
 				.onConflictDoNothing();
 		}
 	});
+}
+
+/**
+ * sync group to project members - replaces a group's roster with the project's
+ * current members. This is the counterpart to the duplicate guard: once a set of
+ * people is saved, the way to record that the project's membership has moved on
+ * is to update that group, not to save a near-identical second one.
+ */
+export async function syncGroupToProjectMembersDAL(
+	groupId: string,
+	projectId: string,
+): Promise<{ memberCount: number }> {
+	const user = await getCurrentUser();
+	if (!user) throw new Error("Unauthorized");
+
+	await requireGroupManager(projectId);
+
+	const [project] = await db
+		.select({ ownerId: projects.ownerId })
+		.from(projects)
+		.where(and(eq(projects.id, projectId), isNull(projects.deletedAt)));
+
+	if (!project) throw new Error("Project not found");
+
+	const memberRows = await db
+		.select({ userId: projectMembers.userId })
+		.from(projectMembers)
+		.where(
+			and(
+				eq(projectMembers.projectId, projectId),
+				isNull(projectMembers.deletedAt),
+			),
+		);
+
+	/** owner included - matches saveProjectMembersAsGroupDAL, so a group saved and then synced holds the same people rather than quietly losing the owner. */
+	const userIds = Array.from(
+		new Set([project.ownerId, ...memberRows.map((row) => row.userId)]),
+	);
+
+	const workspace = await resolveActiveWorkspaceDAL();
+
+	const [group] = await db
+		.select({ id: teams.id })
+		.from(teams)
+		.where(
+			and(
+				eq(teams.id, groupId),
+				eq(teams.workspaceId, workspace.id),
+				isNull(teams.deletedAt),
+			),
+		);
+
+	if (!group) throw new Error("Group not found");
+
+	/**
+	 * gated like save, not like setGroupMembers - the latter is workspace-owner
+	 * only, but this path is the alternative offered when a co-owner is refused a
+	 * duplicate group. Holding it to a stricter rule than the save it replaces
+	 * would leave that co-owner with no way forward at all.
+	 */
+	await db.transaction(async (tx) => {
+		await tx.delete(teamMembers).where(eq(teamMembers.teamId, groupId));
+
+		if (userIds.length > 0) {
+			await tx
+				.insert(teamMembers)
+				.values(userIds.map((userId) => ({ teamId: groupId, userId })))
+				.onConflictDoNothing();
+		}
+	});
+
+	return { memberCount: userIds.length };
 }
 
 export async function deleteGroupDAL(groupId: string): Promise<void> {

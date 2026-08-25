@@ -1,82 +1,88 @@
-"use client";
-
-import { ChevronLeft, FolderLock } from "lucide-react";
-import Link from "next/link";
-import { TagBadge } from "@/app/(dashboard)/_components/ui/badges/tag-badge";
+import { FolderLock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { EmptyState } from "@/components/ui/empty-state";
 import {
-	mockTargetUser,
-	mockVisibleProjects,
-} from "../../_constants/mock-profile";
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbLink,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { EmptyState } from "@/components/ui/empty-state";
+import type { ProfileProjectData, ProfileUser } from "@/lib/types/profile";
+import { initialsOf } from "@/lib/utils/profile";
 import { UserProjectCollapsible } from "./user-profile-collapsible";
 
 interface UserProfileViewProps {
-	targetUserId: string;
-	viewerUserId?: string;
+	user: ProfileUser;
 	isSelf: boolean;
+	projects: ProfileProjectData[];
 }
 
 export function UserProfileView({
-	targetUserId: _targetUserId,
-	viewerUserId: _viewerUserId,
+	user,
 	isSelf,
+	projects,
 }: UserProfileViewProps) {
-	// project filtering logic - fetches and filters user projects, restricting visibility to mutual projects when viewing another user's profile.
-
-	const targetUser = mockTargetUser;
-	const visibleProjects = mockVisibleProjects;
-
 	return (
-		<div className="max-w-5xl mx-auto space-y-8 p-6">
-			{!isSelf && (
-				<div className="flex items-center -mb-2">
-					<Link
-						href="/team"
-						className="flex items-center gap-2 text-sm font-medium text-secondary hover:text-on-surface transition-colors"
-					>
-						<ChevronLeft className="h-4 w-4" />
-						Back to Team
-					</Link>
-				</div>
-			)}
-			{/* profile header section */}
-			<div className="flex items-center gap-6 bg-surface p-6 rounded-xl border border-outline-variant shadow-sm">
-				<Avatar className="h-20 w-20 border-2 border-primary">
-					<AvatarImage src={targetUser.avatarUrl} alt={targetUser.name} />
-					<AvatarFallback className="text-xl font-bold bg-primary-container text-on-primary-container">
-						AJ
+		<div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 sm:gap-8 sm:p-6">
+			{/*
+			 * breadcrumb in flow - it sits as the first child of the column with the
+			 * container's own gap for spacing. The previous version pulled itself up
+			 * with a negative margin, which is what put it on top of the header card
+			 * as soon as the heading wrapped to a second line.
+			 */}
+			<Breadcrumb>
+				<BreadcrumbList>
+					<BreadcrumbItem>
+						<BreadcrumbLink href={isSelf ? "/dashboard" : "/team"}>
+							{isSelf ? "Dashboard" : "Team"}
+						</BreadcrumbLink>
+					</BreadcrumbItem>
+					<BreadcrumbSeparator />
+					<BreadcrumbItem>
+						<BreadcrumbPage className="truncate">
+							{isSelf ? "My profile" : user.name}
+						</BreadcrumbPage>
+					</BreadcrumbItem>
+				</BreadcrumbList>
+			</Breadcrumb>
+
+			{/* profile header - stacks and centres on a phone, sits on one row from sm upward. */}
+			<header className="flex flex-col items-center gap-4 rounded-xl border border-outline-variant bg-surface p-4 text-center shadow-sm sm:flex-row sm:items-center sm:gap-6 sm:p-6 sm:text-left">
+				<Avatar className="size-16 shrink-0 border-2 border-primary sm:size-20">
+					<AvatarImage src={user.avatarUrl} alt="" />
+					<AvatarFallback className="bg-primary-container text-lg font-bold text-on-primary-container sm:text-xl">
+						{initialsOf(user.name)}
 					</AvatarFallback>
 				</Avatar>
-				<div className="space-y-1">
-					<div className="flex items-center gap-3">
-						<h1 className="text-2xl font-bold text-foreground">
-							{targetUser.name}
-						</h1>
-						<TagBadge tag={targetUser.role} />
-					</div>
-					<p className="text-sm text-secondary">{targetUser.email}</p>
-				</div>
-			</div>
 
-			{/* projects list section */}
-			<div className="space-y-4">
-				<div>
-					<h2 className="text-xl font-bold text-foreground">
+				<div className="flex min-w-0 flex-col gap-1">
+					{/* wrap-break-word - names and addresses are user-supplied, and one long unbroken string would otherwise set the card's minimum width. */}
+					<h1 className="wrap-break-word text-xl font-bold text-foreground sm:text-2xl">
+						{user.name}
+					</h1>
+					<p className="wrap-break-word text-sm text-secondary">{user.email}</p>
+				</div>
+			</header>
+
+			<section className="flex flex-col gap-4">
+				<div className="flex flex-col gap-1">
+					<h2 className="text-lg font-bold text-foreground sm:text-xl">
 						{isSelf
-							? "My Assigned Projects & Tasks"
-							: `Shared Projects with ${targetUser.name}`}
+							? "My assigned projects & tasks"
+							: `Shared projects with ${user.name}`}
 					</h2>
-					<p className="text-sm text-secondary">
+					<p className="text-xs text-secondary sm:text-sm">
 						{isSelf
-							? "Overview of all active projects, completion progress, and assigned responsibilities."
-							: "Showing projects and tasks you and this member share together."}
+							? "Every project you can reach, with the tasks assigned to you inside each."
+							: "Only the projects you both belong to are shown here."}
 					</p>
 				</div>
 
-				{visibleProjects.length > 0 ? (
-					<div className="space-y-3">
-						{visibleProjects.map((project) => (
+				{projects.length > 0 ? (
+					<div className="flex flex-col gap-3">
+						{projects.map((project) => (
 							<UserProjectCollapsible key={project.id} project={project} />
 						))}
 					</div>
@@ -84,11 +90,15 @@ export function UserProfileView({
 					<EmptyState
 						subdued
 						icon={FolderLock}
-						title="No shared projects"
-						description="You and this team member do not currently share any common projects."
+						title={isSelf ? "No projects yet" : "No shared projects"}
+						description={
+							isSelf
+								? "Projects you own or are invited to will appear here."
+								: "You and this member do not currently share any projects."
+						}
 					/>
 				)}
-			</div>
+			</section>
 		</div>
 	);
 }

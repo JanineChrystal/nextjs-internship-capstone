@@ -177,6 +177,15 @@ export async function updateProjectAction(
 		if (data.status !== undefined) updatePayload.status = data.status;
 		if (data.priority !== undefined) updatePayload.priority = data.priority;
 
+		/**
+		 * archive stamp - archivedAt is what the archive page and every "live"
+		 * scope actually read, so a status of "archived" that does not stamp it
+		 * archives the project everywhere except the one page built to show it.
+		 */
+		if (data.status !== undefined) {
+			updatePayload.archivedAt = data.status === "archived" ? new Date() : null;
+		}
+
 		const updatedProject = await updateProjectInDB(projectId, updatePayload);
 
 		revalidatePath("/projects");

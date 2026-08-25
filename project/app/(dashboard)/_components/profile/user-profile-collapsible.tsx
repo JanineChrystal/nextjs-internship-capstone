@@ -10,7 +10,8 @@ import {
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
-import type { ProfileProjectData } from "@/types/profile";
+import type { ProfileProjectData } from "@/lib/types/profile";
+import { completionPercentage } from "@/lib/utils/profile";
 import type { TaskStatus } from "@/types/task";
 
 export function UserProjectCollapsible({
@@ -20,8 +21,9 @@ export function UserProjectCollapsible({
 }) {
 	const [isOpen, setIsOpen] = useState(false);
 
-	const progressPercentage = Math.round(
-		(project.completedTasks / project.totalTasks) * 100,
+	const progressPercentage = completionPercentage(
+		project.completedTasks,
+		project.totalTasks,
 	);
 
 	return (

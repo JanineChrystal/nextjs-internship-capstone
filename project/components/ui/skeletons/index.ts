@@ -4,6 +4,7 @@
  * simultaneously.
  */
 export { SkeletonAvatar, SkeletonAvatarList } from "./avatar";
+export { SkeletonBoard } from "./board";
 export { SkeletonCard, SkeletonCardGrid } from "./card";
 export { SkeletonList, SkeletonListRow } from "./list";
 export {

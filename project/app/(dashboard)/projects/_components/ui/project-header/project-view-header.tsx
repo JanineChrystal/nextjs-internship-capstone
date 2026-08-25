@@ -63,7 +63,7 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 			type="button"
 			variant="ghost"
 			onClick={onEdit}
-			className="flex items-center gap-2 text-secondary hover:bg-surface-variant font-label-md"
+			className="flex items-center gap-2 text-secondary hover:bg-surface-variant"
 		>
 			<Edit2 size={16} />
 			Edit
@@ -109,11 +109,18 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 				</div>
 			)}
 
-			{/* start date - renders the formatted project commencement date. */}
+			{/*
+			 * labelled dates - two bare dates separated by a dot gave no way to tell
+			 * which was the start and which the deadline, and the order alone is not
+			 * a label. The word is dimmer than the date so the date still reads first.
+			 */}
 			{project.startDate && (
-				<div className="flex items-center gap-2 text-secondary text-label-sm px-2 py-1 rounded-md transition-all">
+				<div className="flex items-center gap-1.5 text-secondary text-label-sm px-2 py-1 rounded-md transition-all">
 					<Calendar size={14} className="shrink-0" />
-					{formatDateDisplay(project.startDate)}
+					<span className="text-on-surface-variant/70">Start:</span>
+					<span className="font-medium">
+						{formatDateDisplay(project.startDate)}
+					</span>
 				</div>
 			)}
 
@@ -121,11 +128,13 @@ export function ProjectViewHeader({ project, onEdit }: ProjectViewHeaderProps) {
 				<span className="text-outline-variant hidden sm:inline">•</span>
 			)}
 
-			{/* due date - renders the formatted project deadline. */}
 			{project.dueDate && (
-				<div className="flex items-center gap-2 text-secondary text-label-sm px-2 py-1 rounded-md transition-all">
+				<div className="flex items-center gap-1.5 text-secondary text-label-sm px-2 py-1 rounded-md transition-all">
 					<Calendar size={14} className="shrink-0" />
-					{formatDateDisplay(project.dueDate)}
+					<span className="text-on-surface-variant/70">Due:</span>
+					<span className="font-medium">
+						{formatDateDisplay(project.dueDate)}
+					</span>
 				</div>
 			)}
 

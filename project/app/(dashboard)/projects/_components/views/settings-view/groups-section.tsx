@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	ChevronDown,
 	ChevronRight,
+	RefreshCw,
 	Save,
 	Trash2,
 	UserPlus,
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/buttons/button";
 import { Input } from "@/components/ui/input";
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import { SectionTitle } from "@/components/ui/sections";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	type SaveGroupFormValues,
 	SaveGroupSchema,
@@ -35,9 +37,11 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 		isLoading,
 		expandedGroupId,
 		groupMembers,
+		groupStanding,
 		toggleGroup,
 		saveAsGroup,
 		applyGroup,
+		syncGroup,
 		removeGroup,
 	} = useProjectGroups(projectId);
 
@@ -125,7 +129,22 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 			)}
 
 			{isLoading ? (
-				<p className="text-sm text-secondary">Loading groups...</p>
+				<ul className="flex flex-col gap-2">
+					{Array.from({ length: 3 }, (_, index) => (
+						<li
+							// biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no id
+							key={index}
+							className="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-3"
+						>
+							<Skeleton className="size-7 rounded" />
+							<div className="flex flex-1 flex-col gap-1.5">
+								<Skeleton className="h-4 w-40" />
+								<Skeleton className="h-3 w-20" />
+							</div>
+							<Skeleton className="h-8 w-28 rounded-md" />
+						</li>
+					))}
+				</ul>
 			) : groups.length === 0 ? (
 				<p className="text-sm text-secondary">
 					No groups yet. Save this project's members as a group to reuse them on
@@ -135,6 +154,7 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 				<ul className="flex flex-col gap-2">
 					{groups.map((group) => {
 						const isExpanded = expandedGroupId === group.id;
+						const { isFullyApplied, isStale } = groupStanding(group);
 
 						return (
 							<li
@@ -169,16 +189,33 @@ export function GroupsSection({ projectId, canManage }: GroupsSectionProps) {
 
 									{canManage && (
 										<>
-											<Button
-												type="button"
-												variant="outline"
-												size="sm"
-												onClick={() => applyGroup(group.id)}
-												className="h-8 gap-2"
-											>
-												<UserPlus className="h-4 w-4" />
-												Add to project
-											</Button>
+											{/* nothing-to-add guard - hidden when every person in the group is already on this project, which is always true in the project the group was saved from. It reappears here the moment the rosters diverge, and on any other project. */}
+											{!isFullyApplied && (
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													onClick={() => applyGroup(group.id)}
+													className="h-8 gap-2"
+												>
+													<UserPlus className="h-4 w-4" />
+													Add to project
+												</Button>
+											)}
+											{/* sync control - the offered alternative to saving a near-identical second group; only shown when it would actually change the roster. */}
+											{isStale && (
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon-sm"
+													onClick={() => syncGroup(group.id)}
+													title="Update this group to match the project's current members"
+													aria-label={`Sync ${group.name} to this project's members`}
+													className="text-secondary hover:text-primary"
+												>
+													<RefreshCw className="h-4 w-4" />
+												</Button>
+											)}
 											<Button
 												type="button"
 												variant="ghost"

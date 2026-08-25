@@ -40,6 +40,10 @@ export type TaskModalActionId =
 	| "DUPLICATE"
 	| "ARCHIVE"
 	| "DELETE";
+/** task panel tab - the comments/activity selection, shared by the desktop tab row and the mobile bottom strip. */
+export type TaskPanelTab = "comments" | "activity";
+/** task mobile pane - which single panel is on screen below `md`, where the two cannot sit side by side. */
+export type TaskMobilePane = "details" | TaskPanelTab;
 export type TaskPropertyId = "category" | "status" | "priority" | "board";
 export type PriorityType = "low" | "medium" | "high" | "urgent";
 

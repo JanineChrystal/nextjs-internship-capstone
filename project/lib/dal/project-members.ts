@@ -6,7 +6,6 @@ import {
 	createPendingInviteInDB,
 	normalizeInviteEmail,
 } from "@/lib/dal/pending-invites";
-import { linkWorkspaceDirectoriesInDB } from "@/lib/dal/workspaces";
 import { db } from "@/lib/db";
 import {
 	projectMembers,
@@ -72,29 +71,22 @@ export async function inviteUserToProjectInDB(
 			return "pending";
 		}
 
-		await db.transaction(async (tx) => {
-			const targetUser = knownUser;
-			const project = existingProject;
-
-			/** link mutual directories - establishes a two-way directory relationship to ensure mutual visibility. */
-			await linkWorkspaceDirectoriesInDB(tx, {
-				inviterId: user.id,
-				inviteeId: targetUser.id,
-				inviterWorkspaceId: project.workspaceId,
-			});
-
-			await tx
-				.insert(projectMembers)
-				.values({
-					projectId: projectId,
-					userId: targetUser.id,
-					position: jobRole,
-					accessLevel,
-				})
-				.onConflictDoUpdate({
-					target: [projectMembers.projectId, projectMembers.userId],
-					set: { deletedAt: null, position: jobRole, accessLevel },
-				});
+		/**
+		 * invitations are offers, not grants.
+		 *
+		 * A registered person used to be written straight into ProjectMembers, so
+		 * being invited and joining were the same event and there was nothing to
+		 * accept or decline. They now get the same outstanding invitation an
+		 * unregistered address gets - the only difference being that they have an
+		 * account to see it in. The membership rows are written when they accept.
+		 */
+		await createPendingInviteInDB({
+			workspaceId: existingProject.workspaceId,
+			projectId,
+			email: normalizedEmail,
+			invitedBy: user.id,
+			position: jobRole,
+			accessLevel,
 		});
 
 		await recordActivity({
@@ -104,6 +96,12 @@ export async function inviteUserToProjectInDB(
 			details: `Invited ${normalizedEmail}`,
 			projectId,
 			targetUserId: knownUser.id,
+			notify: [
+				{
+					recipientId: knownUser.id,
+					message: "You have been invited to a project",
+				},
+			],
 		});
 
 		return "invited";

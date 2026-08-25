@@ -23,6 +23,8 @@ export interface ProjectToolbarProps {
 	onViewChange: (view: ProjectViewType) => void;
 	renderFilter?: React.ReactNode;
 	canOpenSettings?: boolean;
+	/** invite permission - gates the add-member control and the modal behind it; the avatar row stays visible either way. */
+	canManageMembers?: boolean;
 }
 
 export function ProjectToolbar({
@@ -31,6 +33,7 @@ export function ProjectToolbar({
 	onViewChange,
 	renderFilter,
 	canOpenSettings = true,
+	canManageMembers = false,
 }: ProjectToolbarProps) {
 	const {
 		isAddMemberModalOpen,
@@ -57,18 +60,25 @@ export function ProjectToolbar({
 						<ProjectMembersGroup
 							visibleMembers={visibleMembers}
 							remainingCount={remainingCount}
-							onAddMember={() => setIsAddMemberModalOpen(true)}
+							onAddMember={
+								canManageMembers
+									? () => setIsAddMemberModalOpen(true)
+									: undefined
+							}
 						/>
 					</>
 				}
 			/>
 
-			<AddMemberModal
-				open={isAddMemberModalOpen}
-				onOpenChange={setIsAddMemberModalOpen}
-				scope="project"
-				targetId={projectId}
-			/>
+			{/* gated mount - the modal is not rendered at all without the permission, so its dynamic chunk is never requested by a member. */}
+			{canManageMembers && (
+				<AddMemberModal
+					open={isAddMemberModalOpen}
+					onOpenChange={setIsAddMemberModalOpen}
+					scope="project"
+					targetId={projectId}
+				/>
+			)}
 		</>
 	);
 }
