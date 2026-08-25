@@ -19,6 +19,12 @@ test.describe("task activity", () => {
 		await modal.getByRole("button", { name: "Activity", exact: true }).click();
 
 		const entries = modal.getByRole("listitem");
+
+		/** wait for the fetch - the panel loads on first show, so counting straight away reads zero and every later comparison is off by the rows that had not arrived. */
+		await expect(modal.getByText("Loading activity...")).toBeHidden({
+			timeout: 20_000,
+		});
+		await expect(entries.first()).toBeVisible({ timeout: 20_000 });
 		const before = await entries.count();
 
 		/** a no-op - focus the name and leave it without changing a character. */
