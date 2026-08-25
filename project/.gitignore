@@ -27,8 +27,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# docs
-/docs
+# docs - private notes stay out, the generated ERD source ships with the repo.
+/docs/*
+!/docs/schema.dbml
 # playwright
 # The saved sign-in state is a real session cookie for a real account.
 /e2e/.auth/

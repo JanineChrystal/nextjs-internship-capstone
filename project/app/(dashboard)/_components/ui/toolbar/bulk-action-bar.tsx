@@ -24,8 +24,8 @@ export function BulkActionBar({
 
 	return (
 		<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5 fade-in duration-200">
-			<div className="bg-surface-container-high border border-outline-variant/30 shadow-lg rounded-full px-4 py-2 flex items-center gap-4">
-				<div className="flex items-center gap-2 pr-4 border-r border-outline-variant/50">
+			<div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-2xl border border-outline-variant/30 bg-surface-container-high px-3 py-2 shadow-lg sm:gap-4 sm:rounded-full sm:px-4">
+				<div className="flex items-center gap-2 border-outline-variant/50 pr-3 sm:border-r sm:pr-4">
 					<span className="bg-primary text-primary-foreground text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
 						{selectedCount}
 					</span>

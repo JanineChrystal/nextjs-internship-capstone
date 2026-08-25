@@ -24,8 +24,8 @@ export function PendingInvitesTable({
 					No pending invites. Add members above.
 				</div>
 			) : (
-				<div className="border border-outline-variant rounded-lg overflow-hidden bg-surface">
-					<table className="w-full text-sm text-left">
+				<div className="overflow-x-auto rounded-lg border border-outline-variant bg-surface">
+					<table className="w-full min-w-100 text-left text-sm">
 						<tbody>
 							{invites.map((invite) => (
 								<tr

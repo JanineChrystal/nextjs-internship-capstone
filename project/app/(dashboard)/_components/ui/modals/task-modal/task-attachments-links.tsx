@@ -7,6 +7,8 @@ import type { GridTask } from "@/types/task";
 interface TaskAttachmentsLinksProps {
 	taskData: Partial<GridTask>;
 	fileInputRef: React.RefObject<HTMLInputElement | null>;
+	/** upload in flight - the file goes to Blob before the row exists, so the button has to say so. */
+	isUploading?: boolean;
 	handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	removeAttachment: (id: string) => void;
 	isAddingLink: boolean;
@@ -20,6 +22,7 @@ interface TaskAttachmentsLinksProps {
 export function TaskAttachmentsLinks({
 	taskData,
 	fileInputRef,
+	isUploading = false,
 	handleFileChange,
 	removeAttachment,
 	isAddingLink,
@@ -73,11 +76,12 @@ export function TaskAttachmentsLinks({
 					/>
 					<Button
 						variant="outline"
+						disabled={isUploading}
 						className="w-full justify-start text-secondary border-dashed"
 						onClick={() => fileInputRef.current?.click()}
 					>
 						<Plus className="h-4 w-4 mr-2" />
-						Add attachment
+						{isUploading ? "Uploading..." : "Add attachment"}
 					</Button>
 				</div>
 			</div>

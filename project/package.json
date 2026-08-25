@@ -44,7 +44,8 @@
 		"db:migrate:production": "drizzle-kit migrate --config=drizzle.production.config.ts",
 		"db:studio:integration": "drizzle-kit studio --config=drizzle.integration.config.ts",
 		"db:studio:production": "drizzle-kit studio --config=drizzle.production.config.ts",
-		"test:e2e:deployed": "cross-env E2E_TARGET=deployed playwright test"
+		"test:e2e:deployed": "cross-env E2E_TARGET=deployed playwright test",
+		"db:dbml": "tsx --env-file=.env.local scripts/generate-dbml.ts"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.7.0",
@@ -58,6 +59,7 @@
 		"@react-email/render": "^2.1.0",
 		"@upstash/ratelimit": "^2.0.8",
 		"@upstash/redis": "^1.38.0",
+		"@vercel/blob": "^2.8.0",
 		"bad-words": "^4.1.5",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
