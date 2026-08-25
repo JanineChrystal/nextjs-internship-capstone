@@ -37,8 +37,9 @@ export function AddMemberModal({
 
 	return (
 		<Dialog open={open} onOpenChange={handleCancel}>
-			<DialogContent className="sm:max-w-3xl bg-surface-container-lowest border-outline-variant p-0 gap-0 overflow-hidden">
-				<DialogHeader className="p-6 pb-4 border-b border-outline-variant bg-surface">
+			{/* column, not grid - the body scrolls on a phone instead of the dialog clipping its own footer. */}
+			<DialogContent className="flex max-h-[92dvh] flex-col overflow-hidden bg-surface-container-lowest border-outline-variant p-0 gap-0 sm:max-w-3xl">
+				<DialogHeader className="shrink-0 border-b border-outline-variant bg-surface p-4 pb-3 sm:p-6 sm:pb-4">
 					<DialogTitle className="text-xl font-bold text-on-surface">
 						Share {scope === "project" ? "Project" : "Workspace"} & Invite
 						Members
@@ -49,7 +50,7 @@ export function AddMemberModal({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="p-6 flex flex-col gap-6 bg-surface-container-lowest">
+				<div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto bg-surface-container-lowest p-4 sm:gap-6 sm:p-6">
 					<AddMemberForm form={form} onSubmit={handleAddStaged} scope={scope} />
 
 					<PendingInvitesTable
@@ -59,7 +60,7 @@ export function AddMemberModal({
 					/>
 
 					{/* modal actions container */}
-					<div className="flex justify-end gap-3 pt-2">
+					<div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
 						<Button
 							type="button"
 							variant="outline"

@@ -1,0 +1,310 @@
+// Takda PH - generated from the live schema by scripts/generate-dbml.ts
+// Paste into https://dbdiagram.io/d
+
+Table "ActivityLogs" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "workspaceId" uuid [not null]
+  "projectId" uuid
+  "taskId" uuid
+  "actorId" uuid [not null]
+  "targetUserId" uuid
+  "actionType" enum [not null]
+  "details" text
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "Attachments" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "taskId" uuid [not null]
+  "name" text [not null]
+  "url" text [not null]
+  "type" enum [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "Boards" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "projectId" uuid [not null]
+  "workspaceId" uuid [not null]
+  "name" text [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+  "position" integer [not null]
+  "isCompletionBoard" boolean [not null]
+}
+
+Table "Categories" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "workspaceId" uuid [not null]
+  "name" text [not null]
+  "color" text [not null]
+  "type" enum [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+}
+
+Table "Checklists" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "taskId" uuid [not null]
+  "title" text [not null]
+  "isCompleted" boolean [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "CommentMentions" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "commentId" uuid [not null]
+  "mentionedUserId" uuid [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "Comments" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "taskId" uuid [not null]
+  "authorId" uuid [not null]
+  "parentId" uuid
+  "body" text [not null]
+  "isFlagged" boolean [not null]
+  "flagReason" text
+  "moderatedById" uuid
+  "moderatedAt" timestamp_without_time_zone
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+  "pendingProfanityCheck" boolean [not null]
+}
+
+Table "ContactMessages" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "name" text [not null]
+  "email" text [not null]
+  "organization" text
+  "topic" enum [not null]
+  "message" text [not null]
+  "respondedAt" timestamp_without_time_zone
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+  "notifiedAt" timestamp_without_time_zone
+}
+
+Table "NotificationSettings" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "userId" uuid [not null]
+  "emailWorkspaceInvites" boolean [not null]
+  "emailTaskCompletions" boolean [not null]
+  "emailProjectCompletions" boolean [not null]
+  "emailCommentMentions" boolean [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+  "emailProjectInvites" boolean [not null]
+  "emailCommentViolations" boolean [not null]
+  "emailProjectOverdue" boolean [not null]
+}
+
+Table "Notifications" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "recipientId" uuid [not null]
+  "actorId" uuid
+  "workspaceId" uuid
+  "projectId" uuid
+  "taskId" uuid
+  "actionType" enum [not null]
+  "message" text [not null]
+  "isRead" boolean [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "PendingInvites" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "workspaceId" uuid [not null]
+  "projectId" uuid
+  "email" text [not null]
+  "invitedBy" uuid [not null]
+  "position" text [not null]
+  "accessLevel" enum [not null]
+  "claimedAt" timestamp_without_time_zone
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "ProjectInvites" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "projectId" uuid [not null]
+  "inviteToken" text [not null]
+  "defaultAccessLevel" enum [not null]
+  "defaultPosition" text [not null]
+  "expiresAt" timestamp_without_time_zone
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "ProjectMembers" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "projectId" uuid [not null]
+  "userId" uuid [not null]
+  "position" text [not null]
+  "accessLevel" enum [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "ProjectTeams" {
+  "projectId" uuid [pk, not null]
+  "teamId" uuid [pk, not null]
+  "accessLevel" enum [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+}
+
+Table "Projects" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "workspaceId" uuid [not null]
+  "ownerId" uuid [not null]
+  "name" text [not null]
+  "description" text
+  "status" enum [not null]
+  "priority" enum [not null]
+  "category" text
+  "startDate" timestamp_without_time_zone
+  "dueDate" timestamp_without_time_zone
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+  "archivedAt" timestamp_without_time_zone
+}
+
+Table "TaskAssignees" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "taskId" uuid [not null]
+  "userId" uuid [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "Tasks" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "projectId" uuid [not null]
+  "boardId" uuid [not null]
+  "name" text [not null]
+  "category" text
+  "status" text [not null]
+  "priority" enum [not null]
+  "startDate" timestamp_without_time_zone
+  "dueDate" timestamp_without_time_zone
+  "notes" text
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+  "position" integer [not null]
+  "isCompleted" boolean [not null]
+  "statusOverriddenAt" timestamp_without_time_zone
+  "previousBoardId" uuid
+  "archivedAt" timestamp_without_time_zone
+}
+
+Table "TeamMembers" {
+  "teamId" uuid [pk, not null]
+  "userId" uuid [pk, not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+}
+
+Table "Teams" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "workspaceId" uuid [not null]
+  "name" text [not null]
+  "description" text
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "Users" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "email" text [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+  "clerkId" text [not null]
+  "firstName" text
+  "lastName" text
+  "imageUrl" text
+}
+
+Table "WorkspaceMembers" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "workspaceId" uuid [not null]
+  "userId" uuid [not null]
+  "status" enum [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+Table "Workspaces" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "ownerId" uuid [not null]
+  "name" text [not null]
+  "createdAt" timestamp_without_time_zone [not null, default: `now()`]
+  "updatedAt" timestamp_without_time_zone [not null, default: `now()`]
+  "deletedAt" timestamp_without_time_zone
+}
+
+// Relationships
+Ref: "ActivityLogs"."workspaceId" > "Workspaces"."id"
+Ref: "ActivityLogs"."projectId" > "Projects"."id"
+Ref: "ActivityLogs"."taskId" > "Tasks"."id"
+Ref: "ActivityLogs"."actorId" > "Users"."id"
+Ref: "ActivityLogs"."targetUserId" > "Users"."id"
+Ref: "Attachments"."taskId" > "Tasks"."id"
+Ref: "Boards"."projectId" > "Projects"."id"
+Ref: "Boards"."workspaceId" > "Workspaces"."id"
+Ref: "Categories"."workspaceId" > "Workspaces"."id"
+Ref: "Checklists"."taskId" > "Tasks"."id"
+Ref: "CommentMentions"."commentId" > "Comments"."id"
+Ref: "CommentMentions"."mentionedUserId" > "Users"."id"
+Ref: "Comments"."authorId" > "Users"."id"
+Ref: "Comments"."taskId" > "Tasks"."id"
+Ref: "Comments"."moderatedById" > "Users"."id"
+Ref: "NotificationSettings"."userId" > "Users"."id"
+Ref: "Notifications"."actorId" > "Users"."id"
+Ref: "Notifications"."taskId" > "Tasks"."id"
+Ref: "Notifications"."projectId" > "Projects"."id"
+Ref: "Notifications"."workspaceId" > "Workspaces"."id"
+Ref: "Notifications"."recipientId" > "Users"."id"
+Ref: "PendingInvites"."invitedBy" > "Users"."id"
+Ref: "PendingInvites"."workspaceId" > "Workspaces"."id"
+Ref: "PendingInvites"."projectId" > "Projects"."id"
+Ref: "ProjectInvites"."projectId" > "Projects"."id"
+Ref: "ProjectMembers"."userId" > "Users"."id"
+Ref: "ProjectMembers"."projectId" > "Projects"."id"
+Ref: "ProjectTeams"."teamId" > "Teams"."id"
+Ref: "ProjectTeams"."projectId" > "Projects"."id"
+Ref: "Projects"."ownerId" > "Users"."id"
+Ref: "Projects"."workspaceId" > "Workspaces"."id"
+Ref: "TaskAssignees"."userId" > "Users"."id"
+Ref: "TaskAssignees"."taskId" > "Tasks"."id"
+Ref: "Tasks"."boardId" > "Boards"."id"
+Ref: "Tasks"."projectId" > "Projects"."id"
+Ref: "TeamMembers"."userId" > "Users"."id"
+Ref: "TeamMembers"."teamId" > "Teams"."id"
+Ref: "Teams"."workspaceId" > "Workspaces"."id"
+Ref: "WorkspaceMembers"."userId" > "Users"."id"
+Ref: "WorkspaceMembers"."workspaceId" > "Workspaces"."id"
+Ref: "Workspaces"."ownerId" > "Users"."id"

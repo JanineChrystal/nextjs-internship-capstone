@@ -326,6 +326,12 @@ export function AppSidebar({ className }: { className?: string }) {
 				<div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
 					<AccountMenu collapsed={state === "collapsed" && !isMobile} />
 				</div>
+
+				{isMobile && (
+					<div className="px-2 pb-1">
+						<MobileProfileLink onNavigate={() => setOpenMobile(false)} />
+					</div>
+				)}
 			</SidebarFooter>
 		</Sidebar>
 	);
@@ -337,6 +343,7 @@ export function AppSidebar({ className }: { className?: string }) {
  */
 function AccountMenu({ collapsed }: { collapsed: boolean }) {
 	const [mounted, setMounted] = useState(false);
+	const { isMobile } = useSidebar();
 
 	useEffect(() => setMounted(true), []);
 
@@ -369,13 +376,36 @@ function AccountMenu({ collapsed }: { collapsed: boolean }) {
 			}}
 		>
 			{/* self link - "me" rather than an id, because this component only ever sees the Clerk id and the route is keyed by the database one. The page resolves it server-side. */}
-			<UserButton.MenuItems>
-				<UserButton.Link
-					label="Workspace Profile"
-					labelIcon={<User className="size-4" />}
-					href="/profile/me"
-				/>
-			</UserButton.MenuItems>
+			{!isMobile && (
+				<UserButton.MenuItems>
+					<UserButton.Link
+						label="Workspace Profile"
+						labelIcon={<User className="size-4" />}
+						href="/profile/me"
+					/>
+				</UserButton.MenuItems>
+			)}
 		</UserButton>
+	);
+}
+
+/**
+ * The same destination, reachable on a phone.
+ *
+ * The mobile sidebar is a Sheet, and a Sheet is a modal dialog: it puts
+ * `pointer-events: none` on the body and traps focus. Clerk portals its menu to
+ * the body, so on mobile the item rendered and simply could not be clicked.
+ * This link lives inside the Sheet, where clicks land.
+ */
+function MobileProfileLink({ onNavigate }: { onNavigate: () => void }) {
+	return (
+		<Link
+			href="/profile/me"
+			onClick={onNavigate}
+			className="flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+		>
+			<User className="size-4 shrink-0" />
+			Workspace Profile
+		</Link>
 	);
 }
